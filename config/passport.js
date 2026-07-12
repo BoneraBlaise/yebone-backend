@@ -1,23 +1,13 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/user');
-const dotenv = require('dotenv');
 
-// Load environment variables first
-dotenv.config({ path: "./config/.env" });
-
-// Verify Google credentials are present
+// Environment variables are validated at startup in config/validateEnv.js
 const googleCredentials = {
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: `${process.env.BACKEND_URL}/api/v2/auth/google/callback`
 };
-
-if (!googleCredentials.clientID || !googleCredentials.clientSecret) {
-  console.error('Missing required Google OAuth credentials in .env file');
-  console.error('Please ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set');
-  process.exit(1);
-}
 
 // Serialize user for the session
 passport.serializeUser((user, done) => {

@@ -1,0 +1,15 @@
+/**
+ * Chart of accounts for double-entry journal entries.
+ */
+const AccountType = Object.freeze({
+  CUSTOMER_WALLET: "CUSTOMER_WALLET",
+  VENDOR_WALLET: "VENDOR_WALLET",
+  PLATFORM_REVENUE: "PLATFORM_REVENUE",
+  ESCROW: "ESCROW",
+  DELIVERY_REVENUE: "DELIVERY_REVENUE",
+  REFUND_LIABILITY: "REFUND_LIABILITY",
+  PAYOUT_LIABILITY: "PAYOUT_LIABILITY",
+  MARKETPLACE_CASH: "MARKETPLACE_CASH",
+});
+
+module.exports = AccountType;

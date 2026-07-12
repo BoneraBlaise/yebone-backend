@@ -1,3 +1,21 @@
+const path = require("path");
+const fs = require("fs");
+
+// Load environment variables once at the application entry point.
+const rootEnvPath = path.join(__dirname, ".env");
+const configEnvPath = path.join(__dirname, "config", ".env");
+const envPath = fs.existsSync(rootEnvPath) ? rootEnvPath : configEnvPath;
+
+if (fs.existsSync(envPath)) {
+  require("dotenv").config({ path: envPath });
+}
+
+const validateEnv = require("./config/validateEnv");
+validateEnv();
+
+const { bootstrapPlatform } = require("./platform");
+bootstrapPlatform({ validateOnly: false });
+
 const app = require("./app");
 const connectDatabase = require("./db/Database");
 const cloudinary = require("cloudinary");
@@ -7,13 +25,6 @@ process.on("uncaughtException", (err) => {
   console.log(`Error: ${err.message}`);
   console.log(`shutting down the server for handling uncaught exception`);
 });
-
-// config
-if (process.env.NODE_ENV !== "PRODUCTION") {
-  require("dotenv").config({
-    path: "config/.env",
-  });
-}
 
 // connect db
 connectDatabase();

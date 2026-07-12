@@ -1,3 +1,9 @@
+/**
+ * @deprecated Legacy v2 withdraw routes — payout orchestration migrated to MarketplacePaymentFacade.
+ * Routes preserved for backwards compatibility. Prefer /api/v1/payments vendor payout routes.
+ *
+ * Controller → MarketplacePaymentFacade → Orchestrators → Financial Core → Workflows
+ */
 const Shop = require("../model/shop");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
@@ -5,6 +11,10 @@ const express = require("express");
 const { isSeller, isAuthenticated, isAdmin } = require("../middleware/auth");
 const Withdraw = require("../model/withdraw");
 const sendMail = require("../utils/sendMail");
+const { adapters } = require("../payments/legacy");
+
+const V2WithdrawAdapter = adapters.V2WithdrawAdapter;
+
 const router = express.Router();
 
 // create withdraw request --- only for seller
@@ -33,18 +43,9 @@ router.post(
         return next(new ErrorHandler(error.message, 500));
       }
 
-      const withdraw = await Withdraw.create(data);
+      const result = await V2WithdrawAdapter.createWithdrawRequest(data);
 
-      const shop = await Shop.findById(req.seller._id);
-
-      shop.availableBalance = shop.availableBalance - amount;
-
-      await shop.save();
-
-      res.status(201).json({
-        success: true,
-        withdraw,
-      });
+      res.status(201).json(result);
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
     }
@@ -91,16 +92,12 @@ router.put(
 
       const seller = await Shop.findById(sellerId);
 
-      const transection = {
-        _id: withdraw._id,
-        amount: withdraw.amount,
-        updatedAt: withdraw.updatedAt,
-        status: withdraw.status,
-      };
-
-      seller.transections = [...seller.transections, transection];
-
-      await seller.save();
+      await V2WithdrawAdapter.updateWithdrawRequest({
+        withdrawId: req.params.id,
+        sellerId,
+        withdraw,
+        seller,
+      });
 
       try {
         await sendMail({

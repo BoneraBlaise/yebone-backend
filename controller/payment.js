@@ -1,32 +1,34 @@
+/**
+ * @deprecated Legacy v2 payment routes — migrated to MarketplacePaymentFacade.
+ * Routes preserved for backwards compatibility. Prefer /api/v1/payments for new integrations.
+ *
+ * Controller → MarketplacePaymentFacade → Orchestrators → Financial Core → Workflows
+ */
 const express = require("express");
 const router = express.Router();
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
+const ErrorHandler = require("../utils/ErrorHandler");
+const { adapters } = require("../payments/legacy");
 
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const V2PaymentProcessAdapter = adapters.V2PaymentProcessAdapter;
 
 router.post(
   "/process",
   catchAsyncErrors(async (req, res, next) => {
-    const myPayment = await stripe.paymentIntents.create({
-      amount: req.body.amount,
-      currency: "USD",
-      metadata: {
-        company: "Guriraline",
-      },
-    });
-    res.status(200).json({
-      success: true,
-      client_secret: myPayment.client_secret,
-    });
+    try {
+      const result = await V2PaymentProcessAdapter.processPayment(req.body);
+      res.status(200).json(result);
+    } catch (error) {
+      return next(new ErrorHandler(error.message, error.statusCode || 500));
+    }
   })
 );
 
 router.get(
   "/stripeapikey",
   catchAsyncErrors(async (req, res, next) => {
-    res.status(200).json({ stripeApikey: process.env.STRIPE_API_KEY });
+    res.status(200).json(V2PaymentProcessAdapter.getStripeApiKey());
   })
 );
-
 
 module.exports = router;

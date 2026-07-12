@@ -1,3 +1,7 @@
+/**
+ * @deprecated Unused legacy PayLater product controller — not registered in app.js.
+ * Retained for backwards compatibility only. Not a payment execution entry point.
+ */
 const express = require('express');
 const PayLaterProduct = require('../model/PayLaterProduct');
 const Product = require('../model/product.js');

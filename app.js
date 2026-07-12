@@ -5,14 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 
-// Load environment variables first
-if (process.env.NODE_ENV !== "PRODUCTION") {
-  require("dotenv").config({
-    path: "config/.env",
-  });
-}
-
-// Then load passport after env variables are loaded
+// Environment variables are loaded once in server.js before this module is required.
 const passport = require('./config/passport');
 
 // Array of allowed origins
@@ -137,6 +130,13 @@ app.use("/api/v2/withdraw", withdraw);
 app.use("/api/v2/flashsale", flashsale);
 app.use("/api/v2/bids", bid);
 app.use("/api/v2/commission", commission);
+
+// Provider-independent payments module (v1) — isolated from marketplace v2 routes
+const { registerPaymentRuntime } = require("./payments/runtime");
+registerPaymentRuntime(app);
+
+const { registerPlatformRoutes } = require("./platform/runtime/registerPlatformRoutes");
+registerPlatformRoutes(app);
 
 // Add this before the ErrorHandler middleware
 app.use((err, req, res, next) => {

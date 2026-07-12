@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: guriraline-server
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health/liveness
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: info
+      - key: DB_URL
+        sync: false
+      - key: POSTGRES_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_EXPIRES
+        value: 7d
+      - key: ACTIVATION_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: STORAGE_PROVIDER
+        value: cloudinary
+      - key: STORAGE_LOCAL_PATH
+        value: ./storage/uploads
+      - key: STORAGE_MAX_MB
+        value: "100"
+      - key: CLOUDINARY_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SMPT_HOST
+        sync: false
+      - key: SMPT_PORT
+        value: "587"
+      - key: SMPT_SERVICE
+        sync: false
+      - key: SMPT_MAIL
+        sync: false
+      - key: SMPT_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_API_KEY
+        sync: false

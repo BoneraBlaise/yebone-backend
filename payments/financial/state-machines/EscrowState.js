@@ -1,0 +1,17 @@
+/**
+ * Escrow lifecycle states.
+ */
+const EscrowState = Object.freeze({
+  CREATED: "CREATED",
+  AUTHORIZED: "AUTHORIZED",
+  HELD: "HELD",
+  READY_FOR_RELEASE: "READY_FOR_RELEASE",
+  RELEASED: "RELEASED",
+  PARTIALLY_REFUNDED: "PARTIALLY_REFUNDED",
+  FULLY_REFUNDED: "FULLY_REFUNDED",
+  DISPUTED: "DISPUTED",
+  CANCELLED: "CANCELLED",
+  FAILED: "FAILED",
+});
+
+module.exports = EscrowState;

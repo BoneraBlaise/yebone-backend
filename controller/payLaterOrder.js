@@ -1,3 +1,7 @@
+/**
+ * @deprecated Unused legacy PayLater installment controller — not registered in app.js.
+ * Retained for backwards compatibility only. Not a payment execution entry point.
+ */
 const express = require('express');
 const PayLaterOrder = require('../model/paylaterorder');
 const PayLaterUser = require('../model/paylateruser');
