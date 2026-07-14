@@ -7,26 +7,20 @@ const bodyParser = require("body-parser");
 
 // Environment variables are loaded once in server.js before this module is required.
 const passport = require('./config/passport');
+const {
+  resolveCorsOrigins,
+  isOriginAllowed,
+} = require("./platform/deployment/corsOrigins");
+const {
+  applyProductionMiddleware,
+} = require("./platform/deployment/productionMiddleware");
 
-// Array of allowed origins
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:8081',
-  'http://localhost:19000',
-  'http://localhost:19006',
-  'exp://localhost:8081',
-  'exp://192.168.149.147:8081',
-  'http://192.168.149.147:8081',
-  'http://192.168.149.147:19000',
-  'https://guriraline.com',
-  'https://bonerabliaise.github.io',
-  'https://guriraline-server-e1y8.onrender.com',
-];
+const allowedOrigins = resolveCorsOrigins(process.env);
 
 // CORS options to handle the allowed origins
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin, allowedOrigins)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -51,6 +45,9 @@ const corsOptions = {
 
 // Apply CORS middleware globally
 app.use(cors(corsOptions));
+
+// Production security headers + basic rate limiting (deployment layer only)
+applyProductionMiddleware(app);
 
 app.use(express.json({ limit: "100mb" }));
 app.use(cookieParser());
@@ -151,8 +148,9 @@ app.use((err, req, res, next) => {
     return res.redirect(`${process.env.FRONTEND_URL}/login?error=Google authentication failed`);
   }
   
-  // Default error response
-  if (req.xhr || req.headers.accept.includes('application/json')) {
+  // Default error response (safe Accept header check for production)
+  const accept = String(req.headers.accept || "");
+  if (req.xhr || accept.includes("application/json")) {
     res.status(500).json({
       success: false,
       message: err.message || 'Internal Server Error'
