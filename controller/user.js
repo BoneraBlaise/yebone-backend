@@ -10,7 +10,7 @@ const sendToken = require("../utils/jwtToken");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const crypto = require('crypto');
 const sharp = require('sharp');
-const streamifier = require('streamifier');
+const normalizeEmail = require("../utils/normalizeEmail");
 
 // Create activation token function
 const createToken = (user) => {
@@ -22,7 +22,8 @@ const createToken = (user) => {
 // Create user
 router.post("/create-user", async (req, res, next) => {
   try {
-    const { name, email, password, avatar } = req.body;
+    const { name, password, avatar } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     if (!name || !email || !password || !avatar) {
       return next(new ErrorHandler("Missing required fields", 400));
@@ -43,7 +44,7 @@ router.post("/create-user", async (req, res, next) => {
       return next(new ErrorHandler("Error uploading avatar", 500));
     }
 
-    const user = {
+    const userPayload = {
       name: name,
       email: email,
       password: password,
@@ -53,23 +54,29 @@ router.post("/create-user", async (req, res, next) => {
       },
     };
 
-    const activationToken = createToken(user);
+    const activationToken = createToken(userPayload);
+    const frontendBase = String(process.env.FRONTEND_URL || "").replace(/\/$/, "");
+    const activationUrl = `${frontendBase}/activation/${activationToken}`;
 
-    const activationUrl = `https://guriraline.com/activation/${activationToken}`;
+    const mailResult = await sendMail({
+      email: userPayload.email,
+      subject: "Activate your account",
+      message: `Hello ${userPayload.name}, please click the link to activate your account:\n\n${activationUrl}`,
+    });
 
-    try {
-      await sendMail({
-        email: user.email,
-        subject: "Activate your account",
-        message: `Hello ${user.name}, please click the link to activate your account:\n\n${activationUrl}`,
-      });
-      res.status(201).json({
+    if (mailResult?.skipped) {
+      await User.create(userPayload);
+      return res.status(201).json({
         success: true,
-        message: `Please check your email (${user.email}) to activate your account!`,
+        message: `Account created successfully! You can now sign in with ${userPayload.email}.`,
+        emailVerificationSkipped: true,
       });
-    } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
     }
+
+    res.status(201).json({
+      success: true,
+      message: `Please check your email (${userPayload.email}) to activate your account!`,
+    });
   } catch (error) {
     return next(new ErrorHandler(error.message, 400));
   }
@@ -121,7 +128,7 @@ router.post(
 router.post("/check-email", catchAsyncErrors(async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizeEmail(email) });
 
     if (user) {
       return res.status(200).json({
@@ -143,7 +150,8 @@ router.post(
   "/login-user",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password } = req.body;
+      const { password } = req.body;
+      const email = normalizeEmail(req.body.email);
 
       if (!email || !password) {
         return next(new ErrorHandler("Please fill all fields!", 400));
@@ -404,12 +412,13 @@ router.post(
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { email } = req.body;
+      const normalizedEmail = normalizeEmail(email);
 
       if (!email) {
         return next(new ErrorHandler("Email is required", 400));
       }
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email: normalizedEmail });
 
       if (!user) {
         return next(new ErrorHandler("User not found", 404));
@@ -420,11 +429,20 @@ router.post(
 
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-      await sendMail({
+      const mailResult = await sendMail({
         email: user.email,
         subject: "Password Reset Request",
         message: `Hi ${user.name},\n\nYou requested a password reset. Click the link below to reset your password:\n\n${resetUrl}\n\nIf you didn't request this, please ignore this email.`,
       });
+
+      if (mailResult?.skipped) {
+        return next(
+          new ErrorHandler(
+            "Password reset email is unavailable until SMTP is configured on the server.",
+            503
+          )
+        );
+      }
 
       res.status(200).json({
         success: true,
