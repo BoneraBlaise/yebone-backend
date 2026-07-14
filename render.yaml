@@ -30,7 +30,9 @@ services:
       - key: BACKEND_URL
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://bonerablaise.github.io/yebo-marketplace
+      - key: CORS_ORIGINS
+        value: https://bonerablaise.github.io,https://www.bonerablaise.github.io
       - key: STORAGE_PROVIDER
         value: cloudinary
       - key: STORAGE_LOCAL_PATH

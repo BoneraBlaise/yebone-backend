@@ -56,12 +56,15 @@ if (exists(".env.example") && exists(".env.production.example") && exists("confi
 try {
   const { resolveCorsOrigins } = require(path.join(ROOT, "platform/deployment/corsOrigins"));
   const origins = resolveCorsOrigins({
-    FRONTEND_URL: "https://bonerabliaise.github.io/yebo-marketplace",
+    FRONTEND_URL: "https://bonerablaise.github.io/yebo-marketplace",
+    CORS_ORIGINS:
+      "https://bonerablaise.github.io,https://www.bonerablaise.github.io",
   });
   const required = [
     "https://guriraline.com",
     "https://www.guriraline.com",
-    "https://bonerabliaise.github.io",
+    "https://bonerablaise.github.io",
+    "https://www.bonerablaise.github.io",
   ];
   const missing = required.filter((o) => !origins.includes(o));
   if (missing.length === 0) {
@@ -77,10 +80,10 @@ try {
     fail("security_middleware", "app.js missing production middleware wiring");
   }
 
-  if (appSrc.includes('String(req.headers.accept || "")')) {
-    pass("error_accept_safe", "global error handler safely reads Accept header");
+  if (appSrc.includes("wantsJsonResponse") && appSrc.includes("isApiRequest")) {
+    pass("error_accept_safe", "API error handler returns JSON for /api routes");
   } else {
-    fail("error_accept_safe", "unsafe Accept header access may crash");
+    fail("error_accept_safe", "API routes may redirect instead of JSON errors");
   }
 } catch (error) {
   fail("cors_security", error.message);

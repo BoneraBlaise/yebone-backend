@@ -17,30 +17,41 @@ const {
 
 const allowedOrigins = resolveCorsOrigins(process.env);
 
-// CORS options to handle the allowed origins
+const isApiRequest = (req) => {
+  const path = String(req.originalUrl || req.url || "");
+  return path.startsWith("/api/") || path.startsWith("/health");
+};
+
+const wantsJsonResponse = (req) => {
+  const accept = String(req.headers.accept || "");
+  return (
+    req.xhr ||
+    accept.includes("application/json") ||
+    isApiRequest(req)
+  );
+};
+
+// CORS options — reflect allowed origins; never throw (throws skip CORS headers → ERR_NETWORK)
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin(origin, callback) {
     if (isOriginAllowed(origin, allowedOrigins)) {
-      callback(null, true);
+      callback(null, origin || true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Access-Control-Allow-Headers',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
   ],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 // Apply CORS middleware globally
@@ -135,29 +146,21 @@ registerPaymentRuntime(app);
 const { registerPlatformRoutes } = require("./platform/runtime/registerPlatformRoutes");
 registerPlatformRoutes(app);
 
-// Add this before the ErrorHandler middleware
+// OAuth-only errors may redirect browser navigations; API routes defer to ErrorHandler.
 app.use((err, req, res, next) => {
-  console.error('Global Error Handler:', err);
-  
-  // Handle specific errors
-  if (err.name === 'TokenError') {
-    return res.redirect(`${process.env.FRONTEND_URL}/login?error=Token generation failed`);
+  if (err.name === "TokenError" && !wantsJsonResponse(req)) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/login?error=Token generation failed`
+    );
   }
-  
-  if (err.name === 'GoogleStrategyError') {
-    return res.redirect(`${process.env.FRONTEND_URL}/login?error=Google authentication failed`);
+
+  if (err.name === "GoogleStrategyError" && !wantsJsonResponse(req)) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/login?error=Google authentication failed`
+    );
   }
-  
-  // Default error response (safe Accept header check for production)
-  const accept = String(req.headers.accept || "");
-  if (req.xhr || accept.includes("application/json")) {
-    res.status(500).json({
-      success: false,
-      message: err.message || 'Internal Server Error'
-    });
-  } else {
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=Server error`);
-  }
+
+  return next(err);
 });
 
 app.use(ErrorHandler);
