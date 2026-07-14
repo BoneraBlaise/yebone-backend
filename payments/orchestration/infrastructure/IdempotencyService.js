@@ -1,8 +1,9 @@
-const crypto = require("crypto");
 const DuplicateRequestError = require("../errors/DuplicateRequestError");
+const IdempotencyHelper = require("../../infrastructure/idempotency/IdempotencyHelper");
 
 /**
- * In-memory idempotency guard — no Redis.
+ * In-memory idempotency guard — default for PaymentModule bootstrap/tests.
+ * Production deployments should inject MongoIdempotencyService via DI when wired.
  */
 class IdempotencyService {
   constructor() {
@@ -10,8 +11,7 @@ class IdempotencyService {
   }
 
   fingerprint(payload) {
-    const normalized = JSON.stringify(payload, Object.keys(payload).sort());
-    return crypto.createHash("sha256").update(normalized).digest("hex");
+    return IdempotencyHelper.fingerprint(payload);
   }
 
   has(key) {
