@@ -24,6 +24,10 @@
     "test:events:all": "npm run test:events",
     "test:ledger": "node --test payments/infrastructure/ledger/__tests__/ChartOfAccounts.test.js payments/infrastructure/ledger/__tests__/LedgerJournal.test.js payments/infrastructure/ledger/__tests__/LedgerPostingEngine.test.js payments/infrastructure/ledger/__tests__/LedgerBalanceCalculator.test.js payments/infrastructure/ledger/__tests__/LedgerEngine.test.js payments/infrastructure/ledger/__tests__/LedgerHealthContract.test.js payments/infrastructure/ledger/__tests__/AccountingFlows.test.js",
     "test:ledger:all": "npm run test:ledger",
+    "test:commission": "node --test payments/infrastructure/commission/__tests__/CommissionCalculator.test.js payments/infrastructure/commission/__tests__/CommissionRuleResolver.test.js payments/infrastructure/commission/__tests__/CommissionEngine.test.js payments/infrastructure/commission/__tests__/CommissionEdgeCases.test.js payments/infrastructure/commission/__tests__/CommissionSnapshot.test.js",
+    "test:commission:all": "npm run test:commission",
+    "test:wallet": "node --test payments/infrastructure/wallet/__tests__/WalletProjection.test.js payments/infrastructure/wallet/__tests__/WalletLedgerBridge.test.js payments/infrastructure/wallet/__tests__/WalletService.test.js payments/infrastructure/wallet/__tests__/MarketplaceIntegration.test.js payments/infrastructure/wallet/__tests__/PayoutBatch.test.js",
+    "test:wallet:all": "npm run test:wallet",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },
