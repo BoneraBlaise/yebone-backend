@@ -18,6 +18,8 @@
     "test:audit": "node --test payments/infrastructure/audit/__tests__/AuditSanitizer.test.js payments/infrastructure/audit/__tests__/AuditService.test.js",
     "test:audit:integration": "node --test payments/infrastructure/audit/__tests__/AuditRepository.integration.test.js",
     "test:audit:all": "npm run test:audit && npm run test:audit:integration",
+    "test:engine": "node --test payments/infrastructure/engine/__tests__/FeatureFlagRegistry.test.js payments/infrastructure/engine/__tests__/ProviderRegistry.test.js payments/infrastructure/engine/__tests__/ProviderResolver.test.js payments/infrastructure/engine/__tests__/EngineDependencyContainer.test.js payments/infrastructure/engine/__tests__/PaymentEngineContext.test.js payments/infrastructure/engine/__tests__/PaymentEngine.test.js payments/infrastructure/engine/__tests__/PaymentEngineBootstrap.test.js payments/infrastructure/engine/__tests__/EngineHealthContract.test.js payments/infrastructure/engine/__tests__/ProviderCapabilityMatrix.test.js",
+    "test:engine:all": "npm run test:engine",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },
