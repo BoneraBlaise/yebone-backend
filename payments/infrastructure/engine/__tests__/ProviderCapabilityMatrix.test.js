@@ -42,6 +42,18 @@ describe("Provider capability matrix", () => {
     assert.ok(!subscriptionProviders.some((entry) => entry.code === "MTN_MOMO"));
   });
 
+  it("includes reconciliation capability in default matrix metadata", () => {
+    const registry = new ProviderRegistry();
+    registry.registerDefaults();
+
+    const flutterwave = registry.resolve("FLUTTERWAVE");
+    const paypack = registry.resolve("PAYPACK");
+
+    assert.equal(flutterwave.supports("reconciliation"), true);
+    assert.equal(paypack.supports("reconcile"), true);
+    assert.equal(paypack.supports("payout"), false);
+  });
+
   it("resolver supports capability queries", () => {
     const registry = new ProviderRegistry();
     registry.registerDefaults();

@@ -8,6 +8,7 @@ const ProviderCapability = Object.freeze({
   PAYOUTS: "PAYOUTS",
   WEBHOOKS: "WEBHOOKS",
   SUBSCRIPTIONS: "SUBSCRIPTIONS",
+  RECONCILIATION: "RECONCILIATION",
   ESCROW: "ESCROW",
   WALLET: "WALLET",
 });
@@ -25,6 +26,8 @@ const CAPABILITY_ALIASES = Object.freeze({
   WEBHOOKS: ProviderCapability.WEBHOOKS,
   SUBSCRIPTION: ProviderCapability.SUBSCRIPTIONS,
   SUBSCRIPTIONS: ProviderCapability.SUBSCRIPTIONS,
+  RECONCILE: ProviderCapability.RECONCILIATION,
+  RECONCILIATION: ProviderCapability.RECONCILIATION,
   ESCROW: ProviderCapability.ESCROW,
   WALLET: ProviderCapability.WALLET,
 });

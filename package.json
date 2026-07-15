@@ -28,6 +28,8 @@
     "test:commission:all": "npm run test:commission",
     "test:wallet": "node --test payments/infrastructure/wallet/__tests__/WalletProjection.test.js payments/infrastructure/wallet/__tests__/WalletLedgerBridge.test.js payments/infrastructure/wallet/__tests__/WalletService.test.js payments/infrastructure/wallet/__tests__/MarketplaceIntegration.test.js payments/infrastructure/wallet/__tests__/PayoutBatch.test.js",
     "test:wallet:all": "npm run test:wallet",
+    "test:providers": "node --test payments/infrastructure/providers/__tests__/ProviderAdapterInterface.test.js payments/infrastructure/providers/__tests__/ProviderAdapterRegistry.test.js payments/infrastructure/providers/__tests__/ProviderAdapterResolver.test.js payments/infrastructure/providers/__tests__/ProviderCapabilityValidator.test.js payments/infrastructure/providers/__tests__/Normalization.test.js payments/infrastructure/providers/__tests__/ProviderAdapterHealth.test.js payments/infrastructure/providers/__tests__/ProviderAdapterFeatureGate.test.js payments/infrastructure/providers/__tests__/ProviderAdapters.test.js payments/infrastructure/providers/__tests__/WebhookVerificationInterface.test.js payments/infrastructure/providers/__tests__/ProviderIdempotencyContract.test.js payments/infrastructure/providers/__tests__/ProviderReferenceContract.test.js",
+    "test:providers:all": "npm run test:providers",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },
