@@ -1,0 +1,25 @@
+const createEventBus = require("./EventBusFactory");
+
+module.exports = {
+  EventBusConfig: require("./EventBusConfig"),
+  EventTypes: require("./EventTypes").EventTypes,
+  isKnownEventType: require("./EventTypes").isKnownEventType,
+  isValidEventType: require("./EventTypes").isValidEventType,
+  normalizeEventType: require("./EventTypes").normalizeEventType,
+  EventContext: require("./EventContext"),
+  EventMetadata: require("./EventMetadata"),
+  DomainEvent: require("./DomainEvent"),
+  EventEnvelope: require("./EventEnvelope"),
+  EventHandlerInterface: require("./EventHandlerInterface"),
+  EventSubscriberRegistry: require("./EventSubscriberRegistry"),
+  EventDispatcher: require("./EventDispatcher"),
+  EventBus: require("./EventBus"),
+  EventValidationError: require("./errors/EventValidationError"),
+  SubscriberNotFoundError: require("./errors/SubscriberNotFoundError"),
+  EventQueueFullError: require("./errors/EventQueueFullError"),
+  RetryPolicy: require("./RetryPolicy"),
+  ExponentialBackoffRetryPolicy: require("./ExponentialBackoffRetryPolicy"),
+  EventVersionRegistry: require("./EventVersionRegistry"),
+  createEventBus,
+  EventBusFactory: createEventBus,
+};
