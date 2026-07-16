@@ -26,6 +26,7 @@ function createPaymentEngine(options = {}) {
     providerResolver,
     featureFlags,
     config: options.config || PaymentEngineConfig,
+    providerExecutionOrchestrator: options.providerExecutionOrchestrator || null,
   });
 
   const container =

@@ -2,17 +2,31 @@
 
 Sandbox-first provider integration infrastructure. **Not wired to PaymentModule.**
 
-**Baseline:** `payment-foundation-v2` → Phase 2 freeze (WP-1 through WP-5 validation).  
-**Next:** Phase 3 — Payment Engine provider orchestration (see `TODO_PHASE3.md`).
+**Baseline:** `payment-foundation-v3` (Phase 2 frozen).  
+**Status:** Phase 3 Sprint 1 complete — Provider Execution Integration Foundation implemented (awaiting approval).
 
-### Canonical references before Phase 3
+### Canonical references
 
 | Document | Purpose |
 |----------|---------|
-| [`PHASE3_ENTRY_CRITERIA.md`](./PHASE3_ENTRY_CRITERIA.md) | Checklist that **must** be satisfied before Phase 3 begins |
-| [`ARCHITECTURE_DECISIONS.md`](./ARCHITECTURE_DECISIONS.md) | ADR-lite record of why Module 10 is structured as it is |
+| [`PHASE3_ENTRY_CRITERIA.md`](./PHASE3_ENTRY_CRITERIA.md) | Gate before Phase 3 implementation |
+| [`PHASE3_EXIT_CRITERIA.md`](./PHASE3_EXIT_CRITERIA.md) | Completion criteria per work package |
+| [`ROLLBACK_CRITERIA.md`](./ROLLBACK_CRITERIA.md) | When to stop and revert to v3 |
+| [`ARCHITECTURE_DECISIONS.md`](./ARCHITECTURE_DECISIONS.md) | ADR-lite architectural decisions |
+| [`TODO_PHASE3.md`](./TODO_PHASE3.md) | Phase 3 work packages and scope |
 
-Both documents are **canonical references** — review them before starting any Phase 3 work package.
+---
+
+## Phase 3 Sprint 1 — Provider Execution Integration Foundation ✓
+
+| Component | Role |
+|-----------|------|
+| `ProviderExecutionOrchestrator` | Coordinates injected resolvers, guard, validator — `charge`, `verify`, `payout`, `refund` |
+| `ExecutionResult` | Immutable public boundary — sole orchestrator return type |
+| `RuntimeFactory.createProviderExecutionOrchestrator()` | Composition root factory method (ADR-008) |
+| `PaymentEngine` (optional DI) | When orchestrator injected, attaches `providerExecution` snapshot; unchanged when not injected |
+
+Still **not wired** to PaymentModule, routes, or server. Feature flags remain default OFF.
 
 ---
 

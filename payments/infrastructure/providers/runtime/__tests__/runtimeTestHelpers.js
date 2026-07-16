@@ -19,6 +19,8 @@ function createCombinedFoundation(options = {}) {
     providerRegistry: providerFoundation.providerRegistry,
     skeletonAdapterRegistry: providerFoundation.adapterRegistry,
     featureFlags: providerFoundation.featureFlags,
+    providerAdapterResolver: providerFoundation.adapterResolver,
+    providerCapabilityValidator: providerFoundation.capabilityValidator,
   });
 
   return Object.freeze({

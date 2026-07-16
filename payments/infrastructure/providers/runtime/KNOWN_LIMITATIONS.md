@@ -32,13 +32,23 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
+## Implemented (Phase 3 Sprint 1)
+
+- `ProviderExecutionOrchestrator` — constructor injection only (ADR-008)
+- `ExecutionResult` — immutable public boundary with diagnostics attachment
+- `charge()`, `verify()`, `payout()`, `refund()` orchestration paths
+- `ExecutionTimeline` + `ProviderRuntimeDiagnostics` wired into orchestrator execution
+- Optional `PaymentEngine` orchestrator injection (behavior identical when not injected)
+- `RuntimeFactory.createProviderExecutionOrchestrator()` composition root method
+
+---
+
 ## Not Implemented (Phase 3+)
 
 - Production execution
 - PaymentModule wiring
-- PaymentEngine provider orchestration
+- Production rollout / route wiring
 - Provider execution inside Integration Gate (explicitly rejected)
-- Runtime diagnostics wired into adapter execution path (architecture ready; wiring deferred)
 - Automatic credential rotation on 401
 - Production webhooks
 - Secret Manager cloud backend (stub/no-op only)

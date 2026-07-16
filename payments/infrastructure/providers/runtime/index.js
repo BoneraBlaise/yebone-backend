@@ -47,12 +47,15 @@ const {
   ProviderRuntimeDiagnosticsCollector,
 } = require("./observability/ProviderRuntimeDiagnostics");
 const CorrelationContext = require("./observability/CorrelationContext");
+const { createExecutionResult, EXECUTION_RESULT_MODES } = require("./ExecutionResult");
+const ProviderExecutionOrchestrator = require("./ProviderExecutionOrchestrator");
 
 module.exports = {
   RuntimeConfig,
   RuntimeFactory,
   createRuntimeFoundation: RuntimeBootstrap.createRuntimeFoundation,
   registerDefaultRuntimeAdapters: RuntimeBootstrap.registerDefaultRuntimeAdapters,
+  createProviderExecutionOrchestrator: RuntimeBootstrap.createProviderExecutionOrchestrator,
   RuntimeAdapterRegistry,
   RuntimeAdapterResolver,
   RuntimeExecutionGuard,
@@ -90,4 +93,7 @@ module.exports = {
   createProviderRuntimeDiagnostics,
   ProviderRuntimeDiagnosticsCollector,
   CorrelationContext,
+  createExecutionResult,
+  EXECUTION_RESULT_MODES,
+  ProviderExecutionOrchestrator,
 };

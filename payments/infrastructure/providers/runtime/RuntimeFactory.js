@@ -24,6 +24,7 @@ const PaypackVerifyClient = require("./paypack/PaypackVerifyClient");
 const PaypackRefundClient = require("./paypack/PaypackRefundClient");
 const PaypackErrorMapper = require("./paypack/PaypackErrorMapper");
 const PaypackRuntimeAdapter = require("./paypack/PaypackRuntimeAdapter");
+const ProviderExecutionOrchestrator = require("./ProviderExecutionOrchestrator");
 
 /**
  * Composition root for Module 10 provider runtime — not wired to PaymentModule.
@@ -134,6 +135,35 @@ class RuntimeFactory {
       verifyClient,
       refundClient,
       errorMapper: options.errorMapper || new PaypackErrorMapper(),
+    });
+  }
+
+  static createProviderExecutionOrchestrator(options = {}) {
+    const {
+      providerAdapterResolver,
+      runtimeAdapterResolver,
+      runtimeExecutionGuard,
+      providerCapabilityValidator,
+    } = options;
+
+    if (!providerAdapterResolver) {
+      throw new Error("RuntimeFactory.createProviderExecutionOrchestrator requires providerAdapterResolver");
+    }
+    if (!runtimeAdapterResolver) {
+      throw new Error("RuntimeFactory.createProviderExecutionOrchestrator requires runtimeAdapterResolver");
+    }
+    if (!runtimeExecutionGuard) {
+      throw new Error("RuntimeFactory.createProviderExecutionOrchestrator requires runtimeExecutionGuard");
+    }
+    if (!providerCapabilityValidator) {
+      throw new Error("RuntimeFactory.createProviderExecutionOrchestrator requires providerCapabilityValidator");
+    }
+
+    return new ProviderExecutionOrchestrator({
+      providerAdapterResolver,
+      runtimeAdapterResolver,
+      runtimeExecutionGuard,
+      providerCapabilityValidator,
     });
   }
 

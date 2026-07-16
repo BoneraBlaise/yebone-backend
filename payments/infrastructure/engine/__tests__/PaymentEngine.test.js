@@ -121,4 +121,60 @@ describe("PaymentEngine", () => {
       /requires idempotencyService/
     );
   });
+
+  it("remains unchanged when providerExecutionOrchestrator is not injected", async () => {
+    featureFlags.enable("paymentEngineEnabled");
+    featureFlags.enable("mtnEnabled");
+    providerRegistry.enable("MTN_MOMO");
+
+    const result = await engine.charge({
+      orderId: "ord-no-orchestrator",
+      buyerId: "buyer-1",
+      amount: 1000,
+      providerCode: "MTN_MOMO",
+    });
+
+    assert.equal(result.status, "CREATED");
+    assert.equal("providerExecution" in result, false);
+  });
+
+  it("optionally invokes providerExecutionOrchestrator when injected", async () => {
+    const createProviderFoundation = require("../../providers/ProviderAdapterFactory");
+    const { createRuntimeFoundation } = require("../../providers/runtime/RuntimeBootstrap");
+    const providerFoundation = createProviderFoundation();
+    providerFoundation.providerRegistry.enable("MTN_MOMO");
+    providerFoundation.featureFlags.enable("mtnEnabled");
+
+    const runtimeFoundation = createRuntimeFoundation({
+      providerRegistry: providerFoundation.providerRegistry,
+      skeletonAdapterRegistry: providerFoundation.adapterRegistry,
+      featureFlags: providerFoundation.featureFlags,
+      providerAdapterResolver: providerFoundation.adapterResolver,
+      providerCapabilityValidator: providerFoundation.capabilityValidator,
+    });
+
+    const orchestratorEngine = new PaymentEngine({
+      ...mocks,
+      providerResolver: providerFoundation.providerResolver,
+      featureFlags: providerFoundation.featureFlags,
+      providerExecutionOrchestrator: runtimeFoundation.providerExecutionOrchestrator,
+    });
+    orchestratorEngine.featureFlags.enable("paymentEngineEnabled");
+
+    const result = await orchestratorEngine.charge({
+      orderId: "ord-with-orchestrator",
+      buyerId: "buyer-1",
+      amount: 2000,
+      providerCode: "MTN_MOMO",
+      countryCode: "RW",
+    });
+
+    assert.equal(result.status, "CREATED");
+    assert.ok(result.providerExecution);
+    assert.equal(result.providerExecution.success, true);
+    assert.equal(result.providerExecution.executionMode, "MOCK");
+    assert.equal(result.providerExecution.providerResponse.mock, true);
+    assert.equal("executionTimeline" in result.providerExecution, false);
+    assert.equal("diagnostics" in result.providerExecution, false);
+  });
 });

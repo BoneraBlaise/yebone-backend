@@ -22,6 +22,7 @@ describe("RuntimeBootstrap", () => {
     const foundation = createCombinedFoundation();
 
     assert.ok(foundation.runtimeAdapterResolver);
+    assert.ok(foundation.providerExecutionOrchestrator);
     const decision = foundation.runtimeAdapterResolver.resolve({ providerCode: "MTN_MOMO" });
     assert.equal(decision.executionMode, "MOCK");
     assert.equal(decision.reason, "providerFlagDisabled");

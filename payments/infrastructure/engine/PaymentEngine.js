@@ -5,9 +5,15 @@ const { AuditAction, ResourceType, ActorType } = require("../audit/AuditEvent");
 const PaymentTransactionStatus = require("../transactions/PaymentTransactionStatus");
 
 /**
- * Payment Engine — future single entry point for payment orchestration.
- * Coordinates idempotency, transactions, audit, and provider resolution only.
- * Does not invoke provider adapters (bootstrap foundation).
+ * Payment Engine — single entry point for payment orchestration.
+ * Coordinates idempotency, transactions, audit, and provider resolution.
+ *
+ * Provider execution is optional and externally composed:
+ * - When `providerExecutionOrchestrator` is injected, `charge()` may delegate to
+ *   `ProviderExecutionOrchestrator` and attach a filtered execution snapshot.
+ * - Without an injected orchestrator, behavior remains identical to prior phases.
+ * - PaymentEngine does not depend directly on runtime adapters — only on the
+ *   optional orchestrator interface supplied at composition time (ADR-008).
  */
 class PaymentEngine {
   constructor({
@@ -17,6 +23,7 @@ class PaymentEngine {
     providerResolver,
     featureFlags,
     config = PaymentEngineConfig,
+    providerExecutionOrchestrator = null,
   }) {
     if (!idempotencyService) {
       throw new Error("PaymentEngine requires idempotencyService");
@@ -40,6 +47,7 @@ class PaymentEngine {
     this.providerResolver = providerResolver;
     this.featureFlags = featureFlags;
     this.config = config;
+    this.providerExecutionOrchestrator = providerExecutionOrchestrator || null;
   }
 
   /**
@@ -62,7 +70,9 @@ class PaymentEngine {
 
   /**
    * Orchestrate a charge request — idempotency → transaction → audit → provider resolve.
-   * Provider adapters are NOT invoked at bootstrap stage.
+   * When `providerExecutionOrchestrator` is injected, optionally delegates provider
+   * execution via the orchestrator (reads `ExecutionResult` success + providerResponse only).
+   * Without an injected orchestrator, stops after provider resolve (prior-phase behavior).
    */
   async charge(input = {}, trace = {}) {
     this.featureFlags.assertEngineEnabled();
@@ -117,7 +127,7 @@ class PaymentEngine {
       paymentMethod: context.paymentMethod,
     });
 
-    return Object.freeze({
+    const result = {
       transactionId: transaction.transactionId,
       paymentReference: transaction.paymentReference,
       status: transaction.status,
@@ -125,7 +135,31 @@ class PaymentEngine {
       providerEnabled: provider.enabled,
       correlationId: context.trace.correlationId,
       requestId: context.trace.requestId,
-    });
+    };
+
+    if (this.providerExecutionOrchestrator) {
+      const executionResult = await this.providerExecutionOrchestrator.charge(
+        {
+          providerCode: provider.code,
+          countryCode: context.countryCode,
+          currency: context.currency,
+          paymentMethod: context.paymentMethod,
+          reference: transaction.paymentReference || transaction.transactionId,
+          amount: context.amount,
+          metadata: context.metadata,
+        },
+        context.trace
+      );
+
+      result.providerExecution = Object.freeze({
+        success: executionResult.success,
+        providerResponse: executionResult.providerResponse,
+        executionMode: executionResult.executionMode,
+        correlationId: executionResult.correlationId,
+      });
+    }
+
+    return Object.freeze(result);
   }
 }
 

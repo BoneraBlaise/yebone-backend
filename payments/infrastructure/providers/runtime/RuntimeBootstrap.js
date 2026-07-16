@@ -53,12 +53,28 @@ function createRuntimeFoundation(options = {}) {
     });
   }
 
+  let providerExecutionOrchestrator = options.providerExecutionOrchestrator || null;
+  if (
+    !providerExecutionOrchestrator &&
+    options.providerAdapterResolver &&
+    runtimeAdapterResolver &&
+    options.providerCapabilityValidator
+  ) {
+    providerExecutionOrchestrator = RuntimeFactory.createProviderExecutionOrchestrator({
+      providerAdapterResolver: options.providerAdapterResolver,
+      runtimeAdapterResolver,
+      runtimeExecutionGuard,
+      providerCapabilityValidator: options.providerCapabilityValidator,
+    });
+  }
+
   return Object.freeze({
     version: RuntimeConfig.version,
     runtimeFeatureFlags,
     runtimeAdapterRegistry,
     runtimeExecutionGuard,
     runtimeAdapterResolver,
+    providerExecutionOrchestrator,
     runtime,
     tokenCache,
   });
@@ -76,7 +92,12 @@ function registerDefaultRuntimeAdapters(runtimeAdapterRegistry, runtime) {
   return Object.freeze(DEFAULT_RUNTIME_PROVIDERS.slice());
 }
 
+function createProviderExecutionOrchestrator(options = {}) {
+  return RuntimeFactory.createProviderExecutionOrchestrator(options);
+}
+
 module.exports = {
   createRuntimeFoundation,
   registerDefaultRuntimeAdapters,
+  createProviderExecutionOrchestrator,
 };
