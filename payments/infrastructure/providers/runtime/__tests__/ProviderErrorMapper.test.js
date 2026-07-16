@@ -38,4 +38,20 @@ describe("ProviderErrorMapper", () => {
     const mapped = mapper.mapHttpStatus(400, { message: "Bad request" }, { providerCode: "MTN_MOMO" });
     assert.equal(mapped.code, "PROVIDER_HTTP_400");
   });
+
+  it("sanitizes authorization and secrets from error details", () => {
+    const error = new ProviderHttpError("HTTP failed", {
+      statusCode: 401,
+      providerCode: "PAYPACK",
+      body: {
+        message: "Unauthorized",
+        headers: { Authorization: "Bearer secret-token" },
+        client_secret: "secret-value",
+      },
+    });
+
+    const mapped = mapper.map(error, { operation: "oauth" });
+    assert.equal(mapped.details.body.client_secret, "[REDACTED]");
+    assert.equal(mapped.details.body.headers.Authorization, "[REDACTED]");
+  });
 });

@@ -1,83 +1,108 @@
 # Module 10 — Phase 2 Backlog
 
-Runtime infrastructure follow-up after Phase 1 freeze. **Not started.**
+Runtime sandbox integration. **Architecture refined — see `ARCHITECTURE_PHASE2.md`.**
+
+**Status:** Phase 2 complete (WP-1 through WP-5 validation). **Frozen — awaiting Enterprise Review and commit approval.**
+
+**Phase 2 documentation freeze complete.**
+
+Provider execution integration with Payment Engine is **Phase 3** — see `TODO_PHASE3.md` and entry gate `PHASE3_ENTRY_CRITERIA.md`.
 
 ---
 
-## Runtime Infrastructure
+## Phase 2A — Runtime Registration & Guard ✓ COMPLETE
 
-- Rename `MTNMoMoTokenCache` → `ProviderTokenCache` (or `OAuthTokenCache`)
-- Introduce shared `ProviderTokenCache` used by all providers
-- Improve runtime composition in `RuntimeFactory` (shared credential store / HTTP client instances)
+- [x] `RuntimeAdapterRegistry` (parallel to Module 9 skeleton registry)
+- [x] `RuntimeBootstrap` (wraps `RuntimeFactory`, no PaymentModule wiring)
+- [x] `RuntimeAdapterResolver` — single authority; produces `ExecutionDecision`
+- [x] `ExecutionDecision` model (immutable) — includes `fallbackAllowed`
+- [x] `RuntimeExecutionGuard` — environment, flags, sandbox, credentials, live prevention
+- [x] Rename `MTNMoMoTokenCache` → `ProviderTokenCache`
+- [x] Shared `ProviderTokenCache` in `RuntimeFactory`
+- [x] Runtime feature flags (additive, default OFF): `runtimeSandboxEnabled`, `mtnRuntimeEnabled`, `paypackRuntimeEnabled`
+- [x] Unit tests (mock transport only)
 
----
-
-## MTN MoMo
-
-- Separate Collection credentials (subscription key, API user, API key per product)
-- Separate Disbursement credentials
-- MTN Refund implementation
-- MTN Sandbox validation against live sandbox API
-- MTN Production validation (gated, explicit approval only)
+**Exit:** Resolver produces correct `ExecutionDecision`; guards block non-sandbox; no production wiring.
 
 ---
 
-## Paypack
+## Phase 2B — MTN Runtime ✓ COMPLETE
 
-- Checkout implementation
-- Cash-in
-- Verify payment
-- Refund support (if available)
+- [x] Separate Collection credentials (`MTN_MOMO_COLLECTION_*`)
+- [x] Separate Disbursement credentials (`MTN_MOMO_DISBURSEMENT_*`)
+- [x] Disbursement status client
+- [x] MTN Refund architecture (stub — no HTTP)
+- [x] Injectable mock HTTP transport (non-production only)
+- [x] Sandbox integration tests (credential-gated, optional CI job)
 
----
-
-## Runtime Registration
-
-- Runtime Adapter Registry (parallel to Module 9 skeleton registry)
-- Runtime Resolver (providerCode / country / currency routing)
-- Runtime Feature Gates (align with `FeatureFlagRegistry`)
-- Runtime Bootstrap (composition root wiring, still not PaymentModule)
+**Exit:** MTN collection + disbursement verified against sandbox API (mock + optional live).
 
 ---
 
-## Security
+## Phase 2C — Paypack Runtime ✓ COMPLETE
 
-- Secret Manager implementation (`SecretManagerCredentialProvider`)
-- Vault implementation (`VaultCredentialProvider`)
-- Credential rotation support
-- Live execution guard (env-level enforcement beyond factory override)
+- [x] `PaypackCheckoutClient`
+- [x] `PaypackCashinClient`
+- [x] `PaypackVerifyClient`
+- [x] Extend `PaypackRuntimeAdapter`
+- [x] Refund support (architecture stub — dashboard-only)
+- [x] Sandbox integration tests
 
----
-
-## HTTP
-
-- AbortController support for timeout cancellation
-- Better timeout cancellation (abort in-flight transport)
-- Connection pooling
-- Metrics (latency, status codes, retry counts)
+**Exit:** Paypack checkout/cash-in/verify against sandbox (mock + optional live).
 
 ---
 
-## Observability
+## Phase 2D — Security Hardening & Observability ✓ COMPLETE
 
-- Runtime tracing
-- Metrics per provider / operation
-- Structured logging (no credential leakage)
-- Correlation diagnostics
+### Security
+
+- [x] Product-scoped credential keys in `EnvironmentCredentialProvider`
+- [x] `SecretManagerProvider` / `VaultProvider` interfaces + no-op defaults
+- [x] Credential rotation architecture (`CredentialRotationMetadata`, `CredentialRefreshService`)
+- [x] Live execution env guard (`PAYMENT_RUNTIME_LIVE` blocked)
+- [x] Error detail redaction (`AuthorizationRedactor`, `SecretRedactor`, `ProviderErrorMapper` sanitization)
+
+### Observability (design + in-memory only)
+
+- [x] `ExecutionTimeline` model (passive, read-only)
+- [x] `ProviderRuntimeDiagnostics` with counters
+- [x] Attach `ExecutionDecision` and `ExecutionTimeline` to diagnostics
+- [x] No Prometheus / Datadog / exporters
+
+**Exit:** Full diagnostic trace available in foundation test harness.
 
 ---
 
-## Webhooks
+## Phase 2E — Validation & Freeze ✓ COMPLETE (validation only)
 
-- Production verification (provider-specific algorithms)
-- Timestamp tolerance
-- Replay protection
+- [x] End-to-end foundation tests (mock transport — 206 tests pass)
+- [x] Architecture verification (`npm run verify:architecture` — exit 0)
+- [x] Confirm: Integration Gate unchanged; PaymentModule unwired
+- [x] Documentation freeze (`README.md`, `TODO_PHASE2.md`, `KNOWN_LIMITATIONS.md`)
+- [x] Phase 3 entry criteria documented (`PHASE3_ENTRY_CRITERIA.md`)
+- [x] Architecture decisions documented (`ARCHITECTURE_DECISIONS.md`)
+- [ ] Tag `payment-foundation-v3` (after Enterprise Review + commit approval)
+- [ ] Sandbox runbook (deferred to Phase 3 prep if needed)
+
+**Exit:** Phase 2 frozen. No new runtime code. Awaiting Enterprise Review.
 
 ---
 
-## Production
+## Phase 3 — Next (NOT STARTED)
 
-- Provider sandbox validation (manual + automated)
-- Production environment support in `ProviderEnvironmentResolver`
-- Production credential validation
-- Controlled rollout per provider feature flag
+See `TODO_PHASE3.md`:
+
+- Payment Engine provider orchestration (optional)
+- Runtime diagnostics wiring into execution path
+- Production credential backends (secret manager / vault)
+- Feature flag rollout strategy (explicit approval required)
+
+---
+
+## Explicitly Out of Scope (Phase 2 — honored)
+
+- Provider execution inside Integration Gate pipeline
+- PaymentEngine provider orchestration (Phase 3)
+- PaymentModule / routes / server.js wiring
+- Production endpoints
+- Production feature flag defaults ON

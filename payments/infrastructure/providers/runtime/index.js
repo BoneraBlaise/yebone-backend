@@ -1,5 +1,12 @@
 const RuntimeConfig = require("./RuntimeConfig");
 const RuntimeFactory = require("./RuntimeFactory");
+const RuntimeBootstrap = require("./RuntimeBootstrap");
+const RuntimeAdapterRegistry = require("./RuntimeAdapterRegistry");
+const RuntimeAdapterResolver = require("./RuntimeAdapterResolver");
+const RuntimeExecutionGuard = require("./RuntimeExecutionGuard");
+const RuntimeFeatureFlagRegistry = require("./RuntimeFeatureFlagRegistry");
+const ExecutionDecision = require("./ExecutionDecision");
+const ProviderTokenCache = require("./ProviderTokenCache");
 const ProviderHttpClient = require("./ProviderHttpClient");
 const ProviderRequestSigner = require("./ProviderRequestSigner");
 const ProviderAuthentication = require("./ProviderAuthentication");
@@ -13,10 +20,45 @@ const ProviderSandboxConfig = require("./ProviderSandboxConfig");
 const ProviderEnvironmentResolver = require("./ProviderEnvironmentResolver");
 const MTNMoMoRuntimeAdapter = require("./mtn/MTNMoMoRuntimeAdapter");
 const PaypackRuntimeAdapter = require("./paypack/PaypackRuntimeAdapter");
+const AuthorizationRedactor = require("./security/AuthorizationRedactor");
+const SecretRedactor = require("./security/SecretRedactor");
+const {
+  SecretManagerProvider,
+  NoOpSecretManagerProvider,
+} = require("./credentials/SecretManagerProvider");
+const { VaultProvider, NoOpVaultProvider } = require("./credentials/VaultProvider");
+const CredentialRefreshService = require("./credentials/CredentialRefreshService");
+const {
+  createCredentialRotationMetadata,
+  isExpired,
+} = require("./credentials/CredentialRotationMetadata");
+const {
+  EXECUTION_TIMELINE_STAGES,
+  createExecutionTimeline,
+  ExecutionTimelineRecorder,
+} = require("./observability/ExecutionTimeline");
+const {
+  METRIC_NAMES,
+  createProviderRuntimeMetrics,
+  ProviderRuntimeMetrics,
+} = require("./observability/ProviderRuntimeMetrics");
+const {
+  createProviderRuntimeDiagnostics,
+  ProviderRuntimeDiagnosticsCollector,
+} = require("./observability/ProviderRuntimeDiagnostics");
+const CorrelationContext = require("./observability/CorrelationContext");
 
 module.exports = {
   RuntimeConfig,
   RuntimeFactory,
+  createRuntimeFoundation: RuntimeBootstrap.createRuntimeFoundation,
+  registerDefaultRuntimeAdapters: RuntimeBootstrap.registerDefaultRuntimeAdapters,
+  RuntimeAdapterRegistry,
+  RuntimeAdapterResolver,
+  RuntimeExecutionGuard,
+  RuntimeFeatureFlagRegistry,
+  ProviderTokenCache,
+  ExecutionDecision,
   ProviderHttpClient,
   ProviderRequestSigner,
   ProviderAuthentication,
@@ -30,4 +72,22 @@ module.exports = {
   ProviderEnvironmentResolver,
   MTNMoMoRuntimeAdapter,
   PaypackRuntimeAdapter,
+  AuthorizationRedactor,
+  SecretRedactor,
+  SecretManagerProvider,
+  NoOpSecretManagerProvider,
+  VaultProvider,
+  NoOpVaultProvider,
+  CredentialRefreshService,
+  createCredentialRotationMetadata,
+  isExpired,
+  EXECUTION_TIMELINE_STAGES,
+  createExecutionTimeline,
+  ExecutionTimelineRecorder,
+  METRIC_NAMES,
+  createProviderRuntimeMetrics,
+  ProviderRuntimeMetrics,
+  createProviderRuntimeDiagnostics,
+  ProviderRuntimeDiagnosticsCollector,
+  CorrelationContext,
 };

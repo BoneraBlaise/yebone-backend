@@ -2,7 +2,7 @@ const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const RuntimeFactory = require("../RuntimeFactory");
 const EnvironmentCredentialProvider = require("../credentials/EnvironmentCredentialProvider");
-const MTNMoMoTokenCache = require("../mtn/MTNMoMoTokenCache");
+const ProviderTokenCache = require("../ProviderTokenCache");
 const { createMockTransport, oauthSuccess } = require("./mockHttp");
 
 describe("MTN MoMo OAuth", () => {
@@ -24,7 +24,7 @@ describe("MTN MoMo OAuth", () => {
     const credentialStore = RuntimeFactory.createCredentialStore({
       providers: [new EnvironmentCredentialProvider({ env })],
     });
-    const tokenCache = new MTNMoMoTokenCache();
+    const tokenCache = new ProviderTokenCache();
     const httpClient = RuntimeFactory.createHttpClient({ transport });
     const runtime = RuntimeFactory.createMtnMoMoRuntime({
       credentialStore,

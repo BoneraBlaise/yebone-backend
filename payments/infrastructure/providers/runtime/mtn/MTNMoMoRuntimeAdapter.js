@@ -6,6 +6,7 @@ const ProviderWebhookVerifier = require("../ProviderWebhookVerifier");
 const { applyRuntimeAdapterContractSurface } = require("../RuntimeAdapterContractSurface");
 const MTNMoMoErrorMapper = require("./MTNMoMoErrorMapper");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
+const MTNMoMoRefundClient = require("./MTNMoMoRefundClient");
 const RuntimeConfig = require("../RuntimeConfig");
 
 /**
@@ -18,6 +19,7 @@ class MTNMoMoRuntimeAdapter {
     disbursementClient,
     oauthClient,
     apiUserService,
+    refundClient,
     errorMapper,
     normalizer,
     webhookVerifier,
@@ -27,6 +29,7 @@ class MTNMoMoRuntimeAdapter {
     this.disbursementClient = disbursementClient;
     this.oauthClient = oauthClient;
     this.apiUserService = apiUserService;
+    this.refundClient = refundClient || new MTNMoMoRefundClient({ providerCode: MTNMoMoConfig.providerCode });
     this.errorMapper = errorMapper || new MTNMoMoErrorMapper();
     this.normalizer = normalizer || new ProviderResponseNormalizer(this.providerCode);
     this.webhookVerifier = webhookVerifier || new ProviderWebhookVerifier(this.providerCode);
@@ -60,8 +63,17 @@ class MTNMoMoRuntimeAdapter {
 
   async verify(input = {}) {
     return this._execute("verify", input, async (request) => {
-      const referenceId = request.metadata?.providerReference || request.reference;
-      const result = await this.collectionClient.getStatus(referenceId);
+      const referenceId =
+        request.metadata?.idempotencyKey ||
+        request.metadata?.providerReference ||
+        request.reference;
+      const isDisbursement =
+        request.metadata?.product === "disbursement" || request.metadata?.operation === "payout";
+
+      const result = isDisbursement
+        ? await this.disbursementClient.getStatus(referenceId)
+        : await this.collectionClient.getStatus(referenceId);
+
       return ProviderResponse.fromResult({
         success: true,
         mock: false,
@@ -69,19 +81,23 @@ class MTNMoMoRuntimeAdapter {
         operation: "verify",
         status: result.status,
         externalReference: result.financialTransactionId,
-        metadata: { sandbox: true },
+        metadata: Object.freeze({ sandbox: true, product: isDisbursement ? "disbursement" : "collection" }),
         data: result.raw,
       });
     });
   }
 
-  async refund() {
-    return ProviderResponse.failure(
-      this.errorMapper.map(new Error("MTN MoMo refund not implemented in Phase 1"), {
+  async refund(input = {}) {
+    return this._execute("refund", input, async () => {
+      await this.refundClient.refund();
+      return ProviderResponse.fromResult({
+        success: false,
+        mock: false,
         providerCode: this.providerCode,
         operation: "refund",
-      })
-    );
+        status: "NOT_IMPLEMENTED",
+      });
+    });
   }
 
   async payout(input = {}) {
@@ -92,20 +108,19 @@ class MTNMoMoRuntimeAdapter {
         currency: request.currency,
         payeeMsisdn: request.metadata?.msisdn || request.payload?.msisdn,
       });
-      return ProviderResponse.fromResult({
+      return this.normalizer.normalizePayout({
         success: true,
         mock: false,
-        providerCode: this.providerCode,
-        operation: "payout",
         status: "PENDING",
-        externalReference: result.idempotencyKey,
+        reference: request.reference,
+        providerReference: result.idempotencyKey,
+        merchantReference: result.merchantReference,
         amount: request.amount,
         currency: request.currency,
-        metadata: Object.freeze({
-          correlationId: result.correlationId,
-          sandbox: true,
-        }),
-        data: Object.freeze(result),
+        correlationId: result.correlationId,
+        idempotencyKey: result.idempotencyKey,
+        sandbox: true,
+        raw: result,
       });
     });
   }

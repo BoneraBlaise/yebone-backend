@@ -3,9 +3,10 @@ const ProviderAuthentication = require("../ProviderAuthentication");
 const ProviderRequestSigner = require("../ProviderRequestSigner");
 const ProviderAuthError = require("../errors/ProviderAuthError");
 const PaypackConfig = require("./PaypackConfig");
+const PaypackCredentials = require("./PaypackCredentials");
 
 /**
- * Paypack authentication client — sandbox architecture only.
+ * Paypack authentication client — sandbox only, token cached via ProviderTokenCache.
  */
 class PaypackAuthClient extends ProviderAuthentication {
   constructor({ credentialStore, tokenCache, httpClient, environmentResolver }) {
@@ -15,8 +16,9 @@ class PaypackAuthClient extends ProviderAuthentication {
     this.providerCode = PaypackConfig.providerCode;
   }
 
-  async acquireToken() {
-    const cached = await this.getCachedToken(this.providerCode, "default");
+  async acquireToken(scope = PaypackConfig.scopes.default) {
+    const cacheScope = String(scope || PaypackConfig.scopes.default).toLowerCase();
+    const cached = await this.getCachedToken(this.providerCode, cacheScope);
     if (cached?.accessToken) {
       return cached;
     }
@@ -24,13 +26,16 @@ class PaypackAuthClient extends ProviderAuthentication {
     const credentialResult = await this.credentialStore.load(this.providerCode, { required: true });
     this.assertCredentials(credentialResult, this.providerCode);
 
-    const { clientId, clientSecret } = credentialResult.credentials;
-    if (!clientId || !clientSecret) {
-      throw new ProviderAuthError("Paypack credentials incomplete", { providerCode: this.providerCode });
-    }
+    const resolved = PaypackCredentials.assertAuthResolvable(PaypackCredentials.resolve(credentialResult));
+    const { clientId, clientSecret, username, password, mode } = resolved.auth;
 
     const env = this.environmentResolver.resolve(this.providerCode);
     const url = `${env.baseUrl}${PaypackConfig.sandbox.authPath}`;
+
+    const authorization =
+      mode === "client_credentials"
+        ? ProviderRequestSigner.basicAuth(clientId, clientSecret)
+        : ProviderRequestSigner.basicAuth(username, password);
 
     const response = await this.httpClient.request({
       providerCode: this.providerCode,
@@ -39,7 +44,7 @@ class PaypackAuthClient extends ProviderAuthentication {
       url,
       headers: {
         "Content-Type": "application/json",
-        Authorization: ProviderRequestSigner.basicAuth(clientId, clientSecret),
+        Authorization: authorization,
       },
       correlationId: randomUUID(),
     });
@@ -55,10 +60,11 @@ class PaypackAuthClient extends ProviderAuthentication {
     const token = Object.freeze({
       accessToken,
       tokenType: "Bearer",
-      expiresIn: body.expires_in || 3600,
+      expiresIn: body.expires_in || body.expires || 3600,
+      scope: cacheScope,
     });
 
-    await this.setCachedToken(this.providerCode, "default", token, token.expiresIn);
+    await this.setCachedToken(this.providerCode, cacheScope, token, token.expiresIn);
     return token;
   }
 }

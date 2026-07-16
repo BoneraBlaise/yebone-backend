@@ -9,14 +9,19 @@ const ProviderRetryPolicy = require("./ProviderRetryPolicy");
 const ProviderRequestSigner = require("./ProviderRequestSigner");
 const ProviderHttpClient = require("./ProviderHttpClient");
 const ProviderErrorMapper = require("./ProviderErrorMapper");
-const MTNMoMoTokenCache = require("./mtn/MTNMoMoTokenCache");
+const ProviderTokenCache = require("./ProviderTokenCache");
 const MTNMoMoOAuthClient = require("./mtn/MTNMoMoOAuthClient");
 const MTNMoMoApiUserService = require("./mtn/MTNMoMoApiUserService");
 const MTNMoMoCollectionClient = require("./mtn/MTNMoMoCollectionClient");
 const MTNMoMoDisbursementClient = require("./mtn/MTNMoMoDisbursementClient");
+const MTNMoMoRefundClient = require("./mtn/MTNMoMoRefundClient");
 const MTNMoMoErrorMapper = require("./mtn/MTNMoMoErrorMapper");
 const MTNMoMoRuntimeAdapter = require("./mtn/MTNMoMoRuntimeAdapter");
 const PaypackAuthClient = require("./paypack/PaypackAuthClient");
+const PaypackCheckoutClient = require("./paypack/PaypackCheckoutClient");
+const PaypackCashinClient = require("./paypack/PaypackCashinClient");
+const PaypackVerifyClient = require("./paypack/PaypackVerifyClient");
+const PaypackRefundClient = require("./paypack/PaypackRefundClient");
 const PaypackErrorMapper = require("./paypack/PaypackErrorMapper");
 const PaypackRuntimeAdapter = require("./paypack/PaypackRuntimeAdapter");
 
@@ -48,7 +53,7 @@ class RuntimeFactory {
     const environmentResolver =
       options.environmentResolver || new ProviderEnvironmentResolver(options);
     const httpClient = RuntimeFactory.createHttpClient(options);
-    const tokenCache = options.tokenCache || new MTNMoMoTokenCache();
+    const tokenCache = options.tokenCache || new ProviderTokenCache();
 
     const oauthClient = new MTNMoMoOAuthClient({
       credentialStore,
@@ -75,11 +80,14 @@ class RuntimeFactory {
       environmentResolver,
     });
 
+    const refundClient = options.refundClient || new MTNMoMoRefundClient();
+
     return new MTNMoMoRuntimeAdapter({
       collectionClient,
       disbursementClient,
       oauthClient,
       apiUserService,
+      refundClient,
       errorMapper: options.errorMapper || new MTNMoMoErrorMapper(),
     });
   }
@@ -89,7 +97,7 @@ class RuntimeFactory {
     const environmentResolver =
       options.environmentResolver || new ProviderEnvironmentResolver(options);
     const httpClient = RuntimeFactory.createHttpClient(options);
-    const tokenCache = options.tokenCache || new MTNMoMoTokenCache();
+    const tokenCache = options.tokenCache || new ProviderTokenCache();
 
     const authClient = new PaypackAuthClient({
       credentialStore,
@@ -98,8 +106,33 @@ class RuntimeFactory {
       environmentResolver,
     });
 
+    const verifyClient = new PaypackVerifyClient({
+      authClient,
+      httpClient,
+      environmentResolver,
+    });
+
+    const cashinClient = new PaypackCashinClient({
+      authClient,
+      httpClient,
+      environmentResolver,
+      verifyClient,
+    });
+
+    const checkoutClient = new PaypackCheckoutClient({
+      authClient,
+      httpClient,
+      environmentResolver,
+    });
+
+    const refundClient = options.refundClient || new PaypackRefundClient();
+
     return new PaypackRuntimeAdapter({
       authClient,
+      checkoutClient,
+      cashinClient,
+      verifyClient,
+      refundClient,
       errorMapper: options.errorMapper || new PaypackErrorMapper(),
     });
   }

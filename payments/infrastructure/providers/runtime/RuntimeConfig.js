@@ -6,6 +6,7 @@ const RuntimeConfig = Object.freeze({
   version: "10.0.0-provider-runtime-phase1",
   defaultEnvironment: "sandbox",
   liveExecutionEnabled: false,
+  paymentRuntimeLiveEnvVar: "PAYMENT_RUNTIME_LIVE",
   defaultTimeoutMs: 15000,
   defaultMaxRetries: 2,
   correlationHeader: "X-Correlation-Id",

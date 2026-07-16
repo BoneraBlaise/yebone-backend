@@ -71,6 +71,17 @@ function createRoutingTransport(routes = []) {
   };
 }
 
+function disbursementAccepted() {
+  return { status: 202, body: {} };
+}
+
+function disbursementStatus(status = "SUCCESSFUL") {
+  return {
+    status: 200,
+    body: { status, financialTransactionId: "fin-disburse-456" },
+  };
+}
+
 function mtnMoMoSandboxRoutes() {
   return [
     {
@@ -89,6 +100,88 @@ function mtnMoMoSandboxRoutes() {
       match: ({ method, url }) => method === "GET" && url.includes("/requesttopay"),
       respond: () => collectionStatus("SUCCESSFUL"),
     },
+    {
+      match: ({ method, url }) => method === "POST" && url.includes("/disbursement/v1_0/transfer"),
+      respond: () => disbursementAccepted(),
+    },
+    {
+      match: ({ method, url }) => method === "GET" && url.includes("/disbursement/v1_0/transfer"),
+      respond: () => disbursementStatus("SUCCESSFUL"),
+    },
+  ];
+}
+
+function paypackAuthSuccess(body = {}) {
+  return {
+    status: 200,
+    body: {
+      access: "paypack-access-token",
+      expires_in: 3600,
+      ...body,
+    },
+  };
+}
+
+function paypackCashinAccepted(ref = "paypack-ref-123") {
+  return {
+    status: 200,
+    body: { ref, status: "pending" },
+  };
+}
+
+function paypackCashoutAccepted(ref = "paypack-payout-ref-456") {
+  return {
+    status: 200,
+    body: { ref, status: "pending" },
+  };
+}
+
+function paypackTransactionStatus(status = "successful", ref = "paypack-ref-123") {
+  return {
+    status: 200,
+    body: {
+      ref,
+      status,
+      kind: "CASHIN",
+      amount: 1000,
+      client: "0780000000",
+    },
+  };
+}
+
+function paypackCheckoutSession() {
+  return {
+    status: 200,
+    body: {
+      session_id: "checkout-session-789",
+      payment_link: "https://checkout.paypack.rw/pay/checkout-session-789",
+      kind: "session:created",
+    },
+  };
+}
+
+function paypackSandboxRoutes() {
+  return [
+    {
+      match: ({ url }) => url.includes("/auth/agents/authorize"),
+      respond: () => paypackAuthSuccess(),
+    },
+    {
+      match: ({ method, url }) => method === "POST" && url.includes("/transactions/cashin"),
+      respond: () => paypackCashinAccepted(),
+    },
+    {
+      match: ({ method, url }) => method === "POST" && url.includes("/transactions/cashout"),
+      respond: () => paypackCashoutAccepted(),
+    },
+    {
+      match: ({ method, url }) => method === "GET" && url.includes("/transactions/find"),
+      respond: () => paypackTransactionStatus("successful"),
+    },
+    {
+      match: ({ method, url }) => method === "POST" && url.includes("/checkouts/initiate"),
+      respond: () => paypackCheckoutSession(),
+    },
   ];
 }
 
@@ -96,7 +189,15 @@ module.exports = {
   createMockTransport,
   createRoutingTransport,
   mtnMoMoSandboxRoutes,
+  paypackSandboxRoutes,
   oauthSuccess,
   collectionAccepted,
   collectionStatus,
+  disbursementAccepted,
+  disbursementStatus,
+  paypackAuthSuccess,
+  paypackCashinAccepted,
+  paypackCashoutAccepted,
+  paypackTransactionStatus,
+  paypackCheckoutSession,
 };

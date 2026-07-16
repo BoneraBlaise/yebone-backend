@@ -53,6 +53,7 @@ const result = await foundation.gate.execute({
 - All dependencies injected via `createIntegrationFoundation()` — no singletons
 - No imports of `PaymentModule`, routes, controllers, or provider adapters
 - `PaymentModuleBridge` enforces the integration boundary at construction time
+- **Provider execution is outside this gate.** The pipeline above is settlement/accounting only. Provider charge, verify, refund, and payout are Module 10 runtime concerns (Phase 2+) and optional Payment Engine concerns (Phase 3). Do **not** insert a `ProviderExecutionStage` into this pipeline.
 
 ## Rollback strategy (design only)
 

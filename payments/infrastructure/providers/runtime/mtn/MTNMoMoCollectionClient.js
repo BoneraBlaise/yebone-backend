@@ -1,5 +1,6 @@
 const { randomUUID } = require("node:crypto");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
+const MTNMoMoCredentials = require("./MTNMoMoCredentials");
 const ProviderIdempotencyContract = require("../../ProviderIdempotencyContract");
 const ProviderReferenceContract = require("../../ProviderReferenceContract");
 
@@ -20,7 +21,10 @@ class MTNMoMoCollectionClient {
     const credentialResult = await this.oauthClient.credentialStore.load(this.providerCode, {
       required: true,
     });
-    const { subscriptionKey, targetEnvironment } = credentialResult.credentials;
+    const { subscriptionKey, targetEnvironment } = MTNMoMoCredentials.resolveScope(
+      credentialResult,
+      MTNMoMoConfig.scopes.collection
+    );
 
     const idempotencyKey = this.idempotencyContract.buildKey({
       operation: "charge",
@@ -85,7 +89,10 @@ class MTNMoMoCollectionClient {
     const credentialResult = await this.oauthClient.credentialStore.load(this.providerCode, {
       required: true,
     });
-    const { subscriptionKey, targetEnvironment } = credentialResult.credentials;
+    const { subscriptionKey, targetEnvironment } = MTNMoMoCredentials.resolveScope(
+      credentialResult,
+      MTNMoMoConfig.scopes.collection
+    );
     const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.collection);
     const env = this.environmentResolver.resolve(this.providerCode);
     const url = `${env.baseUrl}${MTNMoMoConfig.sandbox.collectionStatusPath}/${referenceId}`;

@@ -6,15 +6,29 @@ const ProviderWebhookVerifier = require("../ProviderWebhookVerifier");
 const { applyRuntimeAdapterContractSurface } = require("../RuntimeAdapterContractSurface");
 const PaypackErrorMapper = require("./PaypackErrorMapper");
 const PaypackConfig = require("./PaypackConfig");
+const PaypackRefundClient = require("./PaypackRefundClient");
 const RuntimeConfig = require("../RuntimeConfig");
 
 /**
- * Paypack runtime adapter — authentication and normalization architecture only.
+ * Paypack runtime adapter — sandbox architecture, mock HTTP in tests only.
  */
 class PaypackRuntimeAdapter {
-  constructor({ authClient, errorMapper, normalizer, webhookVerifier }) {
+  constructor({
+    authClient,
+    checkoutClient,
+    cashinClient,
+    verifyClient,
+    refundClient,
+    errorMapper,
+    normalizer,
+    webhookVerifier,
+  }) {
     this.providerCode = PaypackConfig.providerCode;
     this.authClient = authClient;
+    this.checkoutClient = checkoutClient;
+    this.cashinClient = cashinClient;
+    this.verifyClient = verifyClient;
+    this.refundClient = refundClient || new PaypackRefundClient({ providerCode: PaypackConfig.providerCode });
     this.errorMapper = errorMapper || new PaypackErrorMapper();
     this.normalizer = normalizer || new ProviderResponseNormalizer(this.providerCode);
     this.webhookVerifier = webhookVerifier || new ProviderWebhookVerifier(this.providerCode);
@@ -23,62 +37,107 @@ class PaypackRuntimeAdapter {
 
   async charge(input = {}) {
     return this._execute("charge", input, async (request) => {
-      await this.authClient.acquireToken();
-      const references = this.providerReference.buildReference({
-        reference: request.reference,
-        providerCode: this.providerCode,
-      });
-      const idempotencyKey = this.providerIdempotency.buildKey({
-        operation: "charge",
-        reference: request.reference,
-        providerCode: this.providerCode,
-      });
+      const useCheckout =
+        request.metadata?.product === "checkout" || request.metadata?.useCheckout === true;
+
+      const result = useCheckout
+        ? await this.checkoutClient.checkout({
+            reference: request.reference,
+            amount: request.amount,
+            currency: request.currency,
+            email: request.metadata?.email,
+            appId: request.metadata?.appId || request.metadata?.applicationId,
+            items: request.metadata?.items,
+            itemName: request.metadata?.itemName,
+          })
+        : await this.cashinClient.cashIn({
+            reference: request.reference,
+            amount: request.amount,
+            currency: request.currency,
+            msisdn: request.metadata?.msisdn || request.payload?.msisdn,
+          });
 
       return this.normalizer.normalizeCharge({
         success: true,
         mock: false,
-        status: "AUTH_READY",
+        status: useCheckout ? "PENDING" : "PENDING",
         reference: request.reference,
-        providerReference: references.providerReference,
-        merchantReference: references.merchantReference,
+        providerReference: result.providerReference || result.transactionRef,
+        merchantReference: result.merchantReference,
         amount: request.amount,
         currency: request.currency,
-        idempotencyKey: idempotencyKey.key,
+        correlationId: result.correlationId,
+        idempotencyKey: result.idempotencyKey,
         sandbox: true,
-        raw: { authenticated: true, productionCallsBlocked: true },
+        raw: result,
       });
     });
   }
 
   async verify(input = {}) {
-    return this._execute("verify", input, async () =>
-      ProviderResponse.fromResult({
+    return this._execute("verify", input, async (request) => {
+      const referenceId =
+        request.metadata?.providerReference ||
+        request.metadata?.transactionRef ||
+        request.metadata?.idempotencyKey ||
+        request.reference;
+
+      const result = await this.verifyClient.findTransaction(referenceId, {
+        kind: request.metadata?.kind,
+      });
+
+      return this.normalizer.normalizeVerify({
         success: true,
         mock: false,
-        providerCode: this.providerCode,
-        operation: "verify",
-        status: "NOT_IMPLEMENTED_PHASE1",
-        metadata: { sandbox: true },
-      })
-    );
+        status: result.status,
+        reference: request.reference,
+        providerReference: result.providerReference,
+        externalReference: result.financialTransactionId,
+        amount: result.amount,
+        kind: result.kind,
+        sandbox: true,
+        raw: result,
+      });
+    });
   }
 
-  async refund() {
-    return ProviderResponse.failure(
-      this.errorMapper.map(new Error("Paypack refund not implemented in Phase 1"), {
+  async refund(input = {}) {
+    return this._execute("refund", input, async () => {
+      await this.refundClient.refund();
+      return ProviderResponse.fromResult({
+        success: false,
+        mock: false,
         providerCode: this.providerCode,
         operation: "refund",
-      })
-    );
+        status: "NOT_IMPLEMENTED",
+      });
+    });
   }
 
-  async payout() {
-    return ProviderResponse.failure(
-      this.errorMapper.map(new Error("Paypack payout not implemented in Phase 1"), {
-        providerCode: this.providerCode,
-        operation: "payout",
-      })
-    );
+  async payout(input = {}) {
+    return this._execute("payout", input, async (request) => {
+      const result = await this.cashinClient.cashOut({
+        reference: request.reference,
+        amount: request.amount,
+        currency: request.currency,
+        msisdn: request.metadata?.msisdn || request.payload?.msisdn,
+      });
+
+      return this.normalizer.normalizePayout({
+        success: true,
+        mock: false,
+        status: "PENDING",
+        reference: request.reference,
+        providerReference: result.providerReference || result.transactionRef,
+        merchantReference: result.merchantReference,
+        amount: request.amount,
+        currency: request.currency,
+        correlationId: result.correlationId,
+        idempotencyKey: result.idempotencyKey,
+        sandbox: true,
+        raw: result,
+      });
+    });
   }
 
   async webhook(input = {}) {

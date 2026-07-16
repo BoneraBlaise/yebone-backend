@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const RuntimeFactory = require("../RuntimeFactory");
 const EnvironmentCredentialProvider = require("../credentials/EnvironmentCredentialProvider");
 const PaypackRuntimeAdapter = require("../paypack/PaypackRuntimeAdapter");
-const { createMockTransport, oauthSuccess } = require("./mockHttp");
+const { createRoutingTransport, paypackSandboxRoutes } = require("./mockHttp");
 
 describe("Paypack Runtime", () => {
   const env = {
@@ -11,37 +11,41 @@ describe("Paypack Runtime", () => {
     PAYPACK_CLIENT_SECRET: "client-secret",
   };
 
-  it("satisfies ProviderAdapterInterface contract", () => {
-    const transport = createMockTransport([oauthSuccess({ access: "paypack-token" })]);
-    const runtime = RuntimeFactory.createPaypackRuntime({
+  function createRuntime() {
+    return RuntimeFactory.createPaypackRuntime({
       providers: [new EnvironmentCredentialProvider({ env })],
-      transport,
+      transport: createRoutingTransport(paypackSandboxRoutes()),
     });
+  }
+
+  it("satisfies ProviderAdapterInterface contract", () => {
+    const runtime = createRuntime();
     assert.doesNotThrow(() => PaypackRuntimeAdapter.assertContract(runtime));
   });
 
-  it("authenticates and normalizes charge without production calls", async () => {
-    const transport = createMockTransport([oauthSuccess({ access: "paypack-token" })]);
-    const runtime = RuntimeFactory.createPaypackRuntime({
-      providers: [new EnvironmentCredentialProvider({ env })],
-      transport,
-    });
-
+  it("executes sandbox cash-in charge via mock HTTP", async () => {
+    const runtime = createRuntime();
     const response = await runtime.charge({
       reference: "order-200",
       amount: 1000,
       currency: "RWF",
+      metadata: { msisdn: "0781234567" },
     });
 
     assert.equal(response.success, true);
     assert.equal(response.mock, false);
-    assert.equal(response.status, "AUTH_READY");
+    assert.equal(response.status, "PENDING");
     assert.equal(response.metadata.sandbox, true);
-    assert.equal(response.data.productionCallsBlocked, true);
   });
 
   it("maps auth failure to ProviderError", async () => {
-    const transport = createMockTransport([{ status: 401, body: { message: "Unauthorized" } }]);
+    const transport = createRoutingTransport([
+      {
+        match: ({ url }) => url.includes("/auth/agents/authorize"),
+        respond: () => ({ status: 401, body: { message: "Unauthorized" } }),
+      },
+    ]);
+
     const runtime = RuntimeFactory.createPaypackRuntime({
       providers: [new EnvironmentCredentialProvider({ env })],
       transport,
@@ -51,6 +55,7 @@ describe("Paypack Runtime", () => {
       reference: "order-fail",
       amount: 500,
       currency: "RWF",
+      metadata: { msisdn: "0781234567" },
     });
 
     assert.equal(response.success, false);

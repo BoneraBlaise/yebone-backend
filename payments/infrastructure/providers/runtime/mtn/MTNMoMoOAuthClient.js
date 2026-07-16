@@ -3,6 +3,7 @@ const ProviderAuthentication = require("../ProviderAuthentication");
 const ProviderRequestSigner = require("../ProviderRequestSigner");
 const ProviderAuthError = require("../errors/ProviderAuthError");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
+const MTNMoMoCredentials = require("./MTNMoMoCredentials");
 
 /**
  * MTN MoMo OAuth token acquisition — sandbox only.
@@ -24,7 +25,10 @@ class MTNMoMoOAuthClient extends ProviderAuthentication {
     const credentialResult = await this.credentialStore.load(this.providerCode, { required: true });
     this.assertCredentials(credentialResult, this.providerCode);
 
-    const { apiUser, apiKey, subscriptionKey, targetEnvironment } = credentialResult.credentials;
+    const { apiUser, apiKey, subscriptionKey, targetEnvironment } = MTNMoMoCredentials.resolveScope(
+      credentialResult,
+      scope
+    );
     if (!apiUser || !apiKey || !subscriptionKey) {
       throw new ProviderAuthError("MTN MoMo credentials incomplete", { providerCode: this.providerCode });
     }

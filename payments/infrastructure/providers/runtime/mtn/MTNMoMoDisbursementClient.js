@@ -1,5 +1,6 @@
 const { randomUUID } = require("node:crypto");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
+const MTNMoMoCredentials = require("./MTNMoMoCredentials");
 const ProviderIdempotencyContract = require("../../ProviderIdempotencyContract");
 const ProviderReferenceContract = require("../../ProviderReferenceContract");
 
@@ -20,7 +21,10 @@ class MTNMoMoDisbursementClient {
     const credentialResult = await this.oauthClient.credentialStore.load(this.providerCode, {
       required: true,
     });
-    const { subscriptionKey, targetEnvironment } = credentialResult.credentials;
+    const { subscriptionKey, targetEnvironment } = MTNMoMoCredentials.resolveScope(
+      credentialResult,
+      MTNMoMoConfig.scopes.disbursement
+    );
 
     const idempotencyKey = this.idempotencyContract.buildKey({
       operation: "payout",
@@ -78,6 +82,42 @@ class MTNMoMoDisbursementClient {
       merchantReference: references.merchantReference,
       sandbox: true,
       raw: response.body,
+    });
+  }
+
+  async getStatus(referenceId) {
+    const credentialResult = await this.oauthClient.credentialStore.load(this.providerCode, {
+      required: true,
+    });
+    const { subscriptionKey, targetEnvironment } = MTNMoMoCredentials.resolveScope(
+      credentialResult,
+      MTNMoMoConfig.scopes.disbursement
+    );
+    const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.disbursement);
+    const env = this.environmentResolver.resolve(this.providerCode);
+    const url = `${env.baseUrl}${MTNMoMoConfig.sandbox.disbursementStatusPath}/${referenceId}`;
+
+    const response = await this.httpClient.request({
+      providerCode: this.providerCode,
+      operation: "disbursement_status",
+      method: "GET",
+      url,
+      headers: {
+        [MTNMoMoConfig.sandbox.targetEnvironmentHeader]: targetEnvironment || "sandbox",
+      },
+      signing: {
+        subscriptionKey,
+        bearerToken: token.accessToken,
+        correlationId: randomUUID(),
+      },
+    });
+
+    const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;
+    return Object.freeze({
+      status: body?.status || "UNKNOWN",
+      financialTransactionId: body?.financialTransactionId || null,
+      sandbox: true,
+      raw: body,
     });
   }
 }
