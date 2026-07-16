@@ -2,140 +2,82 @@
 
 **Purpose:** Completion checklists per work package and overall Phase 3 freeze.
 
+**Baseline:** `payment-foundation-v6` — Payment Foundation Release Candidate
+
+---
+
+## Sprint 3 Exit Criteria — Payment Foundation Release Candidate ✓
+
+Sprint 3 is complete when **all** of the following are true:
+
+### PaymentModule Wiring
+
+- [x] `ProviderExecutionOrchestrator` optionally injected into `PaymentModule` via `paymentFoundation`
+- [x] Backward compatible — legacy `PaymentService` path unchanged when foundation not injected
+- [x] `RuntimeFactory` remains sole runtime composition root
+- [x] `PaymentFoundationBootstrap` coordinates cross-module DI
+
+### PaymentEngine Production Integration
+
+- [x] `PaymentEngine.charge()`, `verify()`, `payout()`, `refund()` delegate to orchestrator when injected
+- [x] Dependency injection only — no Service Locator, no RuntimeFactory inside PaymentEngine
+- [x] Filtered `ExecutionResult` snapshot attached to engine results
+
+### Runtime Activation
+
+- [x] Runtime activatable only through feature flags (default OFF)
+- [x] Sandbox only — `PAYMENT_RUNTIME_LIVE` blocked by `RuntimeExecutionGuard`
+- [x] `FeatureFlagRolloutSupport` for explicit env-based rollout (not auto-applied)
+
+### Webhook Integration
+
+- [x] `PaymentModuleWebhookService` reuses Module 9 adapter contracts
+- [x] MTN and Paypack webhook verification via `RuntimeAdapterResolver`
+- [x] No webhook contract redesign
+
+### End-to-End Validation
+
+- [x] `Sprint3FoundationIntegration.test.js` — MOCK + RUNTIME_SANDBOX + flags + webhooks
+- [x] Full regression passing
+
+### Scope Boundaries
+
+- [x] No server / app.js / route changes
+- [x] No Integration Gate changes
+- [x] No feature flag default changes
+- [x] Production rollout intentionally deferred
+
+---
+
+## Sprint 2 Exit Criteria — Sandbox Validation Foundation ✓
+
+- [x] MTN + Paypack real sandbox validation (credential-gated)
+- [x] Runtime observability wired
+- [x] Security hardening regression
+- [x] End-to-end sandbox validation suite
+
 ---
 
 ## Sprint 1 Exit Criteria — Provider Execution Integration Foundation ✓
 
-Sprint 1 is complete when **all** of the following are true:
-
-### Orchestrator
-
-- [x] `ProviderExecutionOrchestrator` exists with `charge()`, `verify()`, `payout()`, `refund()`
-- [x] **Constructor injection exclusively** — four injected deps
-- [x] **No** internal composition root calls
-- [x] **No** Service Locator, singleton access, or hidden dependency creation
-
-### ExecutionResult
-
-- [x] `ExecutionResult` + `createExecutionResult()` implemented
-- [x] **`success` field present** — orchestration success only
-- [x] `ExecutionResult` is the **only** orchestrator return type
-- [x] `executionTimeline` and `diagnostics` populated
-
-### Safety & authority
-
-- [x] `RuntimeFactory` remains sole composition root
-- [x] `RuntimeAdapterResolver` remains sole authority for `ExecutionDecision`
-- [x] `RuntimeExecutionGuard` enforced on every RUNTIME_SANDBOX path
-- [x] Mock fallback honored when `executionMode === "MOCK"`
-
-### Scope boundaries
-
-- [x] Optional PaymentEngine wiring (not mandatory)
-- [x] **No** PaymentModule / route / server wiring
-- [x] Integration Gate unchanged
-
-### Tests
-
-- [x] Unit tests use mock injected dependencies
-- [x] Regression passing (`npm run test:providers:all` — 223/223)
-- [x] Feature flags remain default OFF; runtime sandbox-only
+- [x] `ProviderExecutionOrchestrator` with `charge()`, `verify()`, `payout()`, `refund()`
+- [x] Constructor injection exclusively (ADR-008)
+- [x] `ExecutionResult` boundary with diagnostics
+- [x] Optional PaymentEngine orchestrator injection
 
 ---
 
-## WP-1 Exit Criteria — charge() only (superseded by Sprint 1)
+## Phase 3 Overall Exit (payment-foundation-v6)
 
-WP-1 is complete when **all** of the following are true:
+| Area | Requirement | Status |
+|------|-------------|--------|
+| Orchestration | charge, verify, payout, refund via `ExecutionResult` | ✓ |
+| Injection | ADR-008 enforced — constructor injection only | ✓ |
+| PaymentModule | Optional foundation wiring, backward compatible | ✓ |
+| Webhooks | Module 9 contracts via PaymentModule service | ✓ |
+| Safety | Guards enforced; flags OFF; sandbox-only | ✓ |
+| Boundaries | Integration Gate unchanged; no route/server wiring | ✓ |
+| Tests | All regression + Sprint 3 suites pass | ✓ |
+| Release | Payment Foundation Release Candidate tagged | ✓ |
 
-### Orchestrator
-
-- [ ] `ProviderExecutionOrchestrator` exists with **`charge()` only**
-- [ ] **Constructor injection exclusively** — four injected deps:
-  - `providerAdapterResolver`
-  - `runtimeAdapterResolver`
-  - `runtimeExecutionGuard`
-  - `providerCapabilityValidator`
-- [ ] **No** internal `RuntimeFactory` calls
-- [ ] **No** Service Locator, singleton access, or hidden dependency creation
-- [ ] Orchestrator **coordinates only** — does not create adapters, guards, resolvers, or validators
-
-### ExecutionResult
-
-- [ ] `ExecutionResult` + `createExecutionResult()` implemented
-- [ ] **`success` field present** — orchestration success only
-- [ ] `ExecutionResult` is the **only** orchestrator return type
-- [ ] `executionTimeline: null` and `diagnostics: null` in WP-1
-
-### Safety & authority
-
-- [ ] `RuntimeFactory` remains sole composition root (orchestrator created by factory/bootstrap)
-- [ ] `RuntimeAdapterResolver` remains sole authority for `ExecutionDecision`
-- [ ] `RuntimeExecutionGuard` enforced on every RUNTIME_SANDBOX path
-- [ ] Mock fallback honored when `executionMode === "MOCK"`
-
-### Scope boundaries
-
-- [ ] `verify()`, `payout()`, `refund()` **not** implemented
-- [ ] **No** diagnostics attachment
-- [ ] **No** timeline attachment
-- [ ] **No** PaymentEngine wiring
-- [ ] **No** production wiring
-- [ ] Integration Gate unchanged
-
-### Tests
-
-- [ ] Unit tests use mock **injected** dependencies
-- [ ] Existing regression passes (`npm run test:providers:all` — 206/206)
-- [ ] Feature flags remain default OFF; runtime sandbox-only
-
----
-
-## WP-2 Exit Criteria — verify()
-
-- [ ] `ProviderExecutionOrchestrator.verify()` — same constructor injection pattern
-- [ ] Returns `ExecutionResult` (with `success`)
-- [ ] Unit tests pass; regression clean
-
----
-
-## WP-3 Exit Criteria — payout()
-
-- [ ] `ProviderExecutionOrchestrator.payout()`
-- [ ] Returns `ExecutionResult`
-- [ ] Unit tests pass; regression clean
-
----
-
-## WP-4 Exit Criteria — refund()
-
-- [ ] `ProviderExecutionOrchestrator.refund()`
-- [ ] Returns `ExecutionResult`
-- [ ] Unit tests pass; regression clean
-
----
-
-## WP-5 Exit Criteria — diagnostics
-
-- [ ] `executionTimeline` and `diagnostics` populated on `ExecutionResult`
-- [ ] Redacted exports; `PaymentEngine` still uses `success` + `providerResponse` only
-
----
-
-## WP-6 Exit Criteria — Phase 3 freeze
-
-- [ ] All WP-1 through WP-5 exit criteria met
-- [ ] Full regression passing
-- [ ] Enterprise Review approved
-- [ ] Ready for tag `payment-foundation-v4`
-
----
-
-## Phase 3 Overall Exit (payment-foundation-v4)
-
-| Area | Requirement |
-|------|-------------|
-| Orchestration | charge, verify, payout, refund via `ExecutionResult` |
-| Injection | ADR-008 enforced — constructor injection only |
-| Safety | Guards enforced; flags OFF; sandbox-only |
-| Boundaries | No Integration Gate / PaymentModule / route wiring |
-| Tests | All regression + Phase 3 suites pass |
+**Production rollout:** Pending explicit approval. Feature flags remain default OFF.

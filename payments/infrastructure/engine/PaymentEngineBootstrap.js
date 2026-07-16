@@ -28,6 +28,7 @@ function createPaymentEngineBootstrap(options = {}) {
     providerResolver: options.providerResolver,
     registerDefaultProviders: options.registerDefaultProviders,
     config: options.config,
+    providerExecutionOrchestrator: options.providerExecutionOrchestrator || null,
   });
 
   return Object.freeze({
@@ -36,6 +37,7 @@ function createPaymentEngineBootstrap(options = {}) {
     providerRegistry: engineBundle.providerRegistry,
     providerResolver: engineBundle.providerResolver,
     featureFlags: engineBundle.featureFlags,
+    providerExecutionOrchestrator: options.providerExecutionOrchestrator || null,
     idempotencyService: idempotency.service,
     idempotencyRepository: idempotency.repository,
     idempotencyCleanup: idempotency.cleanup,

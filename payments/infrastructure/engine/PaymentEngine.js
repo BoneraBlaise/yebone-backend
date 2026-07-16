@@ -93,6 +93,70 @@ class PaymentEngine {
     );
   }
 
+  /**
+   * Verify a provider transaction reference via optional orchestrator delegation.
+   */
+  async verify(input = {}, trace = {}) {
+    this.featureFlags.assertEngineEnabled();
+
+    const context = PaymentEngineContext.fromVerifyRequest(input, trace);
+    const payload = {
+      reference: context.reference,
+      providerCode: context.providerCode,
+    };
+
+    return this.idempotencyService.execute(
+      context.trace.idempotencyKey,
+      payload,
+      async () => this._executeVerify(context),
+      PaymentEngineContext.toIdempotencyContext(context)
+    );
+  }
+
+  /**
+   * Orchestrate a payout via optional orchestrator delegation.
+   */
+  async payout(input = {}, trace = {}) {
+    this.featureFlags.assertEngineEnabled();
+
+    const context = PaymentEngineContext.fromPayoutRequest(input, trace);
+    const payload = {
+      orderId: context.orderId,
+      buyerId: context.buyerId,
+      amount: context.amount,
+      currency: context.currency,
+    };
+
+    return this.idempotencyService.execute(
+      context.trace.idempotencyKey,
+      payload,
+      async () => this._executePayout(context),
+      PaymentEngineContext.toIdempotencyContext(context)
+    );
+  }
+
+  /**
+   * Orchestrate a refund via optional orchestrator delegation.
+   */
+  async refund(input = {}, trace = {}) {
+    this.featureFlags.assertEngineEnabled();
+
+    const context = PaymentEngineContext.fromRefundRequest(input, trace);
+    const payload = {
+      orderId: context.orderId,
+      reference: context.reference,
+      amount: context.amount,
+      currency: context.currency,
+    };
+
+    return this.idempotencyService.execute(
+      context.trace.idempotencyKey,
+      payload,
+      async () => this._executeRefund(context),
+      PaymentEngineContext.toIdempotencyContext(context)
+    );
+  }
+
   async _executeCharge(context) {
     const transaction = await this.transactionService.createTransaction(
       PaymentEngineContext.toTransactionInput(context)
@@ -151,15 +215,160 @@ class PaymentEngine {
         context.trace
       );
 
-      result.providerExecution = Object.freeze({
-        success: executionResult.success,
-        providerResponse: executionResult.providerResponse,
-        executionMode: executionResult.executionMode,
-        correlationId: executionResult.correlationId,
-      });
+      result.providerExecution = PaymentEngine._filterExecutionSnapshot(executionResult);
     }
 
     return Object.freeze(result);
+  }
+
+  async _executeVerify(context) {
+    const provider = this.providerResolver.resolve({
+      providerCode: context.providerCode,
+      countryCode: context.countryCode,
+      paymentMethod: context.paymentMethod,
+    });
+
+    const result = Object.freeze({
+      reference: context.reference,
+      providerCode: provider.code,
+      providerEnabled: provider.enabled,
+      correlationId: context.trace.correlationId,
+      requestId: context.trace.requestId,
+    });
+
+    if (this.providerExecutionOrchestrator) {
+      const executionResult = await this.providerExecutionOrchestrator.verify(
+        {
+          providerCode: provider.code,
+          countryCode: context.countryCode,
+          currency: context.currency,
+          paymentMethod: context.paymentMethod,
+          reference: context.reference,
+          metadata: context.metadata,
+        },
+        context.trace
+      );
+
+      return Object.freeze({
+        ...result,
+        providerExecution: PaymentEngine._filterExecutionSnapshot(executionResult),
+      });
+    }
+
+    return result;
+  }
+
+  async _executePayout(context) {
+    const transaction = await this.transactionService.createTransaction(
+      PaymentEngineContext.toTransactionInput(context)
+    );
+
+    await this.auditService.record({
+      action: AuditAction.PAYMENT_CREATED,
+      actorId: context.buyerId,
+      actorType: ActorType.BUYER,
+      resourceType: ResourceType.TRANSACTION,
+      resourceId: transaction.transactionId,
+      after: {
+        status: PaymentTransactionStatus.CREATED,
+        amount: context.amount,
+        currency: context.currency,
+        orderId: context.orderId,
+        operation: "PAYOUT",
+      },
+      context: {
+        correlationId: context.trace.correlationId,
+        requestId: context.trace.requestId,
+      },
+      metadata: {
+        traceId: context.trace.traceId,
+        paymentMethod: context.paymentMethod,
+        countryCode: context.countryCode,
+      },
+    });
+
+    const provider = this.providerResolver.resolve({
+      providerCode: context.providerCode,
+      countryCode: context.countryCode,
+      paymentMethod: context.paymentMethod,
+    });
+
+    const result = {
+      transactionId: transaction.transactionId,
+      paymentReference: transaction.paymentReference,
+      status: transaction.status,
+      providerCode: provider.code,
+      providerEnabled: provider.enabled,
+      correlationId: context.trace.correlationId,
+      requestId: context.trace.requestId,
+    };
+
+    if (this.providerExecutionOrchestrator) {
+      const executionResult = await this.providerExecutionOrchestrator.payout(
+        {
+          providerCode: provider.code,
+          countryCode: context.countryCode,
+          currency: context.currency,
+          paymentMethod: context.paymentMethod,
+          reference: transaction.paymentReference || transaction.transactionId,
+          amount: context.amount,
+          metadata: context.metadata,
+        },
+        context.trace
+      );
+
+      result.providerExecution = PaymentEngine._filterExecutionSnapshot(executionResult);
+    }
+
+    return Object.freeze(result);
+  }
+
+  async _executeRefund(context) {
+    const provider = this.providerResolver.resolve({
+      providerCode: context.providerCode,
+      countryCode: context.countryCode,
+      paymentMethod: context.paymentMethod,
+    });
+
+    const result = Object.freeze({
+      orderId: context.orderId,
+      reference: context.reference,
+      providerCode: provider.code,
+      providerEnabled: provider.enabled,
+      correlationId: context.trace.correlationId,
+      requestId: context.trace.requestId,
+    });
+
+    if (this.providerExecutionOrchestrator) {
+      const executionResult = await this.providerExecutionOrchestrator.refund(
+        {
+          providerCode: provider.code,
+          countryCode: context.countryCode,
+          currency: context.currency,
+          paymentMethod: context.paymentMethod,
+          reference: context.reference,
+          amount: context.amount,
+          metadata: context.metadata,
+        },
+        context.trace
+      );
+
+      return Object.freeze({
+        ...result,
+        providerExecution: PaymentEngine._filterExecutionSnapshot(executionResult),
+      });
+    }
+
+    return result;
+  }
+
+  static _filterExecutionSnapshot(executionResult) {
+    return Object.freeze({
+      success: executionResult.success,
+      providerResponse: executionResult.providerResponse,
+      executionMode: executionResult.executionMode,
+      correlationId: executionResult.correlationId,
+    });
   }
 }
 

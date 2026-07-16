@@ -1,8 +1,8 @@
 # Module 10 — Phase 3 Backlog
 
-**Baseline:** `payment-foundation-v4`  
+**Baseline:** `payment-foundation-v6` (Payment Foundation Release Candidate)  
 **Branch:** `feature/payment-foundation`  
-**Status:** Sprint 2 complete — Sandbox Validation Foundation frozen (`payment-foundation-v5`)
+**Status:** Phase 3 complete — Sprint 3 Payment Foundation Release Candidate frozen
 
 Provider execution must **NOT** be placed inside the Module 8 Integration Gate settlement pipeline (ADR-004).
 
@@ -10,7 +10,24 @@ Provider execution must **NOT** be placed inside the Module 8 Integration Gate s
 
 ## Scope Principle
 
-Phase 3 Sprint 2 delivers **real sandbox validation** (MTN + Paypack), **runtime observability wiring**, **security hardening regression**, and **end-to-end mock + credential-gated sandbox suites** — still foundation only, not production wiring.
+Phase 3 is **complete**. Sprint 3 delivers the **Payment Foundation Release Candidate** — PaymentModule wiring, PaymentEngine production integration, webhook verification, and feature-flag rollout support. Production rollout remains intentionally deferred.
+
+---
+
+## Sprint 3 Deliverables ✓
+
+| Item | Status |
+|------|--------|
+| `PaymentFoundationBootstrap` — cross-module composition | ✓ |
+| `PaymentModule` optional foundation injection | ✓ |
+| `PaymentEngine.verify()`, `payout()`, `refund()` | ✓ |
+| `PaymentModuleFoundationBridge` | ✓ |
+| `PaymentModuleWebhookService` (MTN + Paypack) | ✓ |
+| `FeatureFlagRolloutSupport` — explicit env rollout | ✓ |
+| `Sprint3FoundationIntegration.test.js` | ✓ |
+| Full regression | ✓ |
+
+**Production rollout:** NOT complete. Feature flags default OFF. Live execution blocked.
 
 ---
 

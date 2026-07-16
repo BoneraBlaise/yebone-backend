@@ -279,6 +279,28 @@ class PaymentModule {
       transactionCoordinator: this.transactionCoordinator,
     });
 
+    this.paymentFoundation = options.paymentFoundation || null;
+    this.paymentEngine =
+      options.paymentEngine ||
+      this.paymentFoundation?.engine ||
+      null;
+    this.providerExecutionOrchestrator =
+      options.providerExecutionOrchestrator ||
+      this.paymentFoundation?.providerExecutionOrchestrator ||
+      null;
+    this.webhookService =
+      options.webhookService ||
+      this.paymentFoundation?.webhookService ||
+      null;
+    this.foundationBridge = null;
+
+    if (this.paymentEngine) {
+      const PaymentModuleFoundationBridge = require("./PaymentModuleFoundationBridge");
+      this.foundationBridge = new PaymentModuleFoundationBridge({
+        paymentEngine: this.paymentEngine,
+      });
+    }
+
     const InfrastructureModule = require("./infrastructure/InfrastructureModule");
     this.infrastructureModule =
       options.infrastructureModule ||
@@ -438,6 +460,58 @@ class PaymentModule {
 
   getInfrastructureModule() {
     return this.infrastructureModule;
+  }
+
+  getPaymentFoundation() {
+    return this.paymentFoundation;
+  }
+
+  getPaymentEngine() {
+    return this.paymentEngine;
+  }
+
+  getProviderExecutionOrchestrator() {
+    return this.providerExecutionOrchestrator;
+  }
+
+  getPaymentFoundationBridge() {
+    return this.foundationBridge;
+  }
+
+  getWebhookVerificationService() {
+    return this.webhookService;
+  }
+
+  isPaymentFoundationWired() {
+    return Boolean(this.foundationBridge);
+  }
+
+  async executeFoundationCharge(input = {}, trace = {}) {
+    if (!this.foundationBridge) {
+      return null;
+    }
+    return this.foundationBridge.charge(input, trace);
+  }
+
+  async executeFoundationVerify(input = {}, trace = {}) {
+    if (!this.foundationBridge) {
+      return null;
+    }
+    return this.foundationBridge.verify(input, trace);
+  }
+
+  async executeFoundationPayout(input = {}, trace = {}) {
+    if (!this.foundationBridge) {
+      return null;
+    }
+    return this.foundationBridge.payout(input, trace);
+  }
+
+  async verifyProviderWebhook(input = {}) {
+    if (!this.webhookService) {
+      return null;
+    }
+    return this.webhookService.verifyWebhook(input);
   }
 }
 

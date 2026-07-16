@@ -2,8 +2,8 @@
 
 Sandbox-first provider integration infrastructure. **Not wired to PaymentModule.**
 
-**Baseline:** `payment-foundation-v5` (Phase 3 Sprint 2 frozen).  
-**Status:** Phase 3 Sprint 2 complete — Sandbox Validation Foundation implemented.
+**Baseline:** `payment-foundation-v6` (Payment Foundation Release Candidate).  
+**Status:** Phase 3 complete — Payment Foundation Release Candidate.
 
 ### Canonical references
 
@@ -30,7 +30,19 @@ Still **not wired** to PaymentModule, routes, or server. Feature flags remain de
 
 ---
 
-## Phase 3 Sprint 2 — Sandbox Validation Foundation ✓
+## Phase 3 Sprint 3 — Payment Foundation Release Candidate ✓
+
+| Component | Role |
+|-----------|------|
+| `PaymentFoundationBootstrap` | Cross-module composition — provider + runtime + engine + webhooks |
+| `PaymentModuleFoundationBridge` | Optional PaymentEngine delegation from PaymentModule |
+| `PaymentModuleWebhookService` | Webhook verification via Module 9 adapter contracts |
+| `FeatureFlagRolloutSupport` | Explicit env-based rollout (defaults remain OFF) |
+| `PaymentEngine.verify/payout/refund()` | Full orchestrator operation surface |
+
+Wired into `PaymentModule` via optional `paymentFoundation` injection. Legacy paths unchanged when not injected. **Production rollout pending** — flags default OFF, no server/route changes.
+
+---
 
 | Component | Role |
 |-----------|------|
@@ -183,9 +195,10 @@ Credentials loaded via `EnvironmentCredentialProvider` (env vars). Stubs exist f
 ## Testing
 
 ```bash
-npm run test:providers:all          # Module 9 foundation + Module 10 runtime (236 tests)
-npm run test:providers:runtime      # Module 10 runtime only (176 tests)
-npm run test:providers:sandbox      # Optional credential-gated MTN sandbox (skipped by default)
+npm run test:payment-foundation    # providers + engine + Sprint 3 foundation (251+ tests)
+npm run test:foundation            # Sprint 3 PaymentModule integration (15 tests)
+npm run test:providers:all          # Module 9 + Module 10 runtime (236 tests)
+npm run test:engine                 # PaymentEngine + rollout support (45 tests)
 npm run verify:architecture         # Cross-module architecture verification
 ```
 

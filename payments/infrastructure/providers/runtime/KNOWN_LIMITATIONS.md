@@ -32,6 +32,17 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
+## Implemented (Phase 3 Sprint 3 — Release Candidate)
+
+- `PaymentFoundationBootstrap` — wires provider + runtime + engine + webhooks
+- `PaymentModule` optional foundation injection (backward compatible)
+- `PaymentEngine.verify()`, `payout()`, `refund()` with orchestrator delegation
+- `PaymentModuleWebhookService` — MTN + Paypack webhook verification
+- `FeatureFlagRolloutSupport` — explicit env rollout (defaults OFF)
+- Sprint 3 end-to-end validation suite
+
+---
+
 ## Implemented (Phase 3 Sprint 2)
 
 - MTN MoMo real sandbox validation (OAuth, collection, disbursement, verify) — credential-gated
@@ -45,22 +56,14 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
-## Not Implemented (Phase 3+)
+## Not Implemented (post–Release Candidate)
 
-- Production execution
-- PaymentModule wiring
-- Production rollout / route wiring
-- Provider execution inside Integration Gate (explicitly rejected)
-- Automatic credential rotation on 401
-- Production webhooks
-- Secret Manager cloud backend (stub/no-op only)
-- Vault cloud backend (stub/no-op only)
-- Distributed transactions
-- Durable event outbox
-- Runtime fallback logic (`fallbackAllowed` is declarative only)
-- Runtime metrics exporters (Prometheus, Datadog)
-- Runtime tracing exporters
-- Tag `payment-foundation-v3` (pending Enterprise Review + commit)
+- Production rollout / live execution
+- Route and server wiring of foundation components
+- Feature flag defaults ON
+- Automatic env flag loading at bootstrap (rollout support is explicit-only)
+- Metrics exporters (Prometheus, Datadog)
+- PaymentModule replacing legacy PaymentService as default path
 
 ---
 
