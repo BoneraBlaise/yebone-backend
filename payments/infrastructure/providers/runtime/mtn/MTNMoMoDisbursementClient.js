@@ -39,7 +39,10 @@ class MTNMoMoDisbursementClient {
       providerCode: this.providerCode,
     });
 
-    const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.disbursement);
+    const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.disbursement, {
+      metrics: input.metrics,
+      correlationId: input.correlationId,
+    });
     const env = this.environmentResolver.resolve(this.providerCode);
     const correlationId = input.correlationId || randomUUID();
     const url = `${env.baseUrl}${MTNMoMoConfig.sandbox.disbursementPath}`;
@@ -72,6 +75,7 @@ class MTNMoMoDisbursementClient {
         idempotencyKey: idempotencyKey.key,
         correlationId,
       },
+      metrics: input.metrics,
     });
 
     return Object.freeze({
@@ -85,7 +89,7 @@ class MTNMoMoDisbursementClient {
     });
   }
 
-  async getStatus(referenceId) {
+  async getStatus(referenceId, options = {}) {
     const credentialResult = await this.oauthClient.credentialStore.load(this.providerCode, {
       required: true,
     });
@@ -93,7 +97,10 @@ class MTNMoMoDisbursementClient {
       credentialResult,
       MTNMoMoConfig.scopes.disbursement
     );
-    const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.disbursement);
+    const token = await this.oauthClient.acquireToken(MTNMoMoConfig.scopes.disbursement, {
+      metrics: options.metrics,
+      correlationId: options.correlationId,
+    });
     const env = this.environmentResolver.resolve(this.providerCode);
     const url = `${env.baseUrl}${MTNMoMoConfig.sandbox.disbursementStatusPath}/${referenceId}`;
 
@@ -108,8 +115,9 @@ class MTNMoMoDisbursementClient {
       signing: {
         subscriptionKey,
         bearerToken: token.accessToken,
-        correlationId: randomUUID(),
+        correlationId: options.correlationId || randomUUID(),
       },
+      metrics: options.metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

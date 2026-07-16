@@ -8,6 +8,7 @@ const MTNMoMoErrorMapper = require("./MTNMoMoErrorMapper");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
 const MTNMoMoRefundClient = require("./MTNMoMoRefundClient");
 const RuntimeConfig = require("../RuntimeConfig");
+const { resolveRuntimeExecutionContext } = require("../observability/RuntimeExecutionContext");
 
 /**
  * MTN MoMo runtime adapter — sandbox architecture, mock HTTP in tests only.
@@ -38,11 +39,14 @@ class MTNMoMoRuntimeAdapter {
 
   async charge(input = {}) {
     return this._execute("charge", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const result = await this.collectionClient.requestToPay({
         reference: request.reference,
         amount: request.amount,
         currency: request.currency,
         payerMsisdn: request.metadata?.msisdn || request.payload?.msisdn,
+        metrics: ctx.metrics,
+        correlationId: ctx.correlationId,
       });
       return this.normalizer.normalizeCharge({
         success: true,
@@ -63,6 +67,7 @@ class MTNMoMoRuntimeAdapter {
 
   async verify(input = {}) {
     return this._execute("verify", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const referenceId =
         request.metadata?.idempotencyKey ||
         request.metadata?.providerReference ||
@@ -70,9 +75,10 @@ class MTNMoMoRuntimeAdapter {
       const isDisbursement =
         request.metadata?.product === "disbursement" || request.metadata?.operation === "payout";
 
+      const statusOptions = { metrics: ctx.metrics, correlationId: ctx.correlationId };
       const result = isDisbursement
-        ? await this.disbursementClient.getStatus(referenceId)
-        : await this.collectionClient.getStatus(referenceId);
+        ? await this.disbursementClient.getStatus(referenceId, statusOptions)
+        : await this.collectionClient.getStatus(referenceId, statusOptions);
 
       return ProviderResponse.fromResult({
         success: true,
@@ -102,11 +108,14 @@ class MTNMoMoRuntimeAdapter {
 
   async payout(input = {}) {
     return this._execute("payout", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const result = await this.disbursementClient.transfer({
         reference: request.reference,
         amount: request.amount,
         currency: request.currency,
         payeeMsisdn: request.metadata?.msisdn || request.payload?.msisdn,
+        metrics: ctx.metrics,
+        correlationId: ctx.correlationId,
       });
       return this.normalizer.normalizePayout({
         success: true,

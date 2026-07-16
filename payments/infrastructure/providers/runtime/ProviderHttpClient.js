@@ -1,6 +1,7 @@
 const RuntimeConfig = require("./RuntimeConfig");
 const ProviderHttpError = require("./errors/ProviderHttpError");
 const ProviderTimeoutError = require("./errors/ProviderTimeoutError");
+const { emitRuntimeMetric, observeRuntimeDuration } = require("./observability/RuntimeMetricsEmitter");
 
 /**
  * Injectable HTTP client — live network blocked unless transport is injected (tests only).
@@ -41,6 +42,7 @@ class ProviderHttpClient {
     correlationId = null,
     idempotencyKey = null,
     signing = {},
+    metrics = null,
   } = {}) {
     if (!this.liveExecutionEnabled && !this.transportInjected) {
       throw new ProviderHttpError("Live provider HTTP blocked at Module 10 Phase 1", {
@@ -61,6 +63,7 @@ class ProviderHttpClient {
       : headers;
 
     let attempt = 0;
+    const startedAtMs = Date.now();
     while (true) {
       try {
         const response = await this._executeWithTimeout({
@@ -69,6 +72,7 @@ class ProviderHttpClient {
           headers: signedHeaders,
           body,
           timeoutMs: timeout,
+          metrics,
         });
 
         if (response.status >= 400) {
@@ -79,11 +83,16 @@ class ProviderHttpClient {
           });
           if (this.retryPolicy?.shouldRetry({ attempt, operation, error })) {
             attempt += 1;
+            emitRuntimeMetric(metrics, "provider_retry");
             await ProviderHttpClient._sleep(this.retryPolicy.nextDelayMs(attempt));
             continue;
           }
+          observeRuntimeDuration(metrics, Date.now() - startedAtMs);
           throw error;
         }
+
+        emitRuntimeMetric(metrics, "runtime_http");
+        observeRuntimeDuration(metrics, Date.now() - startedAtMs);
 
         return Object.freeze({
           status: response.status,
@@ -101,21 +110,26 @@ class ProviderHttpClient {
 
         if (this.retryPolicy?.shouldRetry({ attempt, operation, error: wrapped })) {
           attempt += 1;
+          emitRuntimeMetric(metrics, "provider_retry");
           await ProviderHttpClient._sleep(this.retryPolicy.nextDelayMs(attempt));
           continue;
         }
+        if (wrapped instanceof ProviderTimeoutError) {
+          emitRuntimeMetric(metrics, "provider_timeout");
+        }
+        observeRuntimeDuration(metrics, Date.now() - startedAtMs);
         throw wrapped;
       }
     }
   }
 
-  async _executeWithTimeout({ method, url, headers, body, timeoutMs }) {
+  async _executeWithTimeout({ method, url, headers, body, timeoutMs, metrics }) {
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(
-        () => reject(new ProviderTimeoutError(`Provider request timed out after ${timeoutMs}ms`, { timeoutMs })),
-        timeoutMs
-      );
+      timer = setTimeout(() => {
+        emitRuntimeMetric(metrics, "provider_timeout");
+        reject(new ProviderTimeoutError(`Provider request timed out after ${timeoutMs}ms`, { timeoutMs }));
+      }, timeoutMs);
     });
 
     try {

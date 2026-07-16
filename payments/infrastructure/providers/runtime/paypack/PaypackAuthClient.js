@@ -4,6 +4,7 @@ const ProviderRequestSigner = require("../ProviderRequestSigner");
 const ProviderAuthError = require("../errors/ProviderAuthError");
 const PaypackConfig = require("./PaypackConfig");
 const PaypackCredentials = require("./PaypackCredentials");
+const { emitRuntimeMetric } = require("../observability/RuntimeMetricsEmitter");
 
 /**
  * Paypack authentication client — sandbox only, token cached via ProviderTokenCache.
@@ -16,12 +17,15 @@ class PaypackAuthClient extends ProviderAuthentication {
     this.providerCode = PaypackConfig.providerCode;
   }
 
-  async acquireToken(scope = PaypackConfig.scopes.default) {
+  async acquireToken(scope = PaypackConfig.scopes.default, options = {}) {
+    const metrics = options.metrics || null;
     const cacheScope = String(scope || PaypackConfig.scopes.default).toLowerCase();
     const cached = await this.getCachedToken(this.providerCode, cacheScope);
     if (cached?.accessToken) {
+      emitRuntimeMetric(metrics, "oauth_cache_hit");
       return cached;
     }
+    emitRuntimeMetric(metrics, "oauth_cache_miss");
 
     const credentialResult = await this.credentialStore.load(this.providerCode, { required: true });
     this.assertCredentials(credentialResult, this.providerCode);
@@ -46,7 +50,8 @@ class PaypackAuthClient extends ProviderAuthentication {
         "Content-Type": "application/json",
         Authorization: authorization,
       },
-      correlationId: randomUUID(),
+      correlationId: options.correlationId || randomUUID(),
+      metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

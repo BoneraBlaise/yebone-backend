@@ -51,7 +51,7 @@ describe("Provider capability matrix", () => {
 
     assert.equal(flutterwave.supports("reconciliation"), true);
     assert.equal(paypack.supports("reconcile"), true);
-    assert.equal(paypack.supports("payout"), false);
+    assert.equal(paypack.supports("payout"), true);
   });
 
   it("resolver supports capability queries", () => {
@@ -63,7 +63,7 @@ describe("Provider capability matrix", () => {
     });
 
     assert.equal(resolver.supports("FLUTTERWAVE", "payouts"), true);
-    assert.equal(resolver.supports("PAYPACK", "payout"), false);
+    assert.equal(resolver.supports("PAYPACK", "payout"), true);
   });
 
   it("documents matrix entries for all default providers", () => {

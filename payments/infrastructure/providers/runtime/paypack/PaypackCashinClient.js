@@ -40,7 +40,10 @@ class PaypackCashinClient {
   }
 
   async _createTransaction({ input, operation, path, msisdn }) {
-    const token = await this.authClient.acquireToken(PaypackConfig.scopes.default);
+    const token = await this.authClient.acquireToken(PaypackConfig.scopes.default, {
+      metrics: input.metrics,
+      correlationId: input.correlationId,
+    });
     const env = this.environmentResolver.resolve(this.providerCode);
 
     const idempotencyKey = this.idempotencyContract.buildKey({
@@ -80,6 +83,7 @@ class PaypackCashinClient {
         idempotencyKey: idempotencyKey.key,
         correlationId,
       },
+      metrics: input.metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

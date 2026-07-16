@@ -1,8 +1,8 @@
 # Module 10 — Phase 3 Backlog
 
-**Baseline:** `payment-foundation-v3`  
+**Baseline:** `payment-foundation-v4`  
 **Branch:** `feature/payment-foundation`  
-**Status:** Sprint 1 complete — Provider Execution Integration Foundation implemented (awaiting approval)
+**Status:** Sprint 2 complete — Sandbox Validation Foundation frozen (`payment-foundation-v5`)
 
 Provider execution must **NOT** be placed inside the Module 8 Integration Gate settlement pipeline (ADR-004).
 
@@ -10,7 +10,22 @@ Provider execution must **NOT** be placed inside the Module 8 Integration Gate s
 
 ## Scope Principle
 
-Phase 3 Sprint 1 delivers **`ProviderExecutionOrchestrator`** with full operation surface (`charge`, `verify`, `payout`, `refund`), **`ExecutionResult`** boundary, diagnostics attachment, and optional **`PaymentEngine`** injection — still foundation only, not production wiring.
+Phase 3 Sprint 2 delivers **real sandbox validation** (MTN + Paypack), **runtime observability wiring**, **security hardening regression**, and **end-to-end mock + credential-gated sandbox suites** — still foundation only, not production wiring.
+
+---
+
+## Sprint 2 Deliverables ✓
+
+| Item | Status |
+|------|--------|
+| MTN real sandbox validation (OAuth, collection, disbursement, verify) | ✓ |
+| Paypack real sandbox validation (auth, checkout, cash-in/out, verify) | ✓ |
+| Runtime metrics wired (HTTP, OAuth, orchestrator) | ✓ |
+| Security hardening regression suite | ✓ |
+| End-to-end sandbox validation (mock + credential-gated live) | ✓ |
+| Full regression (`test:providers:all`, `test:engine`, `verify:architecture`) | ✓ |
+
+**Not in Sprint 2:** Production rollout, PaymentModule wiring, feature flag default changes, metrics exporters.
 
 ---
 

@@ -12,8 +12,11 @@ class PaypackVerifyClient {
     this.providerCode = PaypackConfig.providerCode;
   }
 
-  async findTransaction(referenceId, { kind } = {}) {
-    const token = await this.authClient.acquireToken(PaypackConfig.scopes.default);
+  async findTransaction(referenceId, { kind, metrics, correlationId } = {}) {
+    const token = await this.authClient.acquireToken(PaypackConfig.scopes.default, {
+      metrics,
+      correlationId,
+    });
     const env = this.environmentResolver.resolve(this.providerCode);
     const url = `${env.baseUrl}${PaypackConfig.sandbox.findPath}/${referenceId}`;
 
@@ -27,8 +30,9 @@ class PaypackVerifyClient {
       },
       signing: {
         bearerToken: token.accessToken,
-        correlationId: randomUUID(),
+        correlationId: correlationId || randomUUID(),
       },
+      metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

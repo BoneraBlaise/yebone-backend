@@ -2,8 +2,8 @@
 
 Sandbox-first provider integration infrastructure. **Not wired to PaymentModule.**
 
-**Baseline:** `payment-foundation-v3` (Phase 2 frozen).  
-**Status:** Phase 3 Sprint 1 complete — Provider Execution Integration Foundation implemented (awaiting approval).
+**Baseline:** `payment-foundation-v5` (Phase 3 Sprint 2 frozen).  
+**Status:** Phase 3 Sprint 2 complete — Sandbox Validation Foundation implemented.
 
 ### Canonical references
 
@@ -27,6 +27,21 @@ Sandbox-first provider integration infrastructure. **Not wired to PaymentModule.
 | `PaymentEngine` (optional DI) | When orchestrator injected, attaches `providerExecution` snapshot; unchanged when not injected |
 
 Still **not wired** to PaymentModule, routes, or server. Feature flags remain default OFF.
+
+---
+
+## Phase 3 Sprint 2 — Sandbox Validation Foundation ✓
+
+| Component | Role |
+|-----------|------|
+| `RuntimeMetricsEmitter` | In-memory metric emission (`oauth_cache_hit/miss`, `provider_*`, `runtime_mock/http`) |
+| `RuntimeExecutionContext` | Propagates `runtimeMetrics` + `correlationId` into adapter HTTP calls |
+| `SandboxValidation.test.js` | End-to-end mock-transport orchestrator validation (MTN + Paypack) |
+| `Sprint2SecurityValidation.test.js` | Credential isolation, redaction, guard, rotation metadata |
+| `MTNMoMoSandbox.integration.test.js` | Credential-gated MTN sandbox (OAuth, collection, disbursement, verify) |
+| Paypack sandbox tests | Credential-gated auth, checkout, cash-in/out, verify |
+
+Real sandbox executes **only** when integration env flags and credentials are present. Production URLs and credentials are never used.
 
 ---
 
@@ -111,13 +126,14 @@ Product-scoped env keys: `PAYPACK_DEFAULT_*`, `PAYPACK_CHECKOUT_*` (legacy `PAYP
 
 `PAYMENT_RUNTIME_LIVE` blocked by `RuntimeExecutionGuard.assertLiveExecutionPrevented()`.
 
-### Observability (passive, in-memory only)
+### Observability (active during runtime execution, in-memory only)
 
 | Component | Role |
 |-----------|------|
 | `ExecutionTimeline` | Immutable read-only execution trace with stages |
-| `ProviderRuntimeDiagnostics` | Attaches `ExecutionDecision` + `ExecutionTimeline` |
-| `ProviderRuntimeMetrics` | Design-only counters (no exporters) |
+| `ProviderRuntimeDiagnostics` | Attaches `ExecutionDecision` + `ExecutionTimeline` + metrics |
+| `ProviderRuntimeMetrics` | In-memory counters (no exporters) |
+| `RuntimeMetricsEmitter` | Emits metrics from HTTP, OAuth, and orchestrator layers |
 | `CorrelationContext` | Correlation propagation helper |
 
 No Prometheus, Datadog, or telemetry exporters.
@@ -167,9 +183,9 @@ Credentials loaded via `EnvironmentCredentialProvider` (env vars). Stubs exist f
 ## Testing
 
 ```bash
-npm run test:providers:all          # Module 9 foundation + Module 10 runtime (206 tests)
-npm run test:providers:runtime      # Module 10 runtime only (146 tests)
-npm run test:providers:sandbox      # Optional credential-gated sandbox (skipped by default)
+npm run test:providers:all          # Module 9 foundation + Module 10 runtime (236 tests)
+npm run test:providers:runtime      # Module 10 runtime only (176 tests)
+npm run test:providers:sandbox      # Optional credential-gated MTN sandbox (skipped by default)
 npm run verify:architecture         # Cross-module architecture verification
 ```
 

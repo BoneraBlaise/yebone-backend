@@ -8,6 +8,7 @@ const PaypackErrorMapper = require("./PaypackErrorMapper");
 const PaypackConfig = require("./PaypackConfig");
 const PaypackRefundClient = require("./PaypackRefundClient");
 const RuntimeConfig = require("../RuntimeConfig");
+const { resolveRuntimeExecutionContext } = require("../observability/RuntimeExecutionContext");
 
 /**
  * Paypack runtime adapter — sandbox architecture, mock HTTP in tests only.
@@ -37,23 +38,28 @@ class PaypackRuntimeAdapter {
 
   async charge(input = {}) {
     return this._execute("charge", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const useCheckout =
         request.metadata?.product === "checkout" || request.metadata?.useCheckout === true;
 
+      const clientInput = {
+        reference: request.reference,
+        amount: request.amount,
+        currency: request.currency,
+        metrics: ctx.metrics,
+        correlationId: ctx.correlationId,
+      };
+
       const result = useCheckout
         ? await this.checkoutClient.checkout({
-            reference: request.reference,
-            amount: request.amount,
-            currency: request.currency,
+            ...clientInput,
             email: request.metadata?.email,
             appId: request.metadata?.appId || request.metadata?.applicationId,
             items: request.metadata?.items,
             itemName: request.metadata?.itemName,
           })
         : await this.cashinClient.cashIn({
-            reference: request.reference,
-            amount: request.amount,
-            currency: request.currency,
+            ...clientInput,
             msisdn: request.metadata?.msisdn || request.payload?.msisdn,
           });
 
@@ -76,6 +82,7 @@ class PaypackRuntimeAdapter {
 
   async verify(input = {}) {
     return this._execute("verify", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const referenceId =
         request.metadata?.providerReference ||
         request.metadata?.transactionRef ||
@@ -84,6 +91,8 @@ class PaypackRuntimeAdapter {
 
       const result = await this.verifyClient.findTransaction(referenceId, {
         kind: request.metadata?.kind,
+        metrics: ctx.metrics,
+        correlationId: ctx.correlationId,
       });
 
       return this.normalizer.normalizeVerify({
@@ -116,11 +125,14 @@ class PaypackRuntimeAdapter {
 
   async payout(input = {}) {
     return this._execute("payout", input, async (request) => {
+      const ctx = resolveRuntimeExecutionContext(request);
       const result = await this.cashinClient.cashOut({
         reference: request.reference,
         amount: request.amount,
         currency: request.currency,
         msisdn: request.metadata?.msisdn || request.payload?.msisdn,
+        metrics: ctx.metrics,
+        correlationId: ctx.correlationId,
       });
 
       return this.normalizer.normalizePayout({

@@ -4,6 +4,7 @@ const ProviderRequestSigner = require("../ProviderRequestSigner");
 const ProviderAuthError = require("../errors/ProviderAuthError");
 const MTNMoMoConfig = require("./MTNMoMoConfig");
 const MTNMoMoCredentials = require("./MTNMoMoCredentials");
+const { emitRuntimeMetric } = require("../observability/RuntimeMetricsEmitter");
 
 /**
  * MTN MoMo OAuth token acquisition — sandbox only.
@@ -16,11 +17,14 @@ class MTNMoMoOAuthClient extends ProviderAuthentication {
     this.providerCode = MTNMoMoConfig.providerCode;
   }
 
-  async acquireToken(scope = MTNMoMoConfig.scopes.collection) {
+  async acquireToken(scope = MTNMoMoConfig.scopes.collection, options = {}) {
+    const metrics = options.metrics || null;
     const cached = await this.getCachedToken(this.providerCode, scope);
     if (cached?.accessToken) {
+      emitRuntimeMetric(metrics, "oauth_cache_hit");
       return cached;
     }
+    emitRuntimeMetric(metrics, "oauth_cache_miss");
 
     const credentialResult = await this.credentialStore.load(this.providerCode, { required: true });
     this.assertCredentials(credentialResult, this.providerCode);
@@ -48,7 +52,8 @@ class MTNMoMoOAuthClient extends ProviderAuthentication {
         [MTNMoMoConfig.sandbox.targetEnvironmentHeader]: targetEnvironment || "sandbox",
       },
       signing: { subscriptionKey },
-      correlationId: randomUUID(),
+      correlationId: options.correlationId || randomUUID(),
+      metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

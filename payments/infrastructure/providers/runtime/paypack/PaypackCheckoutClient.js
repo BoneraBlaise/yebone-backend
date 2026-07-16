@@ -17,7 +17,10 @@ class PaypackCheckoutClient {
   }
 
   async checkout(input = {}) {
-    const token = await this.authClient.acquireToken(PaypackConfig.scopes.checkout);
+    const token = await this.authClient.acquireToken(PaypackConfig.scopes.checkout, {
+      metrics: input.metrics,
+      correlationId: input.correlationId,
+    });
     this.environmentResolver.resolve(this.providerCode);
 
     const idempotencyKey = this.idempotencyContract.buildKey({
@@ -64,6 +67,7 @@ class PaypackCheckoutClient {
         idempotencyKey: idempotencyKey.key,
         correlationId,
       },
+      metrics: input.metrics,
     });
 
     const body = typeof response.body === "string" ? JSON.parse(response.body) : response.body;

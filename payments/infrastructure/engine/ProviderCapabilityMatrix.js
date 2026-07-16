@@ -50,6 +50,7 @@ const DEFAULT_PROVIDER_MATRIX = Object.freeze({
     capabilities: [
       ProviderCapability.PAYMENTS,
       ProviderCapability.REFUNDS,
+      ProviderCapability.PAYOUTS,
       ProviderCapability.WEBHOOKS,
       ProviderCapability.RECONCILIATION,
     ],
@@ -59,6 +60,7 @@ const DEFAULT_PROVIDER_MATRIX = Object.freeze({
     supportedOperations: [
       ProviderCapability.PAYMENTS,
       ProviderCapability.REFUNDS,
+      ProviderCapability.PAYOUTS,
       ProviderCapability.WEBHOOKS,
       ProviderCapability.RECONCILIATION,
     ],

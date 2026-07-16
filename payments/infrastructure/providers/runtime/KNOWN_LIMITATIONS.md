@@ -32,14 +32,16 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
-## Implemented (Phase 3 Sprint 1)
+## Implemented (Phase 3 Sprint 2)
 
-- `ProviderExecutionOrchestrator` — constructor injection only (ADR-008)
-- `ExecutionResult` — immutable public boundary with diagnostics attachment
-- `charge()`, `verify()`, `payout()`, `refund()` orchestration paths
-- `ExecutionTimeline` + `ProviderRuntimeDiagnostics` wired into orchestrator execution
-- Optional `PaymentEngine` orchestrator injection (behavior identical when not injected)
-- `RuntimeFactory.createProviderExecutionOrchestrator()` composition root method
+- MTN MoMo real sandbox validation (OAuth, collection, disbursement, verify) — credential-gated
+- Paypack real sandbox validation (auth, checkout, cash-in/out, verify) — credential-gated
+- Runtime metrics wired into HTTP, OAuth, and orchestrator execution paths
+- `RuntimeMetricsEmitter` + `RuntimeExecutionContext` for in-memory observability
+- `SandboxValidation.test.js` — end-to-end mock-transport orchestrator suite
+- `Sprint2SecurityValidation.test.js` — security hardening regression suite
+- Paypack `PAYOUTS` capability reflected in Module 4 matrix (runtime cash-out alignment)
+- Refund remains stub (MTN architecture stub; Paypack dashboard-only)
 
 ---
 

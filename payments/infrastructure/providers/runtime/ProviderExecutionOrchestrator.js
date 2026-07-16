@@ -5,6 +5,8 @@ const ProviderCapabilityError = require("../errors/ProviderCapabilityError");
 const { createExecutionResult } = require("./ExecutionResult");
 const CorrelationContext = require("./observability/CorrelationContext");
 const { ProviderRuntimeDiagnosticsCollector } = require("./observability/ProviderRuntimeDiagnostics");
+const SecretRedactor = require("./security/SecretRedactor");
+const { emitRuntimeMetric, observeRuntimeDuration } = require("./observability/RuntimeMetricsEmitter");
 
 /**
  * Coordinates injected runtime collaborators — constructor injection only (ADR-008).
@@ -53,6 +55,7 @@ class ProviderExecutionOrchestrator {
   }
 
   async _execute(operation, input, trace) {
+    const startedAtMs = Date.now();
     const correlation = new CorrelationContext({
       correlationId: trace.correlationId || input.correlationId,
       executionId: trace.executionId || input.executionId,
@@ -79,6 +82,9 @@ class ProviderExecutionOrchestrator {
       });
 
       diagnostics.attachExecutionDecision(decision);
+      if (decision.executionMode === "MOCK") {
+        emitRuntimeMetric(diagnostics, "runtime_mock");
+      }
 
       timeline = correlation.createTimelineRecorder({
         providerCode: decision.providerCode,
@@ -102,6 +108,8 @@ class ProviderExecutionOrchestrator {
 
       const adapter = decision.adapter;
       if (!adapter || typeof adapter[operation] !== "function") {
+        emitRuntimeMetric(diagnostics, "provider_failure");
+        observeRuntimeDuration(diagnostics, Date.now() - startedAtMs);
         const failedTimeline = timeline.fail();
         diagnostics.attachExecutionTimeline(failedTimeline);
         return this._failureResult({
@@ -117,6 +125,12 @@ class ProviderExecutionOrchestrator {
       const providerResponse = await adapter[operation]({
         ...input,
         providerCode: decision.providerCode,
+        correlationId: correlation.correlationId,
+        metadata: {
+          ...(input.metadata || {}),
+          correlationId: correlation.correlationId,
+          runtimeMetrics: diagnostics,
+        },
       });
 
       if (decision.executionMode === "RUNTIME_SANDBOX") {
@@ -130,16 +144,24 @@ class ProviderExecutionOrchestrator {
       const normalizedResponse = ProviderResponse.fromResult(providerResponse);
       const success = normalizedResponse.success !== false;
 
-      return createExecutionResult({
+      if (success) {
+        emitRuntimeMetric(diagnostics, "provider_success");
+      } else {
+        emitRuntimeMetric(diagnostics, "provider_failure");
+      }
+      observeRuntimeDuration(diagnostics, Date.now() - startedAtMs);
+
+      return this._successResult({
+        correlation,
+        decision,
+        closedTimeline,
+        diagnostics,
+        normalizedResponse,
         success,
-        providerResponse: normalizedResponse,
-        executionDecision: decision,
-        executionTimeline: closedTimeline,
-        diagnostics: diagnostics.snapshot(),
-        executionMode: decision.executionMode,
-        correlationId: correlation.correlationId,
       });
     } catch (error) {
+      emitRuntimeMetric(diagnostics, "provider_failure");
+      observeRuntimeDuration(diagnostics, Date.now() - startedAtMs);
       return this._handleExecutionError(error, {
         correlation,
         timeline,
@@ -156,6 +178,26 @@ class ProviderExecutionOrchestrator {
     this.runtimeExecutionGuard.assertLiveExecutionPrevented();
     this.runtimeExecutionGuard.assertRuntimeEnabled(providerCode);
     this.runtimeExecutionGuard.assertSandbox(providerCode);
+  }
+
+  _successResult({
+    correlation,
+    decision,
+    closedTimeline,
+    diagnostics,
+    normalizedResponse,
+    success,
+  }) {
+    const redactedDiagnostics = SecretRedactor.redactDiagnostics(diagnostics.snapshot());
+    return createExecutionResult({
+      success,
+      providerResponse: normalizedResponse,
+      executionDecision: decision,
+      executionTimeline: closedTimeline,
+      diagnostics: redactedDiagnostics,
+      executionMode: decision.executionMode,
+      correlationId: correlation.correlationId,
+    });
   }
 
   _handleExecutionError(error, { correlation, timeline, diagnostics, decision, operation, input }) {
@@ -234,12 +276,14 @@ class ProviderExecutionOrchestrator {
         metadata: Object.freeze({ message }),
       });
 
+    const redactedDiagnostics = SecretRedactor.redactDiagnostics(diagnostics.snapshot());
+
     return createExecutionResult({
       success: false,
       providerResponse: response,
       executionDecision: decision,
       executionTimeline: timeline,
-      diagnostics: diagnostics.snapshot(),
+      diagnostics: redactedDiagnostics,
       executionMode: decision.executionMode,
       correlationId: correlation.correlationId,
     });
