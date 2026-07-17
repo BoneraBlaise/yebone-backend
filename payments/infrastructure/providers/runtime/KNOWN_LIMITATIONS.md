@@ -66,15 +66,28 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
-## Not Implemented (deferred — Sprint 3+)
+## Implemented (Phase 4 Sprint 3)
 
-- **Duplicate webhook protection / replay idempotency** — deferred to Sprint 3
-- **App-level raw body middleware** — Sprint 2 spike: stable `JSON.stringify` / `rawPayload` when provided; byte-exact pre-parse HMAC deferred
+- `TransactionCorrelationPolicy` — immutable correlation chain across logs, audit, idempotency, events, settlement
+- `WebhookReconciliationResult` — canonical result model on all webhook paths
+- `WebhookIdempotencyService` — Mongo-scoped duplicate protection (`webhook_reconciliation`)
+- `WebhookReplayGuard` — replay window enforcement
+- `WebhookReconciliationOrchestrator` — verified transaction state reconciliation
+- `WebhookSettlementBridge` — optional settlement via pipeline stages (flag-gated)
+- `WebhookEventPublisher` — domain events after reconciliation
+- `LegacyPaymentRoutingPolicy` — migration strategy (defaults legacy)
+- Env flags: `PAYMENT_WEBHOOK_RECONCILIATION`, `PAYMENT_WEBHOOK_SETTLEMENT`, `PAYMENT_LEGACY_ROUTING_POLICY` (all default OFF)
+
+---
+
+## Not Implemented (deferred — Sprint 4+)
+
+- **App-level raw body middleware** — stable `JSON.stringify` / `rawPayload` when provided; byte-exact pre-parse HMAC deferred
 - Production live execution
 - Feature flag defaults ON
 - Metrics exporters (Prometheus, Datadog)
-- PaymentModule replacing legacy PaymentService as default path
-- Transaction state updates from inbound webhooks
+- PaymentModule replacing legacy PaymentService as default charge path
+- Full legacy → foundation transaction store linking
 
 ---
 

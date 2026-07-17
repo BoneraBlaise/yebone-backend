@@ -11,6 +11,9 @@ class RuntimeConfig {
     this.enableBackgroundJobs = options.enableBackgroundJobs === true;
     this.composePaymentFoundation = options.composePaymentFoundation === true;
     this.applyFeatureFlagRollout = options.applyFeatureFlagRollout === true;
+    this.enableWebhookReconciliation = options.enableWebhookReconciliation === true;
+    this.enableWebhookSettlement = options.enableWebhookSettlement === true;
+    this.enableLegacyRoutingPolicy = options.enableLegacyRoutingPolicy === true;
     this.shutdownTimeoutMs = options.shutdownTimeoutMs || 10000;
     this.logLevel = options.logLevel || "info";
     this.correlationHeader = options.correlationHeader || "x-correlation-id";

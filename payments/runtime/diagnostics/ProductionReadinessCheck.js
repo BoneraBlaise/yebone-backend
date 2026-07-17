@@ -28,6 +28,9 @@ class ProductionReadinessCheck {
       webhookRoutesEnabled:
         this.runtime.config.enableWebhooks === true &&
         (this.runtime.webhookRegistry?.list?.().length || 0) > 0,
+      webhookReconciliationEnabled: this.runtime.config.enableWebhookReconciliation === true,
+      webhookSettlementEnabled: this.runtime.config.enableWebhookSettlement === true,
+      legacyRoutingPolicyEnabled: this.runtime.config.enableLegacyRoutingPolicy === true,
       noProviderSdkIntegrated: true,
     };
 
@@ -38,7 +41,10 @@ class ProductionReadinessCheck {
           key !== "paymentFoundationWired" &&
           key !== "paymentFoundationOptional" &&
           key !== "webhookHandlersRegistered" &&
-          key !== "webhookRoutesEnabled"
+          key !== "webhookRoutesEnabled" &&
+          key !== "webhookReconciliationEnabled" &&
+          key !== "webhookSettlementEnabled" &&
+          key !== "legacyRoutingPolicyEnabled"
       )
       .every(([, value]) => value === true);
 

@@ -43,6 +43,15 @@ class StartupDiagnostics {
       }
     );
 
+    this.record(
+      "webhook_reconciliation",
+      this.runtime.config.enableWebhookReconciliation ? "ok" : "skipped",
+      {
+        enableWebhookReconciliation: this.runtime.config.enableWebhookReconciliation,
+        orchestratorWired: Boolean(this.runtime.webhookReconciliation?.orchestrator),
+      }
+    );
+
     return {
       healthy: this.entries.every((e) => e.status === "ok"),
       entries: this.entries,

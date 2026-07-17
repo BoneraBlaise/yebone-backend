@@ -1,5 +1,7 @@
 const { v1 } = require("../../api/versioning");
 const WebhookRequestContext = require("./WebhookRequestContext");
+const WebhookReconciliationResult = require("./WebhookReconciliationResult");
+const TransactionCorrelationPolicy = require("./TransactionCorrelationPolicy");
 const RuntimeExecutionGuardError = require("../../infrastructure/providers/runtime/errors/RuntimeExecutionGuardError");
 
 /**
@@ -39,12 +41,14 @@ class WebhookRouter {
               });
             }
 
-            this.logger?.info("Webhook received", {
-              providerCode: context.providerCode,
+            const correlationChain = TransactionCorrelationPolicy.fromWebhookInput({
               correlationId: context.correlationId,
+              payload: context.payload,
             });
 
-            const signatureResult = await handler.verifySignature(
+            this.logger?.info("Webhook received", TransactionCorrelationPolicy.toLogContext(correlationChain));
+
+            await handler.verifySignature(
               {
                 payload: context.payload,
                 payloadMaterial: context.payloadMaterial,
@@ -63,28 +67,24 @@ class WebhookRouter {
               correlationId: context.correlationId,
             });
 
-            const accepted = result?.accepted === true;
-            const statusCode = accepted || result?.verification?.mock ? 202 : 202;
+            const reconciliation = WebhookReconciliationResult.create(result);
+            const statusCode = WebhookReconciliationResult.httpStatus(reconciliation);
 
-            this.logger?.info("Webhook processed", {
-              providerCode: context.providerCode,
-              correlationId: context.correlationId,
-              accepted,
-              executionMode: result?.executionMode,
-              verificationStatus: result?.status,
-            });
+            this.logger?.info("Webhook processed", TransactionCorrelationPolicy.toLogContext(
+              TransactionCorrelationPolicy.enrich(correlationChain, {
+                providerEventId: reconciliation.providerEventId,
+                providerReference: reconciliation.providerReference,
+                transactionId: reconciliation.transactionId,
+                ledgerEntryId: reconciliation.ledgerEntryIds?.[0] || null,
+                eventId: reconciliation.eventIds?.[0] || null,
+                auditId: reconciliation.auditId,
+              })
+            ));
 
             return res.status(statusCode).json({
               success: true,
-              correlationId: context.correlationId,
-              data: Object.freeze({
-                accepted,
-                providerCode: context.providerCode,
-                executionMode: result?.executionMode || null,
-                verificationStatus: result?.status || signatureResult?.status || null,
-                mock: Boolean(result?.verification?.mock || signatureResult?.mock),
-                result,
-              }),
+              correlationId: reconciliation.correlationId || context.correlationId,
+              data: WebhookReconciliationResult.toHttpData(reconciliation),
             });
           } catch (error) {
             if (error instanceof RuntimeExecutionGuardError) {

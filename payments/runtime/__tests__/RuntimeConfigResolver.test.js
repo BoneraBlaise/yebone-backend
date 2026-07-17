@@ -32,5 +32,16 @@ describe("RuntimeConfigResolver", () => {
     const keys = RuntimeConfigResolver.describeEnvKeys();
     assert.ok(keys.includes("PAYMENT_COMPOSE_FOUNDATION"));
     assert.ok(keys.includes("PAYMENT_ENABLE_WEBHOOKS"));
+    assert.ok(keys.includes("PAYMENT_WEBHOOK_RECONCILIATION"));
+    assert.ok(keys.includes("PAYMENT_WEBHOOK_SETTLEMENT"));
+  });
+
+  it("resolves Sprint 3 reconciliation flags from env", () => {
+    const resolved = RuntimeConfigResolver.resolve({
+      PAYMENT_WEBHOOK_RECONCILIATION: "true",
+      PAYMENT_WEBHOOK_SETTLEMENT: "false",
+    });
+    assert.equal(resolved.enableWebhookReconciliation, true);
+    assert.equal(resolved.enableWebhookSettlement, false);
   });
 });

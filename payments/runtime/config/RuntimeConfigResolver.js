@@ -6,6 +6,9 @@ class RuntimeConfigResolver {
     PAYMENT_COMPOSE_FOUNDATION: "composePaymentFoundation",
     PAYMENT_ENABLE_WEBHOOKS: "enableWebhooks",
     PAYMENT_APPLY_FEATURE_FLAG_ROLLOUT: "applyFeatureFlagRollout",
+    PAYMENT_WEBHOOK_RECONCILIATION: "enableWebhookReconciliation",
+    PAYMENT_WEBHOOK_SETTLEMENT: "enableWebhookSettlement",
+    PAYMENT_LEGACY_ROUTING_POLICY: "enableLegacyRoutingPolicy",
   });
 
   static resolve(env = process.env, baseOptions = {}) {

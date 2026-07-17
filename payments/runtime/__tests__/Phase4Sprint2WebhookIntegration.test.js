@@ -138,6 +138,7 @@ describe("Phase 4 Sprint 2 webhook integration", () => {
     assert.equal(response.body.data.providerCode, "MTN_MOMO");
     assert.equal(response.body.data.executionMode, "MOCK");
     assert.equal(response.body.data.mock, true);
+    assert.equal(response.body.data.reconciled, false);
   });
 
   it("accepts Paypack webhook with normalized provider code", async () => {

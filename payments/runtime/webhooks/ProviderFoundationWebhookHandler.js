@@ -1,13 +1,17 @@
-const WebhookHandlerInterface = require("../webhooks/WebhookHandlerInterface");
+const WebhookHandlerInterface = require("./WebhookHandlerInterface");
+const WebhookReconciliationOrchestrator = require("./WebhookReconciliationOrchestrator");
+const WebhookReconciliationResult = require("./WebhookReconciliationResult");
+const TransactionCorrelationPolicy = require("./TransactionCorrelationPolicy");
 
 /**
  * Webhook handler bridge — delegates to PaymentModuleWebhookService using Module 9 contracts.
  */
 class ProviderFoundationWebhookHandler extends WebhookHandlerInterface {
-  constructor({ providerCode, webhookService }) {
+  constructor({ providerCode, webhookService, reconciliationOrchestrator = null }) {
     super();
     this.providerCode = providerCode;
     this.webhookService = webhookService;
+    this.reconciliationOrchestrator = reconciliationOrchestrator;
   }
 
   async verifySignature(payload, headers) {
@@ -33,14 +37,51 @@ class ProviderFoundationWebhookHandler extends WebhookHandlerInterface {
       rawPayload: envelope.payloadMaterial,
     });
 
-    return Object.freeze({
-      accepted: verification.verified === true,
+    if (!this.reconciliationOrchestrator) {
+      const verified = WebhookReconciliationOrchestrator._isVerificationEligible(
+        verification,
+        verification.executionMode
+      );
+      return WebhookReconciliationResult.verifyOnly({
+        verified,
+        correlationId: envelope.correlationId,
+        executionMode: verification.executionMode,
+        providerCode: this.providerCode,
+        mock: verification.mock === true,
+        providerReference:
+          verification.references?.providerReference ||
+          envelope.payload?.reference ||
+          null,
+        providerEventId: envelope.payload?.eventId || envelope.payload?.id || null,
+        reason: verification.verified ? "VERIFIED_ONLY" : verification.status,
+      });
+    }
+
+    const result = await this.reconciliationOrchestrator.process({
       providerCode: this.providerCode,
-      executionMode: verification.executionMode,
-      status: verification.status,
+      payload: envelope.payload,
+      payloadMaterial: envelope.payloadMaterial,
+      headers: envelope.headers,
       correlationId: envelope.correlationId,
       verification,
+      executionMode: verification.executionMode,
     });
+
+    TransactionCorrelationPolicy.enrich(
+      TransactionCorrelationPolicy.fromWebhookInput({
+        correlationId: envelope.correlationId,
+        verification,
+        payload: envelope.payload,
+      }),
+      {
+        transactionId: result.transactionId,
+        eventId: result.eventIds?.[0] || null,
+        auditId: result.auditId,
+        ledgerEntryId: result.ledgerEntryIds?.[0] || null,
+      }
+    );
+
+    return result;
   }
 
   static _normalizeEnvelope(input, headers = {}) {

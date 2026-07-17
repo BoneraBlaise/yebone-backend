@@ -7,6 +7,8 @@ const { GracefulShutdown } = require("../shutdown");
 const { StartupDiagnostics, ProductionReadinessCheck } = require("../diagnostics");
 const PaymentApplicationBootstrap = require("./PaymentApplicationBootstrap");
 const ProviderFoundationWebhookHandler = require("../webhooks/ProviderFoundationWebhookHandler");
+const { WebhookReconciliationBootstrap } = require("./WebhookReconciliationBootstrap");
+const LegacyPaymentRoutingPolicy = require("../migration/LegacyPaymentRoutingPolicy");
 
 /**
  * Dependency injection bootstrap for payment runtime.
@@ -25,10 +27,17 @@ class DependencyInjectionBootstrap {
       });
     }
 
+    const legacyRoutingPolicy = new LegacyPaymentRoutingPolicy({
+      enabled: config.enableLegacyRoutingPolicy === true,
+    });
+
     const paymentModuleOptions = PaymentApplicationBootstrap.resolvePaymentModuleOptions({
       paymentFoundation,
       composePaymentFoundation: false,
-      paymentModuleOptions: options.paymentModuleOptions,
+      paymentModuleOptions: {
+        ...(options.paymentModuleOptions || {}),
+        legacyRoutingPolicy,
+      },
     });
 
     const logger = new Logger({ serviceName: config.serviceName, level: config.logLevel });
@@ -38,13 +47,22 @@ class DependencyInjectionBootstrap {
     const jobScheduler = new JobScheduler({ logger: logger.child({ component: "jobs" }) });
     const webhookRegistry = new WebhookRegistry();
 
-    if (paymentModule.getWebhookVerificationService()) {
+    let webhookReconciliation = null;
+    if (paymentFoundation && paymentModule.getWebhookVerificationService()) {
+      webhookReconciliation = WebhookReconciliationBootstrap.compose({
+        paymentFoundation,
+        config,
+        logger: logger.child({ component: "webhook-reconciliation" }),
+        options: options.webhookReconciliationOptions || {},
+      });
+
       for (const providerCode of ["MTN_MOMO", "PAYPACK"]) {
         webhookRegistry.register(
           providerCode,
           new ProviderFoundationWebhookHandler({
             providerCode,
             webhookService: paymentModule.getWebhookVerificationService(),
+            reconciliationOrchestrator: webhookReconciliation?.orchestrator || null,
           })
         );
       }
@@ -64,6 +82,8 @@ class DependencyInjectionBootstrap {
       apiLayer,
       jobScheduler,
       webhookRegistry,
+      webhookReconciliation,
+      legacyRoutingPolicy,
       shutdown,
     };
 

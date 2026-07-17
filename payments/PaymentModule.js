@@ -49,6 +49,7 @@ const {
   TransactionCoordinator,
   MarketplacePaymentFacade,
 } = require("./orchestration");
+const LegacyPaymentRoutingPolicy = require("./runtime/migration/LegacyPaymentRoutingPolicy");
 
 /**
  * Composition root for payment foundation, financial, and orchestration layers.
@@ -280,6 +281,8 @@ class PaymentModule {
     });
 
     this.paymentFoundation = options.paymentFoundation || null;
+    this.legacyRoutingPolicy =
+      options.legacyRoutingPolicy || new LegacyPaymentRoutingPolicy();
     this.paymentEngine =
       options.paymentEngine ||
       this.paymentFoundation?.engine ||
@@ -480,6 +483,10 @@ class PaymentModule {
 
   getWebhookVerificationService() {
     return this.webhookService;
+  }
+
+  getLegacyPaymentRoutingPolicy() {
+    return this.legacyRoutingPolicy;
   }
 
   isPaymentFoundationWired() {
