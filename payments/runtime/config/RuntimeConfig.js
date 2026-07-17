@@ -9,6 +9,8 @@ class RuntimeConfig {
     this.enablePaymentRoutes = options.enablePaymentRoutes !== false;
     this.enableWebhooks = options.enableWebhooks === true;
     this.enableBackgroundJobs = options.enableBackgroundJobs === true;
+    this.composePaymentFoundation = options.composePaymentFoundation === true;
+    this.applyFeatureFlagRollout = options.applyFeatureFlagRollout === true;
     this.shutdownTimeoutMs = options.shutdownTimeoutMs || 10000;
     this.logLevel = options.logLevel || "info";
     this.correlationHeader = options.correlationHeader || "x-correlation-id";

@@ -22,11 +22,18 @@ class ProductionReadinessCheck {
       shutdownSignalHandlersRegistered: this.runtime.config.isProduction()
         ? Boolean(this.runtime.shutdown?.registered)
         : true,
+      paymentFoundationWired: Boolean(this.runtime.paymentModule?.isPaymentFoundationWired?.()),
+      paymentFoundationOptional: !this.runtime.config.composePaymentFoundation,
       noProviderSdkIntegrated: true,
     };
 
     const healthy = Object.entries(checks)
-      .filter(([key]) => key !== "noProviderSdkIntegrated")
+      .filter(
+        ([key]) =>
+          key !== "noProviderSdkIntegrated" &&
+          key !== "paymentFoundationWired" &&
+          key !== "paymentFoundationOptional"
+      )
       .every(([, value]) => value === true);
 
     const report = {
