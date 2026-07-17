@@ -7,61 +7,23 @@
   const Shop = require("../model/shop");
   const cloudinary = require("cloudinary");
   const ErrorHandler = require("../utils/ErrorHandler");
-  // Import mongoose to validate ObjectId format
   const mongoose = require("mongoose");
+  const { getMarketplaceCore } = require("../marketplace");
 
    // create product
    router.post(
     "/create-product",
     catchAsyncErrors(async (req, res, next) => {
       try {
-        const shopId = req.body.shopId;
-        const shop = await Shop.findById(shopId);
-        if (!shop) {
-          return next(new ErrorHandler("Shop Id is invalid!", 400));
-        } else {
-          let images = [];
+        const core = getMarketplaceCore();
+        const product = await core.services.product.createProduct(req.body);
 
-          if (typeof req.body.images === "string") {
-            images.push(req.body.images);
-          } else {
-            images = req.body.images;
-          }
-
-          const imagesLinks = [];
-
-          for (let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-              folder: "products",
-            });
-
-            imagesLinks.push({
-              public_id: result.public_id,
-              url: result.secure_url,
-            });
-          }
-
-          // Destructure and set defaults for new fields
-          const { condition = "new", location = "Kigali-Rwanda", productType = "normal", ...restBody } = req.body;
-
-          const productData = {
-            ...restBody,
-            condition,
-            location,
-            productType,
-            images: imagesLinks,
-            shop: shop,
-          };
-
-          const product = await Product.create(productData);
-
-          res.status(201).json({
-            success: true,
-            product,
-          });
-        }
+        res.status(201).json({
+          success: true,
+          product,
+        });
       } catch (error) {
-        return next(new ErrorHandler(error, 400));
+        return next(new ErrorHandler(error.message || error, error.statusCode || 400));
       }
     })
   );

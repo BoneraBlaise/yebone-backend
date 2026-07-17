@@ -143,6 +143,9 @@ app.use("/api/v2/commission", commission);
 const { registerPaymentRuntime } = require("./payments/runtime");
 registerPaymentRuntime(app);
 
+const { registerMarketplaceCore } = require("./marketplace");
+registerMarketplaceCore(app);
+
 const { registerPlatformRoutes } = require("./platform/runtime/registerPlatformRoutes");
 registerPlatformRoutes(app);
 

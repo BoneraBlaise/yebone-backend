@@ -9,6 +9,7 @@ const Product = require("../model/product");
 const Commission = require("../model/commission");
 const calculateCommissionRate = require("../utils/calculateCommission");
 const { processOrderCommission, updateCommissionStatus } = require("../utils/referralUtils");
+const { getMarketplaceCore } = require("../marketplace");
 
 
 // create new order
@@ -16,127 +17,22 @@ router.post(
   "/create-order",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { 
-        cart, 
-        wonBid, 
-        shippingAddress, 
-        user, 
-        totalPrice, 
-        paymentInfo, 
-        shipping = 0, 
-        subTotalPrice,
-        referralCode 
-      } = req.body;
-
-      if (!shippingAddress || !user) {
-        return next(new ErrorHandler("Missing required fields: shippingAddress or user", 400));
-      }
-
-      if (!paymentInfo) {
-        return next(new ErrorHandler("Payment information is required", 400));
-      }
-
-      const calculatedSubTotal = subTotalPrice || totalPrice - shipping;
-      const orders = [];
-
-      // HANDLE WON BID ORDER
-      if (wonBid) {
-        const order = await Order.create({
-          cart: [{
-            ...wonBid,
-            shopId: wonBid.sellerId,
-            shop: wonBid.sellerId,
-            price: wonBid.price,
-            qty: 1
-          }],
-          shippingAddress,
-          user,
-          totalPrice: wonBid.price + shipping,
-          subTotalPrice: wonBid.price,
-          shipping,
-          paymentInfo: {
-            ...paymentInfo,
-            status: "Pending"
-          },
-          orderType: "won_bid",
-          referralCode
-        });
-
-        if (referralCode) {
-          await processOrderCommission(order, referralCode);
-        }
-
-        return res.status(201).json({ success: true, orders: [order] });
-      }
-
-      // HANDLE REGULAR MULTI-SHOP CART ORDER
-      if (!Array.isArray(cart) || cart.length === 0) {
-        return next(new ErrorHandler("Cart must be a non-empty array", 400));
-      }
-
-      const shopItemsMap = new Map();
-
-      for (const item of cart) {
-        const itemPrice = item.discountPrice || item.originalPrice;
-        if (!item.shopId || !itemPrice || !item.qty) continue;
-
-        const normalizedItem = {
-          ...item,
-          price: Number(itemPrice),
-          qty: Number(item.qty)
-        };
-
-        if (!shopItemsMap.has(item.shopId)) {
-          shopItemsMap.set(item.shopId, []);
-        }
-
-        shopItemsMap.get(item.shopId).push(normalizedItem);
-      }
-
-      for (const [shopId, items] of shopItemsMap) {
-        const shopTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-
-        const order = await Order.create({
-          cart: items.map(item => ({
-            ...item,
-            total: item.price * item.qty
-          })),
-          shippingAddress,
-          user,
-          totalPrice: shopTotal + shipping,
-          shipping,
-          subTotalPrice: shopTotal,
-          paymentInfo: {
-            ...paymentInfo,
-            status: "Pending"
-          },
-          orderType: "regular",
-          referralCode
-        });
-
-        if (referralCode) {
-          await processOrderCommission(order, referralCode);
-        }
-
-        orders.push(order);
-      }
-
-      if (orders.length === 0) {
-        return next(new ErrorHandler("Failed to create any orders", 500));
-      }
+      const core = getMarketplaceCore();
+      const { orders } = await core.services.order.createOrders(req.body);
+      const paymentSessions = await core.hooks.payment.prepareForOrders(orders, req.body.user);
+      core.hooks.order.afterCreate({ orders });
 
       res.status(201).json({
         success: true,
-        orders
+        orders,
+        paymentSessions,
       });
     } catch (error) {
       console.error("Order creation error:", error);
-      return next(new ErrorHandler(error.message || "Internal server error", 500));
+      return next(new ErrorHandler(error.message || "Internal server error", error.statusCode || 500));
     }
   })
 );
-
-module.exports = router;
 
 
 // get all orders of user

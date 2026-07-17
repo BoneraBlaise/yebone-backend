@@ -6,6 +6,7 @@ const { isAuthenticated } = require("../middleware/auth");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const crypto = require("crypto");
+const { getMarketplaceCore } = require("../marketplace");
 
 // Generate unique referral code
 const generateReferralCode = (userId) => {
@@ -14,47 +15,27 @@ const generateReferralCode = (userId) => {
   return `${prefix}${randomString}`.toUpperCase();
 };
 
-// Join commission program - simplified for logged-in users
-router.post(
-  "/join",
-  isAuthenticated,
-  catchAsyncErrors(async (req, res, next) => {
-    try {
-      const user = await User.findById(req.user.id);
-      
-      // Check if already a commissioner
-      if (user.isCommissioner) {
-        return next(new ErrorHandler("You are already a commissioner", 400));
-      }
+async function joinCommissionProgram(req, res, next) {
+  try {
+    const core = getMarketplaceCore();
+    const commission = await core.services.commission.joinProgram(req.user.id);
+    core.hooks.commission.afterJoin({ referralCode: commission.referralCode });
 
-      // Generate unique referral code
-      const referralCode = generateReferralCode(user._id);
-      
-      // Create commission record
-      const commission = await Commission.create({
-        user: user._id,
-        referralCode,
-        balance: { available: 0, pending: 0 }
-      });
+    res.status(201).json({
+      success: true,
+      message: "Successfully joined the commission program",
+      commission,
+    });
+  } catch (error) {
+    return next(new ErrorHandler(error.message, error.statusCode || 500));
+  }
+}
 
-      // Update user record
-      user.isCommissioner = true;
-      user.commissionProgramId = commission._id;
-      await user.save();
+// Join commission program - canonical route
+router.post("/join", isAuthenticated, catchAsyncErrors(joinCommissionProgram));
 
-      res.status(201).json({
-        success: true,
-        message: "Successfully joined the commission program",
-        commission: {
-          referralCode: commission.referralCode,
-          balance: commission.balance
-        }
-      });
-    } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
-    }
-  })
-);
+// Legacy frontend alias — same handler
+router.post("/join-program", isAuthenticated, catchAsyncErrors(joinCommissionProgram));
 
 // Get commissioner dashboard data
 router.get(
