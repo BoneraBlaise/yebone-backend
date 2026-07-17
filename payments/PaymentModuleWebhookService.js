@@ -54,6 +54,7 @@ class PaymentModuleWebhookService {
       ...input,
       providerCode,
       payload: input.payload,
+      rawPayload: input.rawPayload || input.payloadMaterial,
       headers: input.headers || {},
       signature: input.signature,
       correlationId: input.correlationId,
@@ -62,6 +63,7 @@ class PaymentModuleWebhookService {
     return Object.freeze({
       ...result,
       providerCode,
+      correlationId: input.correlationId || result.correlationId || null,
       executionMode: decision.executionMode,
       decisionReason: decision.reason,
       fallbackAllowed: decision.fallbackAllowed,
@@ -93,11 +95,14 @@ class PaymentModuleWebhookService {
     const result = await adapter.verifySignature({
       ...input,
       providerCode,
+      rawPayload: input.rawPayload || input.payloadMaterial,
+      correlationId: input.correlationId,
     });
 
     return Object.freeze({
       ...result,
       providerCode,
+      correlationId: input.correlationId || result.correlationId || null,
       executionMode: decision.executionMode,
       decisionReason: decision.reason,
     });

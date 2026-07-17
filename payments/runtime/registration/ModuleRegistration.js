@@ -27,9 +27,19 @@ class ModuleRegistration {
     ApiVersionRegistration.register(app, { logger });
     const middlewareStack = MiddlewareRegistration.registerGlobal(app, apiLayer.middleware, config, logger);
 
-    const webhookRouter = config.enableWebhooks
-      ? new WebhookRouter({ registry: webhookRegistry, logger })
+    const webhookHandlers = webhookRegistry.list();
+    const webhookRoutesEnabled =
+      config.enableWebhooks === true && webhookHandlers.length > 0;
+
+    const webhookRouter = webhookRoutesEnabled
+      ? new WebhookRouter({ registry: webhookRegistry, logger, config })
       : null;
+
+    if (config.enableWebhooks && webhookHandlers.length === 0) {
+      logger.warn("Webhook routes disabled — no handlers registered (compose foundation first)", {
+        composePaymentFoundation: config.composePaymentFoundation,
+      });
+    }
 
     const router = RouteRegistration.register(app, {
       apiLayer,

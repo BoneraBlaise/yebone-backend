@@ -56,14 +56,40 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 
 ---
 
-## Not Implemented (post–Release Candidate)
+## Implemented (Phase 4 Sprint 2)
 
-- Production rollout / live execution
-- Route and server wiring of foundation components
+- `RuntimeConfigResolver` — env-gated bootstrap (`PAYMENT_COMPOSE_FOUNDATION`, `PAYMENT_ENABLE_WEBHOOKS`)
+- HTTP webhook route `POST /api/v1/payments/webhooks/:providerCode` (opt-in)
+- `WebhookRequestContext` — correlationId + payload material propagation
+- Webhook verify + accept only — no transaction state updates
+- Startup/readiness diagnostics for webhook mount state
+
+---
+
+## Not Implemented (deferred — Sprint 3+)
+
+- **Duplicate webhook protection / replay idempotency** — deferred to Sprint 3
+- **App-level raw body middleware** — Sprint 2 spike: stable `JSON.stringify` / `rawPayload` when provided; byte-exact pre-parse HMAC deferred
+- Production live execution
 - Feature flag defaults ON
-- Automatic env flag loading at bootstrap (rollout support is explicit-only)
 - Metrics exporters (Prometheus, Datadog)
 - PaymentModule replacing legacy PaymentService as default path
+- Transaction state updates from inbound webhooks
+
+---
+
+## Previously deferred (now partially addressed in Phase 4)
+
+- ~~Route and server wiring of foundation components~~ — Sprint 2: env bootstrap + webhook routes (opt-in)
+- ~~Automatic env flag loading at bootstrap~~ — Sprint 2: `RuntimeConfigResolver` (explicit env keys, defaults false)
+
+---
+
+## Not Implemented (post–Release Candidate — remaining)
+
+- Production live execution rollout
+- Metrics exporters
+- Full legacy → foundation migration as default path
 
 ---
 
@@ -72,7 +98,7 @@ See `ARCHITECTURE_PHASE2.md` and `README.md`.
 - `liveExecutionEnabled` defaults to `false`
 - `PAYMENT_RUNTIME_LIVE` blocked by `RuntimeExecutionGuard`
 - Provider feature flags default **OFF**
-- Runtime isolated from production (`PaymentModule`, routes, `server.js` unchanged)
+- Runtime isolated from production (`server.js`, `app.js` unchanged; webhook routes opt-in)
 - No production HTTP calls in default test suites
 - No production endpoints configured
 - Error details sanitized before return (no credential/Authorization leak)

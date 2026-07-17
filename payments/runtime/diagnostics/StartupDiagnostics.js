@@ -29,6 +29,20 @@ class StartupDiagnostics {
       count: this.runtime.apiLayer?.routeDefinitions?.length || 0,
     });
 
+    this.record("webhook_registry", this.runtime.webhookRegistry?.list?.().length ? "ok" : "skipped", {
+      handlers: this.runtime.webhookRegistry?.list?.() || [],
+    });
+    this.record(
+      "webhook_routes_mounted",
+      this.runtime.config.enableWebhooks && (this.runtime.webhookRegistry?.list?.().length || 0) > 0
+        ? "ok"
+        : "skipped",
+      {
+        enableWebhooks: this.runtime.config.enableWebhooks,
+        composePaymentFoundation: this.runtime.config.composePaymentFoundation,
+      }
+    );
+
     return {
       healthy: this.entries.every((e) => e.status === "ok"),
       entries: this.entries,

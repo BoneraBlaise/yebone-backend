@@ -24,6 +24,10 @@ class ProductionReadinessCheck {
         : true,
       paymentFoundationWired: Boolean(this.runtime.paymentModule?.isPaymentFoundationWired?.()),
       paymentFoundationOptional: !this.runtime.config.composePaymentFoundation,
+      webhookHandlersRegistered: (this.runtime.webhookRegistry?.list?.().length || 0) > 0,
+      webhookRoutesEnabled:
+        this.runtime.config.enableWebhooks === true &&
+        (this.runtime.webhookRegistry?.list?.().length || 0) > 0,
       noProviderSdkIntegrated: true,
     };
 
@@ -32,7 +36,9 @@ class ProductionReadinessCheck {
         ([key]) =>
           key !== "noProviderSdkIntegrated" &&
           key !== "paymentFoundationWired" &&
-          key !== "paymentFoundationOptional"
+          key !== "paymentFoundationOptional" &&
+          key !== "webhookHandlersRegistered" &&
+          key !== "webhookRoutesEnabled"
       )
       .every(([, value]) => value === true);
 

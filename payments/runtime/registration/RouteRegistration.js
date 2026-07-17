@@ -104,11 +104,17 @@ class RouteRegistration {
     });
 
     if (config.enableWebhooks && webhookRouter) {
+      let webhookRouteCount = 0;
       webhookRouter.getDefinitions().forEach((route) => {
         router[route.method.toLowerCase()](
           route.fullPath.replace(/^\/api\/v1\/payments/, ""),
           route.handler
         );
+        webhookRouteCount += 1;
+      });
+      logger?.info("Payment webhook routes registered", {
+        count: webhookRouteCount,
+        basePath: "/api/v1/payments/webhooks",
       });
     }
 

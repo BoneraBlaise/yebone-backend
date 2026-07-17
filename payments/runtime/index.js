@@ -5,14 +5,33 @@ const { ModuleRegistration } = require("./registration");
  * Registers the provider-independent payment module with Express.
  * Business controllers remain behind MarketplacePaymentFacade only.
  */
+const RuntimeConfig = require("./config/RuntimeConfig");
+const RuntimeConfigResolver = require("./config/RuntimeConfigResolver");
+
 function registerPaymentRuntime(app, options = {}) {
-  const runtime = DependencyInjectionBootstrap.create(options);
+  const resolvedConfig = RuntimeConfigResolver.resolve(process.env, options.config || {});
+  const config =
+    resolvedConfig instanceof RuntimeConfig ? resolvedConfig : new RuntimeConfig(resolvedConfig);
+
+  const runtime = DependencyInjectionBootstrap.create({
+    ...options,
+    config,
+    env: options.env || process.env,
+  });
   const result = ModuleRegistration.register(app, runtime);
   return { runtime, result };
 }
 
 function createPaymentRuntime(options = {}) {
-  return DependencyInjectionBootstrap.create(options);
+  const resolvedConfig = RuntimeConfigResolver.resolve(process.env, options.config || {});
+  const config =
+    resolvedConfig instanceof RuntimeConfig ? resolvedConfig : new RuntimeConfig(resolvedConfig);
+
+  return DependencyInjectionBootstrap.create({
+    ...options,
+    config,
+    env: options.env || process.env,
+  });
 }
 
 module.exports = {

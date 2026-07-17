@@ -13,7 +13,9 @@ class ProviderWebhookVerifier {
 
   verifyWebhook(input = {}) {
     const secret = input.webhookSecret || input.secret;
-    const payload = typeof input.payload === "string" ? input.payload : JSON.stringify(input.payload || {});
+    const payload =
+      input.rawPayload ||
+      (typeof input.payload === "string" ? input.payload : JSON.stringify(input.payload || {}));
     const signature = input.signature || input.headers?.["x-paypack-signature"] || input.headers?.["x-mtn-signature"];
 
     if (!secret || !signature) {
