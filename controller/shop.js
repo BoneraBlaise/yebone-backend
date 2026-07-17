@@ -1,142 +1,65 @@
 const express = require("express");
-const path = require("path");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
 const sendMail = require("../utils/sendMail");
-const Shop = require("../model/shop");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
-const cloudinary = require("cloudinary");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
+const { getVendorPlatform } = require("../marketplace");
+
+function handleServiceError(error, next) {
+  return next(new ErrorHandler(error.message, error.statusCode || 500));
+}
 
 // create shop
-router.post("/create-shop", catchAsyncErrors(async (req, res, next) => {
-  try {
-    const { email } = req.body;
-    const sellerEmail = await Shop.findOne({ email });
-    if (sellerEmail) {
-      return next(new ErrorHandler("User already exists", 400));
-    }
-
-    const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-      folder: "avatars",
-    });
-
-
-    const seller = {
-      name: req.body.name,
-      email: email,
-      password: req.body.password,
-      avatar: {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      },
-      address: req.body.address,
-      phoneNumber: req.body.phoneNumber,
-      zipCode: req.body.zipCode,
-      paymentInfo: req.body.paymentInfo,
-    };
-
-    const activationToken = createActivationToken(seller);
-
-    const activationUrl = `https://guriraline.com/seller/activation/${activationToken}`;
-
+router.post(
+  "/create-shop",
+  catchAsyncErrors(async (req, res, next) => {
     try {
+      const vendor = getVendorPlatform();
+      const { seller, activationToken } = await vendor.registerPending(req.body);
+      const activationUrl = vendor.config.buildActivationUrl(activationToken);
+
       await sendMail({
         email: seller.email,
         subject: "Activate your Shop",
         message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
       });
+
       res.status(201).json({
         success: true,
         message: `please check your email:- ${seller.email} to activate your shop!`,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 400));
-  }
-}));
+  })
+);
 
-// create activation token
-const createActivationToken = (seller) => {
-  return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
-    expiresIn: "10m",
-  });
-};
-
-
-//Shop activation logic
-router.post("/activation/:activation_token", catchAsyncErrors(async (req, res, next) => {
-  try {
-    const { activation_token } = req.params; // Get token from the URL parameter
-
-    let newSeller;
+// Shop activation logic
+router.post(
+  "/activation/:activation_token",
+  catchAsyncErrors(async (req, res, next) => {
     try {
-      newSeller = jwt.verify(activation_token, process.env.ACTIVATION_SECRET);
-    } catch (err) {
-      if (err.name === "TokenExpiredError") {
-        return next(new ErrorHandler("Activation token has expired", 400));
-      }
-      return next(new ErrorHandler("Invalid token", 400));
+      const vendor = getVendorPlatform();
+      const seller = await vendor.activateFromToken(req.params.activation_token);
+      sendShopToken(seller, 201, res);
+    } catch (error) {
+      return handleServiceError(error, next);
     }
-
-    // If token is valid, proceed with activation logic
-    const { name, email, password, avatar, zipCode, address, phoneNumber, paymentInfo } = newSeller;
-
-    let seller = await Shop.findOne({ email });
-
-    if (seller) {
-      return next(new ErrorHandler("User already exists", 400));
-    }
-
-    seller = await Shop.create({
-      name,
-      email,
-      avatar,
-      password,
-      zipCode,
-      address,
-      phoneNumber,
-      paymentInfo,
-    });
-
-    sendShopToken(seller, 201, res);  // Send the token or response after activation
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 500));
-  }
-}));
+  })
+);
 
 // login shop
 router.post(
   "/login-shop",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return next(new ErrorHandler("Please provide the all fields!", 400));
-      }
-
-      const user = await Shop.findOne({ email }).select("+password");
-
-      if (!user) {
-        return next(new ErrorHandler("User doesn't exists!", 400));
-      }
-
-      const isPasswordValid = await user.comparePassword(password);
-
-      if (!isPasswordValid) {
-        return next(
-          new ErrorHandler("Please provide the correct information", 400)
-        );
-      }
-
+      const vendor = getVendorPlatform();
+      const user = await vendor.login(req.body.email, req.body.password);
       sendShopToken(user, 201, res);
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -147,18 +70,17 @@ router.get(
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const seller = await Shop.findById(req.seller._id);
-
-      if (!seller) {
-        return next(new ErrorHandler("User doesn't exists", 400));
-      }
+      const vendor = getVendorPlatform();
+      const seller = await vendor.profile.getProfile(req.seller._id);
+      const analytics = vendor.analytics.getBasicSummary(seller);
 
       res.status(200).json({
         success: true,
         seller,
+        vendorAnalytics: analytics,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -166,7 +88,7 @@ router.get(
 // log out from shop
 router.get(
   "/logout",
-  catchAsyncErrors(async (req, res, next) => {
+  catchAsyncErrors(async (_req, res, next) => {
     try {
       res.cookie("seller_token", null, {
         expires: new Date(Date.now()),
@@ -179,7 +101,7 @@ router.get(
         message: "Log out successful!",
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -189,13 +111,14 @@ router.get(
   "/get-shop-info/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const shop = await Shop.findById(req.params.id);
+      const vendor = getVendorPlatform();
+      const shop = await vendor.profile.getPublicInfo(req.params.id);
       res.status(201).json({
         success: true,
         shop,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -206,31 +129,16 @@ router.put(
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      let existsSeller = await Shop.findById(req.seller._id);
-
-      const imageId = existsSeller.avatar.public_id;
-
-      await cloudinary.v2.uploader.destroy(imageId);
-
-      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: "avatars",
-        width: 150,
-      });
-
-      existsSeller.avatar = {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      };
-
-
-      await existsSeller.save();
+      const vendor = getVendorPlatform();
+      const seller = await vendor.profile.updateAvatar(req.seller._id, req.body.avatar);
+      vendor.hooks.afterProfileUpdated({ shopId: req.seller._id, field: "avatar" });
 
       res.status(200).json({
         success: true,
-        seller: existsSeller,
+        seller,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -241,28 +149,16 @@ router.put(
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { name, description, address, phoneNumber, zipCode } = req.body;
-
-      const shop = await Shop.findOne(req.seller._id);
-
-      if (!shop) {
-        return next(new ErrorHandler("User not found", 400));
-      }
-
-      shop.name = name;
-      shop.description = description;
-      shop.address = address;
-      shop.phoneNumber = phoneNumber;
-      shop.zipCode = zipCode;
-
-      await shop.save();
+      const vendor = getVendorPlatform();
+      const shop = await vendor.settings.updateBusinessInfo(req.seller._id, req.body);
+      vendor.hooks.afterProfileUpdated({ shopId: req.seller._id, field: "businessInfo" });
 
       res.status(201).json({
         success: true,
         shop,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -274,15 +170,14 @@ router.get(
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const sellers = await Shop.find().sort({
-        createdAt: -1,
-      });
+      const vendor = getVendorPlatform();
+      const sellers = await vendor.shopService.listAll();
       res.status(201).json({
         success: true,
         sellers,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -294,22 +189,15 @@ router.delete(
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const seller = await Shop.findById(req.params.id);
-
-      if (!seller) {
-        return next(
-          new ErrorHandler("Seller is not available with this id", 400)
-        );
-      }
-
-      await Shop.findByIdAndDelete(req.params.id);
+      const vendor = getVendorPlatform();
+      await vendor.shopService.deleteById(req.params.id);
 
       res.status(201).json({
         success: true,
         message: "Seller deleted successfully!",
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -320,49 +208,41 @@ router.put(
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { withdrawMethod } = req.body;
-
-      const seller = await Shop.findByIdAndUpdate(req.seller._id, {
-        withdrawMethod,
-      });
+      const vendor = getVendorPlatform();
+      const seller = await vendor.settings.updateWithdrawMethod(
+        req.seller._id,
+        req.body.withdrawMethod
+      );
 
       res.status(201).json({
         success: true,
         seller,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// delete seller withdraw merthods --- only seller
+// delete seller withdraw methods --- only seller
 router.delete(
   "/delete-withdraw-method/",
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const seller = await Shop.findById(req.seller._id);
-
-      if (!seller) {
-        return next(new ErrorHandler("Seller not found with this id", 400));
-      }
-
-      seller.withdrawMethod = null;
-
-      await seller.save();
+      const vendor = getVendorPlatform();
+      const seller = await vendor.settings.clearWithdrawMethod(req.seller._id);
 
       res.status(201).json({
         success: true,
         seller,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-//controller to verify shop
 // Verify Shop - Admin only
 router.put(
   "/verify-shop/:id",
@@ -370,15 +250,9 @@ router.put(
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const shop = await Shop.findById(req.params.id);
-
-      if (!shop) {
-        return next(new ErrorHandler("Shop not found", 400));
-      }
-
-      // Verify the shop
-      shop.isVerified = true;
-      await shop.save();
+      const vendor = getVendorPlatform();
+      const { shop } = await vendor.verification.verify(req.params.id);
+      vendor.hooks.afterVerified({ shopId: req.params.id, verified: true });
 
       res.status(200).json({
         success: true,
@@ -386,7 +260,7 @@ router.put(
         shop,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
@@ -398,15 +272,9 @@ router.put(
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const shop = await Shop.findById(req.params.id);
-
-      if (!shop) {
-        return next(new ErrorHandler("Shop not found", 400));
-      }
-
-      // Unverify the shop
-      shop.isVerified = false;
-      await shop.save();
+      const vendor = getVendorPlatform();
+      const { shop } = await vendor.verification.unverify(req.params.id);
+      vendor.hooks.afterVerified({ shopId: req.params.id, verified: false });
 
       res.status(200).json({
         success: true,
@@ -414,10 +282,9 @@ router.put(
         shop,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
-
 
 module.exports = router;

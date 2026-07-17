@@ -30,6 +30,10 @@ function registerMarketplaceCore(app, options = {}) {
   );
 
   app.use("/api/v2/marketplace", router);
+
+  const { registerVendorPlatform } = require("./vendor");
+  registerVendorPlatform(app, core, options.vendor || {});
+
   return core;
 }
 
@@ -38,4 +42,5 @@ module.exports = {
   getMarketplaceCore,
   registerMarketplaceCore,
   MarketplaceCore: require("./core/MarketplaceCore"),
+  getVendorPlatform: () => require("./vendor").getVendorPlatform(),
 };
