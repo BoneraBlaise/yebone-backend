@@ -52,6 +52,7 @@ class WebhookReconciliationBootstrap {
 
     const orchestrator = new WebhookReconciliationOrchestrator({
       transactionService: engine.transactionService,
+      transactionLinkService: options.transactionLinkService || null,
       webhookIdempotencyService: webhookIdempotency,
       eventPublisher,
       settlementBridge,

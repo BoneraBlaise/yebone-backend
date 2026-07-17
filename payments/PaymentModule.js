@@ -283,6 +283,8 @@ class PaymentModule {
     this.paymentFoundation = options.paymentFoundation || null;
     this.legacyRoutingPolicy =
       options.legacyRoutingPolicy || new LegacyPaymentRoutingPolicy();
+    this.transactionLinkService = options.transactionLinkService || null;
+    this.paymentChargeRouter = options.paymentChargeRouter || null;
     this.paymentEngine =
       options.paymentEngine ||
       this.paymentFoundation?.engine ||
@@ -487,6 +489,30 @@ class PaymentModule {
 
   getLegacyPaymentRoutingPolicy() {
     return this.legacyRoutingPolicy;
+  }
+
+  getTransactionLinkService() {
+    return this.transactionLinkService;
+  }
+
+  getPaymentChargeRouter() {
+    return this.paymentChargeRouter;
+  }
+
+  configureChargeInfrastructure({ transactionLinkService, paymentChargeRouter } = {}) {
+    if (transactionLinkService) {
+      this.transactionLinkService = transactionLinkService;
+    }
+    if (paymentChargeRouter) {
+      this.paymentChargeRouter = paymentChargeRouter;
+    }
+  }
+
+  async createRoutedOrderPayment(input = {}, trace = {}) {
+    if (!this.paymentChargeRouter) {
+      throw new Error("PaymentChargeRouter is not configured");
+    }
+    return this.paymentChargeRouter.createOrderPayment(input, trace);
   }
 
   isPaymentFoundationWired() {

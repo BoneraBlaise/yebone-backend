@@ -35,4 +35,23 @@ describe("TransactionCorrelationPolicy", () => {
     assert.equal(meta.correlationId, "corr-abc");
     assert.equal(meta.metadata.correlationId, "corr-abc");
   });
+
+  it("establishes charge correlation and preserves it through link application", () => {
+    const chain = TransactionCorrelationPolicy.fromChargeRequest({
+      input: { orderId: "order-1" },
+      trace: { correlationId: "corr-charge-1" },
+    });
+    const link = {
+      correlationId: "corr-charge-1",
+      module2TransactionId: "txn-1",
+      providerReference: "prov-1",
+    };
+    const merged = TransactionCorrelationPolicy.fromWebhookInput({
+      correlationId: "corr-http-other",
+      link,
+      payload: { reference: "prov-1" },
+    });
+    assert.equal(merged.correlationId, "corr-charge-1");
+    assert.equal(merged.transactionId, "txn-1");
+  });
 });

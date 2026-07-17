@@ -14,6 +14,7 @@ class WebhookReconciliationOrchestrator {
   constructor({
     transactionService,
     webhookIdempotencyService,
+    transactionLinkService = null,
     eventPublisher = null,
     settlementBridge = null,
     replayGuard = null,
@@ -28,6 +29,7 @@ class WebhookReconciliationOrchestrator {
     }
 
     this.transactionService = transactionService;
+    this.transactionLinkService = transactionLinkService;
     this.webhookIdempotencyService = webhookIdempotencyService;
     this.eventPublisher = eventPublisher;
     this.settlementBridge = settlementBridge;
@@ -41,7 +43,24 @@ class WebhookReconciliationOrchestrator {
       input.verification,
       input.verification?.executionMode || input.executionMode
     );
-    const correlationChain = TransactionCorrelationPolicy.fromWebhookInput(input);
+
+    const resolvedLink = this.transactionLinkService
+      ? await this.transactionLinkService.resolveLinkForWebhook({
+          providerReference:
+            input.verification?.references?.providerReference ||
+            input.payload?.reference ||
+            input.payload?.providerReference ||
+            null,
+          paymentReference: input.payload?.paymentReference || input.payload?.reference || null,
+          orderId: input.payload?.orderId || null,
+          correlationId: input.correlationId,
+        })
+      : null;
+
+    const correlationChain = TransactionCorrelationPolicy.fromWebhookInput({
+      ...input,
+      link: resolvedLink,
+    });
     const executionMode = input.verification?.executionMode || input.executionMode || null;
 
     if (!verified) {
@@ -99,6 +118,7 @@ class WebhookReconciliationOrchestrator {
           ...input,
           correlationChain,
           executionMode,
+          resolvedLink,
         });
         return WebhookIdempotencyService.wrapResult(result);
       }
@@ -107,7 +127,7 @@ class WebhookReconciliationOrchestrator {
     return cached;
   }
 
-  async _reconcileOnce({ correlationChain, payload, verification, providerCode, executionMode }) {
+  async _reconcileOnce({ correlationChain, payload, verification, providerCode, executionMode, resolvedLink }) {
     const targetStatus = WebhookTransactionStateMapper.resolveTargetStatus({
       payload,
       verification,
@@ -130,11 +150,14 @@ class WebhookReconciliationOrchestrator {
     }
 
     let transaction;
+    let chain = correlationChain;
+
     try {
-      if (correlationChain.providerReference) {
-        transaction = await this.transactionService.getByProviderReference(
-          correlationChain.providerReference
-        );
+      if (resolvedLink?.module2TransactionId) {
+        transaction = await this.transactionService.getTransaction(resolvedLink.module2TransactionId);
+        chain = TransactionCorrelationPolicy.applyLink(chain, resolvedLink);
+      } else if (chain.providerReference) {
+        transaction = await this.transactionService.getByProviderReference(chain.providerReference);
       } else if (payload.paymentReference || payload.reference) {
         transaction = await this.transactionService.getByPaymentReference(
           payload.paymentReference || payload.reference
@@ -165,9 +188,9 @@ class WebhookReconciliationOrchestrator {
 
     const previousStatus = transaction.status;
     let updated = transaction;
-    let chain = TransactionCorrelationPolicy.enrich(correlationChain, {
+    chain = TransactionCorrelationPolicy.enrich(chain, {
       transactionId: transaction.transactionId,
-      providerReference: transaction.providerReference || correlationChain.providerReference,
+      providerReference: transaction.providerReference || chain.providerReference,
     });
 
     try {

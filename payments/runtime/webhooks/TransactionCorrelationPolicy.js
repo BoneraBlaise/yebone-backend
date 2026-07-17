@@ -1,7 +1,9 @@
+const crypto = require("node:crypto");
+
 /**
- * Immutable correlation chain for webhook reconciliation.
- * A single correlationId is established at the HTTP boundary and propagated
- * unchanged through idempotency, settlement, events, audit, and responses.
+ * Immutable correlation chain for payment operations.
+ * A single correlationId is established at charge creation (or HTTP boundary)
+ * and propagated unchanged through linking, webhooks, settlement, events, audit, and responses.
  * No downstream component may generate a replacement correlationId.
  */
 class TransactionCorrelationPolicy {
@@ -19,12 +21,28 @@ class TransactionCorrelationPolicy {
     });
   }
 
-  static fromWebhookInput({ correlationId, verification = {}, payload = {}, payloadMaterial = null }) {
+  static fromChargeRequest({ input = {}, trace = {} }) {
+    const correlationId = TransactionCorrelationPolicy._resolveChargeCorrelationId(input, trace);
+
+    return TransactionCorrelationPolicy.create({
+      correlationId,
+      providerReference:
+        input.providerReference ||
+        input.paymentReference ||
+        input.metadata?.providerReference ||
+        null,
+    });
+  }
+
+  static fromWebhookInput({ correlationId, link = null, verification = {}, payload = {}, payloadMaterial = null }) {
+    const canonicalCorrelationId = link?.correlationId || correlationId;
+
     const providerReference =
       verification.references?.providerReference ||
       payload.providerReference ||
       payload.reference ||
       payload.transactionRef ||
+      link?.providerReference ||
       null;
 
     const providerEventId =
@@ -35,10 +53,37 @@ class TransactionCorrelationPolicy {
       null;
 
     return TransactionCorrelationPolicy.create({
-      correlationId,
+      correlationId: canonicalCorrelationId,
       providerEventId,
       providerReference,
+      transactionId: link?.module2TransactionId || null,
     });
+  }
+
+  static applyLink(chain, link) {
+    if (!link) {
+      return chain;
+    }
+
+    return TransactionCorrelationPolicy.enrich(chain, {
+      correlationId: link.correlationId,
+      providerReference: link.providerReference || chain.providerReference,
+      transactionId: link.module2TransactionId || chain.transactionId,
+    });
+  }
+
+  static _resolveChargeCorrelationId(input, trace) {
+    const candidate =
+      trace?.correlationId ||
+      input?.correlationId ||
+      input?.metadata?.correlationId ||
+      null;
+
+    if (candidate) {
+      return String(candidate).trim();
+    }
+
+    return crypto.randomUUID();
   }
 
   static enrich(chain, patch = {}) {

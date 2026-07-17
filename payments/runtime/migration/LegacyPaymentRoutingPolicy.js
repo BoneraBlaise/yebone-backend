@@ -23,6 +23,14 @@ class LegacyPaymentRoutingPolicy {
     return !this.foundationChargeProviders.has(normalized);
   }
 
+  resolveChargePath(providerCode) {
+    return this.shouldUseLegacyCharge(providerCode) ? "legacy" : "foundation";
+  }
+
+  isEnabled() {
+    return this.enabled === true;
+  }
+
   shouldUseFoundationWebhooks() {
     return this.enabled;
   }

@@ -9,6 +9,8 @@ const PaymentApplicationBootstrap = require("./PaymentApplicationBootstrap");
 const ProviderFoundationWebhookHandler = require("../webhooks/ProviderFoundationWebhookHandler");
 const { WebhookReconciliationBootstrap } = require("./WebhookReconciliationBootstrap");
 const LegacyPaymentRoutingPolicy = require("../migration/LegacyPaymentRoutingPolicy");
+const { TransactionLinkRepository, TransactionLinkService } = require("../linking");
+const PaymentChargeRouter = require("../charging/PaymentChargeRouter");
 
 /**
  * Dependency injection bootstrap for payment runtime.
@@ -42,6 +44,25 @@ class DependencyInjectionBootstrap {
 
     const logger = new Logger({ serviceName: config.serviceName, level: config.logLevel });
     const paymentModule = options.paymentModule || new PaymentModule(paymentModuleOptions);
+
+    let transactionLinkService = null;
+    if (paymentFoundation?.engine) {
+      const linkRepository =
+        options.transactionLinkRepository || new TransactionLinkRepository();
+      transactionLinkService = new TransactionLinkService({ repository: linkRepository });
+      paymentModule.configureChargeInfrastructure({
+        transactionLinkService,
+        paymentChargeRouter: new PaymentChargeRouter({
+          paymentService: paymentModule.getPaymentService(),
+          foundationBridge: paymentModule.getPaymentFoundationBridge(),
+          routingPolicy: legacyRoutingPolicy,
+          transactionService: paymentFoundation.engine.transactionService,
+          transactionLinkService,
+          logger: logger.child({ component: "payment-charge-router" }),
+        }),
+      });
+    }
+
     const facade = paymentModule.getMarketplacePaymentFacade();
     const apiLayer = createPaymentApi(paymentModule);
     const jobScheduler = new JobScheduler({ logger: logger.child({ component: "jobs" }) });
@@ -53,7 +74,10 @@ class DependencyInjectionBootstrap {
         paymentFoundation,
         config,
         logger: logger.child({ component: "webhook-reconciliation" }),
-        options: options.webhookReconciliationOptions || {},
+        options: {
+          ...(options.webhookReconciliationOptions || {}),
+          transactionLinkService,
+        },
       });
 
       for (const providerCode of ["MTN_MOMO", "PAYPACK"]) {
@@ -84,6 +108,7 @@ class DependencyInjectionBootstrap {
       webhookRegistry,
       webhookReconciliation,
       legacyRoutingPolicy,
+      transactionLinkService,
       shutdown,
     };
 

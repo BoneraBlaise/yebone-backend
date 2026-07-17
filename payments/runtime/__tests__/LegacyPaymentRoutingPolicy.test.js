@@ -15,5 +15,7 @@ describe("LegacyPaymentRoutingPolicy", () => {
     });
     assert.equal(policy.shouldUseLegacyCharge("MTN_MOMO"), false);
     assert.equal(policy.shouldUseLegacyCharge("PAYPACK"), true);
+    assert.equal(policy.resolveChargePath("MTN_MOMO"), "foundation");
+    assert.equal(policy.resolveChargePath("PAYPACK"), "legacy");
   });
 });
