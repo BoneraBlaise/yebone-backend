@@ -1,8 +1,9 @@
 # Yebone — Project Status
 
 **Last updated:** 2026-07-18  
-**Checkpoint tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/platform-freeze-checkpoint`
+**Design tag:** `yebo-ai-design-v1`  
+**Foundation tag:** `platform-pre-ai-v1`  
+**Current branch:** `feature/yebo-ai-design`
 
 ---
 
@@ -12,9 +13,30 @@
 
 ---
 
-## Platform Foundation — COMPLETE
+## Platform Foundation — COMPLETE & FROZEN
 
-The marketplace platform foundation is **frozen** at `platform-pre-ai-v1`. No new features or business logic changes until Phase 7 (YEBO AI) begins under separate branch governance.
+Frozen at `platform-pre-ai-v1`. Business modules unchanged.
+
+---
+
+## Phase 7 — DESIGN COMPLETE (Not Implemented)
+
+YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
+
+| Aspect | Status |
+|--------|--------|
+| AI platform module design | ✔ `marketplace/ai/` blueprint |
+| Tool architecture | ✔ 7 core tools defined |
+| Prompt architecture | ✔ Versioned registry design |
+| Provider architecture | ✔ Backend-only keys |
+| Security architecture | ✔ Documented |
+| Memory architecture | ✔ Documented |
+| Observability design | ✔ Documented |
+| Frontend integration plan | ✔ YIP UI reuse |
+| Implementation roadmap | ✔ Milestones 7.1–7.7 |
+| **Implementation code** | **✗ Not started** |
+
+**Canonical blueprint:** [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md)
 
 ---
 
@@ -22,16 +44,15 @@ The marketplace platform foundation is **frozen** at `platform-pre-ai-v1`. No ne
 
 | Layer | Role | Status |
 |-------|------|--------|
-| **Payment Foundation** | Provider orchestration, ledger, webhooks | Frozen (`payment-foundation-v10`) |
-| **Marketplace Core** | Configuration, lifecycle, health, hooks | Frozen (`marketplace-core-v1`) |
-| **Vendor Platform** | Shop registration, seller profile | Frozen (`vendor-management-v1`) |
-| **Product Catalog** | Product CRUD, reviews, media | Frozen (`product-catalog-v1`) |
-| **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen (`orders-production-v1`) |
-| **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen (`search-production-v1`) |
-| **Legacy v2 API** | Express controllers at `/api/v2/*` | Production (thin adapters) |
-| **Frontend** | React SPA + Redux + design system | Frozen (`FRONTEND_ARCHITECTURE.md`) |
-
-See [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) for canonical architecture.
+| **Payment Foundation** | Provider orchestration, ledger, webhooks | Frozen |
+| **Marketplace Core** | Configuration, lifecycle, health, hooks | Frozen |
+| **Vendor Platform** | Shop registration, seller profile | Frozen |
+| **Product Catalog** | Product CRUD, reviews, media | Frozen |
+| **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
+| **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
+| **YEBO AI (design)** | Orchestration layer blueprint | Design frozen — not built |
+| **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
+| **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
 ---
 
@@ -39,82 +60,17 @@ See [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) for canonical archite
 
 | Phase | Name | Tag(s) |
 |-------|------|--------|
-| 1 | Payment Module | `payment-foundation-v10` |
-| 2 | Marketplace Core | `marketplace-core-v1` |
-| 3 | Vendor Management | `vendor-management-v1` |
-| 4 | Product Catalog | `product-catalog-v1` |
-| 5 | Orders | `orders-v1` → `orders-production-v1` |
-| 6 | Search & Discovery | `search-v1` → `search-production-v1` |
-| **Checkpoint** | **Platform Freeze (Pre-AI)** | **`platform-pre-ai-v1`** |
+| 1–6 | Foundation modules | Through `search-production-v1` |
+| Checkpoint | Platform Freeze | `platform-pre-ai-v1` |
+| **7 (design)** | **YEBO AI Architecture** | **`yebo-ai-design-v1`** |
 
 ---
 
-## Frozen Tags (Restore Points)
+## Next Step
 
-```
-payment-foundation-v10
-marketplace-core-v1
-vendor-management-v1
-product-catalog-v1
-orders-v1
-orders-production-v1
-search-v1
-search-production-v1
-platform-pre-ai-v1
-```
+**Phase 7.1 — AI Gateway implementation** — See [AI_ROADMAP.md](./AI_ROADMAP.md)
 
----
-
-## Architecture Maturity
-
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| Module boundaries | High | Single service layer per domain |
-| Dependency hygiene | High | No circular platform imports |
-| Legacy compatibility | 100 | `verify:legacy-migration` |
-| Test coverage | High | Full foundation verification suite |
-| Documentation | Complete | Architecture, roadmap, changelog, AI guide |
-
----
-
-## Production Readiness
-
-| Module | Ready | Verification |
-|--------|-------|--------------|
-| Payment Foundation | ✔ | `test:payment-foundation` |
-| Marketplace Core | ✔ | `test:marketplace-core` |
-| Vendor Platform | ✔ | `test:vendor-management` |
-| Product Catalog | ✔ | `test:product-catalog` |
-| Orders | ✔ | `test:orders-production` |
-| Search | ✔ | `test:search-production` |
-| Full platform | ✔ | `verify:platform-pre-ai` |
-
----
-
-## Known Technical Debt
-
-| Item | Impact | Planned |
-|------|--------|---------|
-| Regex search (no `$text` index) | Medium search perf at scale | Post-AI infra |
-| Process-local rate limits | Not distributed | Infra phase |
-| String-based category taxonomy | Limited taxonomy ops | Phase 8 |
-| Payment sessions outside MongoDB txn | Documented compensation | Accepted |
-| Legacy `controller/order.js` adapter | Thin compat layer | Intentional |
-| Notifications not implemented | Feature gap | Phase 10 |
-| Delivery workflow not implemented | Feature gap | Phase 9 |
-
----
-
-## Modules Remaining (Post-Foundation)
-
-| Phase | Module | Status |
-|-------|--------|--------|
-| 7 | YEBO AI | **Next** — see [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) |
-| 8 | Inventory & Categories | Upcoming |
-| 9 | Delivery & Fulfillment | Future |
-| 10 | Notifications & Mobile | Future |
-
-**Do not begin Phase 7 until `platform-pre-ai-v1` is deployed.**
+Do not implement until explicitly starting milestone 7.1 on a dedicated branch.
 
 ---
 
@@ -122,21 +78,21 @@ platform-pre-ai-v1
 
 | Document | Purpose |
 |----------|---------|
-| [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) | Canonical backend architecture |
-| [ARCHITECTURE_VERIFICATION_REPORT.md](./ARCHITECTURE_VERIFICATION_REPORT.md) | Verification audit |
-| [RELEASE_NOTES_PRE_AI.md](./RELEASE_NOTES_PRE_AI.md) | Pre-AI release summary |
-| [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Phase 7 integration rules |
-| [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md) | Phase roadmap |
-| [CHANGELOG.md](../CHANGELOG.md) | Milestone history |
-| [SEARCH.md](./SEARCH.md) | Search platform reference |
-| [FRONTEND_ARCHITECTURE.md](./FRONTEND_ARCHITECTURE.md) | Frontend standard |
+| [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) | Canonical AI blueprint |
+| [AI_TOOLS.md](./AI_TOOLS.md) | Tool registry design |
+| [PROMPT_ARCHITECTURE.md](./PROMPT_ARCHITECTURE.md) | Prompt system |
+| [AI_PROVIDER_ARCHITECTURE.md](./AI_PROVIDER_ARCHITECTURE.md) | Provider abstraction |
+| [AI_SECURITY.md](./AI_SECURITY.md) | Security design |
+| [AI_ROADMAP.md](./AI_ROADMAP.md) | Milestones 7.1–7.7 |
+| [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) | Platform architecture |
+| [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
 
 ## Verification
 
 ```bash
-npm run verify:platform-pre-ai
+npm run verify:platform-pre-ai   # Foundation unchanged
 ```
 
-All marketplace, payment, architecture, and legacy migration checks must pass before Phase 7.
+AI verification scripts will be added per milestone during implementation.

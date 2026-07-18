@@ -1,74 +1,58 @@
 # Yebone — Development Roadmap
 
-**Checkpoint:** `platform-pre-ai-v1`  
-**Foundation status:** COMPLETE — frozen until Phase 7 begins
+**Foundation:** `platform-pre-ai-v1` (frozen)  
+**AI design:** `yebo-ai-design-v1` (frozen)  
+**Implementation:** Not started
 
-Related: [PROJECT_STATUS.md](./PROJECT_STATUS.md) · [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) · [CHANGELOG.md](../CHANGELOG.md)
+Related: [AI_ROADMAP.md](./AI_ROADMAP.md) · [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ---
 
 ## Completed ✅
 
-### Phase 1 — Payment Module
+### Phases 1–6 + Platform Freeze
 
-- Provider-independent payment foundation
-- **Tag:** `payment-foundation-v10`
+See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`.
 
-### Phase 2 — Marketplace Core
+### Phase 7 — YEBO AI Design
 
-- Canonical marketplace composition layer
-- **Tag:** `marketplace-core-v1`
-
-### Phase 3 — Vendor Management
-
-- ShopService + vendor platform
-- **Tag:** `vendor-management-v1`
-
-### Phase 4 — Product Catalog
-
-- ProductService + catalog platform
-- **Tag:** `product-catalog-v1`
-
-### Phase 5 — Orders
-
-- OrderService + orders platform
-- Production hardening: idempotency, transactions, inventory guards
-- **Tags:** `orders-v1` → `orders-production-v1`
-
-### Phase 6 — Search & Discovery
-
-- SearchService + search platform
-- Server-backed discovery APIs, frontend search UI
-- Production hardening: validation, rate limits, unicode normalization
-- **Tags:** `search-v1` → `search-production-v1`
-
-### Platform Freeze Checkpoint
-
-- Canonical architecture documentation
-- Full verification suite
-- Pre-AI release notes and AI integration guide
-- **Tag:** `platform-pre-ai-v1`
+- Complete orchestration architecture for `marketplace/ai/`
+- Tool, prompt, provider, security, memory, observability designs
+- Frontend YIP reuse plan (no UI redesign)
+- Milestones 7.1–7.7 defined with independent freeze tags
+- **Tag:** `yebo-ai-design-v1`
+- **No implementation code**
 
 ---
 
 ## Current
 
-**Platform foundation is frozen.** No active development phase.
+**AI architecture design is frozen.** Implementation not started.
 
-Restore point: `platform-pre-ai-v1`  
-Branch: `feature/platform-freeze-checkpoint`
+Restore points:
+
+- Foundation: `platform-pre-ai-v1`
+- AI design: `yebo-ai-design-v1`
+
+Branch: `feature/yebo-ai-design`
 
 ---
 
-## Upcoming
+## Upcoming — Phase 7 Implementation
 
-### Phase 7 — YEBO AI
+Implementation follows [AI_ROADMAP.md](./AI_ROADMAP.md). Each milestone is independently freezeable.
 
-- Natural language discovery via SearchPlatform (no duplicate query engine)
-- AI orchestration hooks on frozen search and orders layers
-- Frontend AI components wire to existing `/search` and `/products` shells
-- **Guide:** [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md)
-- **Prerequisite:** Deploy and freeze `platform-pre-ai-v1`
+| Milestone | Name | Target tag |
+|-----------|------|------------|
+| 7.1 | AI Gateway | `yebo-ai-gateway-v1` |
+| 7.2 | Tool Registry | `yebo-ai-tools-v1` |
+| 7.3 | Search Integration | `yebo-ai-search-v1` |
+| 7.4 | Commerce Assistant | `yebo-ai-assistant-v1` |
+| 7.5 | Recommendations | `yebo-ai-recommend-v1` |
+| 7.6 | Checkout Intelligence | `yebo-ai-checkout-v1` |
+| 7.7 | Conversation Memory | `yebo-ai-memory-v1` |
+
+**Prerequisite:** Deploy `platform-pre-ai-v1` + adopt `yebo-ai-design-v1` blueprint.
 
 ---
 
@@ -90,15 +74,13 @@ Branch: `feature/platform-freeze-checkpoint`
 
 ---
 
-## Archive (Obsolete Entries)
+## Archive
 
-The following items were superseded by foundation completion and are no longer active roadmap targets:
+| Obsolete | Superseded by |
+|----------|---------------|
+| Client-side LLM keys | `AI_PROVIDER_ARCHITECTURE.md` — backend only |
+| `YIPShoppingIntelligence` mock path | `SearchTool` via gateway (7.3) |
+| Frontend prompt templates | `AIPromptRegistry` (7.2) |
+| Phase 7 prep docs alone | `YEBO_AI_ARCHITECTURE.md` + design suite |
 
-| Obsolete Entry | Superseded By |
-|----------------|---------------|
-| "Implement order service from scratch" | `orders-v1` / `orders-production-v1` |
-| "Build search from Product.find()" | `search-v1` / `search-production-v1` |
-| "Migrate payment logic to controllers" | `payment-foundation-v10` facade |
-| "Phase 6 prep only" docs | `platform-pre-ai-v1` checkpoint |
-
-Historical phase prep documents (`PHASE4_PREPARATION.md`, `PHASE5_PREPARATION.md`, `PHASE7_PREPARATION.md`) remain for context; canonical Phase 7 guidance is [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md).
+Canonical Phase 7 docs: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md)

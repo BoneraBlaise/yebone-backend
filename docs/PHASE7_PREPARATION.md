@@ -1,50 +1,35 @@
 # Phase 7 Preparation — YEBO AI
 
-**Baseline:** `platform-pre-ai-v1`  
-**Status:** Foundation complete — Phase 7 not started
+**Foundation:** `platform-pre-ai-v1`  
+**Design freeze:** `yebo-ai-design-v1`  
+**Implementation:** Not started
 
-> **Canonical guide:** [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md)
+> **Canonical blueprint:** [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md)
 
-Do not begin Phase 7 until `platform-pre-ai-v1` is tagged, verified, and deployed.
-
----
-
-## Prerequisites (Verified at Checkpoint)
-
-- [x] All foundation modules frozen through `search-production-v1`
-- [x] Platform architecture documented ([PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md))
-- [x] Full verification passing (`npm run verify:platform-pre-ai`)
-- [x] Frontend architecture frozen ([FRONTEND_ARCHITECTURE.md](./FRONTEND_ARCHITECTURE.md))
-- [x] AI integration rules defined ([YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md))
+This document is superseded for architecture detail by the design suite. Retained for historical context.
 
 ---
 
-## Quick Reference
+## Design Documents (authoritative)
 
-| Rule | Detail |
-|------|--------|
-| AI orchestrates | Existing platforms via public APIs and Platform classes |
-| AI never duplicates | SearchService, OrderService, ProductService, ShopService logic |
-| AI never bypasses | Validation, state machines, idempotency, payment facade |
-| Frontend | Extend existing shells — do not create parallel layouts |
-
-See the full integration guide for allowed interfaces, forbidden bypasses, and hook extension points.
-
----
-
-## Out of Scope for Phase 7
-
-- Vector / semantic search indexes
-- Personalization engine
-- Voice search
-- Recommendation ML models
-- Autonomous order/payment mutations without user confirmation
+| Document | Content |
+|----------|---------|
+| [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) | Platform module design + audit classification |
+| [AI_TOOLS.md](./AI_TOOLS.md) | Tool registry |
+| [PROMPT_ARCHITECTURE.md](./PROMPT_ARCHITECTURE.md) | Versioned prompts |
+| [AI_PROVIDER_ARCHITECTURE.md](./AI_PROVIDER_ARCHITECTURE.md) | Provider abstraction |
+| [AI_SECURITY.md](./AI_SECURITY.md) | Security design |
+| [AI_ROADMAP.md](./AI_ROADMAP.md) | Milestones 7.1–7.7 |
+| [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Frozen platform integration rules |
 
 ---
 
-## Related Documentation
+## Core Rule
 
-- [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md)
-- [RELEASE_NOTES_PRE_AI.md](./RELEASE_NOTES_PRE_AI.md)
-- [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-- [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
+YEBO AI is an **orchestration layer** — not a business platform. See design docs for full architecture.
+
+---
+
+## Next Step
+
+Begin **Phase 7.1 — AI Gateway** per [AI_ROADMAP.md](./AI_ROADMAP.md) on a dedicated implementation branch.

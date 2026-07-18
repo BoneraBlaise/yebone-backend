@@ -2,8 +2,9 @@
 
 Backend for the Yebone AI-powered African marketplace platform.
 
-**Platform checkpoint:** `platform-pre-ai-v1`  
-**Foundation status:** COMPLETE — frozen before Phase 7 (YEBO AI)
+**Foundation checkpoint:** `platform-pre-ai-v1`  
+**AI design freeze:** `yebo-ai-design-v1`  
+**Implementation status:** Design complete — not built
 
 ---
 
@@ -33,6 +34,8 @@ API base: `/api/v2/*`
 
 Do not modify frozen modules without explicit unfreeze.
 
+**YEBO AI (designed, not built):** `marketplace/ai/` — see design docs below.
+
 ---
 
 ## Verification
@@ -41,28 +44,35 @@ Do not modify frozen modules without explicit unfreeze.
 npm run verify:platform-pre-ai
 ```
 
-Runs all foundation tests, architecture checks, and legacy migration verification.
-
 ---
 
 ## Documentation
 
+### Platform
+
 | Document | Description |
 |----------|-------------|
 | [docs/PLATFORM_ARCHITECTURE.md](docs/PLATFORM_ARCHITECTURE.md) | Canonical platform architecture |
-| [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) | Current status and maturity |
+| [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) | Current status |
 | [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) | Phase roadmap |
-| [docs/RELEASE_NOTES_PRE_AI.md](docs/RELEASE_NOTES_PRE_AI.md) | Pre-AI release summary |
-| [docs/YEBO_AI_INTEGRATION_GUIDE.md](docs/YEBO_AI_INTEGRATION_GUIDE.md) | Phase 7 AI integration rules |
-| [docs/ARCHITECTURE_VERIFICATION_REPORT.md](docs/ARCHITECTURE_VERIFICATION_REPORT.md) | Architecture audit |
-| [docs/SEARCH.md](docs/SEARCH.md) | Search platform reference |
-| [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md) | Frontend UI standard |
 | [CHANGELOG.md](CHANGELOG.md) | Milestone history |
+
+### YEBO AI (design — permanent blueprint)
+
+| Document | Description |
+|----------|-------------|
+| [docs/YEBO_AI_ARCHITECTURE.md](docs/YEBO_AI_ARCHITECTURE.md) | **Canonical AI architecture** |
+| [docs/AI_TOOLS.md](docs/AI_TOOLS.md) | Tool registry design |
+| [docs/PROMPT_ARCHITECTURE.md](docs/PROMPT_ARCHITECTURE.md) | Prompt system |
+| [docs/AI_PROVIDER_ARCHITECTURE.md](docs/AI_PROVIDER_ARCHITECTURE.md) | Provider abstraction |
+| [docs/AI_SECURITY.md](docs/AI_SECURITY.md) | Security design |
+| [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md) | Implementation milestones 7.1–7.7 |
+| [docs/YEBO_AI_INTEGRATION_GUIDE.md](docs/YEBO_AI_INTEGRATION_GUIDE.md) | Frozen platform integration rules |
 
 ---
 
 ## Next Phase
 
-**Phase 7 — YEBO AI** — See [docs/YEBO_AI_INTEGRATION_GUIDE.md](docs/YEBO_AI_INTEGRATION_GUIDE.md)
+**Phase 7.1 — AI Gateway** — See [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)
 
-Do not begin Phase 7 until `platform-pre-ai-v1` is deployed.
+Design is frozen at `yebo-ai-design-v1`. Do not implement until milestone 7.1 begins.

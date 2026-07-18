@@ -6,6 +6,16 @@ Format: `[tag]` — summary of architectural impact.
 
 ---
 
+## [yebo-ai-design-v1] — YEBO AI Architecture Design Freeze
+
+- Canonical AI orchestration architecture (`docs/YEBO_AI_ARCHITECTURE.md`)
+- Tool, prompt, provider, security, and roadmap design documents
+- `marketplace/ai/` module design — no implementation
+- Phase 7 split into 7 independently freezeable milestones (7.1–7.7)
+- Frontend YIP reuse plan — gateway wiring, no UI redesign
+
+---
+
 ## [platform-pre-ai-v1] — Platform Freeze Checkpoint
 
 - Canonical platform architecture documented (`docs/PLATFORM_ARCHITECTURE.md`)
