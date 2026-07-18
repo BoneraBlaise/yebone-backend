@@ -9,6 +9,7 @@ class AICapabilityRegistry {
       ["order_status", ["history", "tracking", "order_status"]],
       ["vendor_lookup", ["shop_lookup", "seller_lookup"]],
       ["recommend", ["recommendations", "candidate_composition"]],
+      ["checkout", ["checkout_guidance", "product_comparison", "purchase_readiness"]],
       ["payment", ["readiness", "payment_availability", "health"]],
       ["catalog", ["product_lookup", "product_details"]],
       ["knowledge", ["faq", "policy", "platform_docs"]],

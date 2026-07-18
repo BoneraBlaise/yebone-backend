@@ -27,11 +27,11 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**Phase 7.5 contextual recommendations frozen.** Phase 7.6 not started.
+**Phase 7.6 checkout intelligence frozen.** Phase 7.7 not started.
 
-Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`
+Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`
 
-Branch: `feature/yebo-ai-recommend`
+Branch: `feature/yebo-ai-checkout`
 
 ---
 
@@ -44,8 +44,8 @@ Branch: `feature/yebo-ai-recommend`
 | 7.3 | Search Integration | `yebo-ai-search-v1` | ✅ Complete |
 | 7.4 | Commerce Assistant | `yebo-ai-assistant-v1` | ✅ Complete |
 | 7.5 | Recommendations | `yebo-ai-recommend-v1` | ✅ Complete |
-| 7.6 | Checkout Intelligence | `yebo-ai-checkout-v1` | Next |
-| 7.7 | Conversation Memory | `yebo-ai-memory-v1` |
+| 7.6 | Checkout Intelligence | `yebo-ai-checkout-v1` | ✅ Complete |
+| 7.7 | Conversation Memory | `yebo-ai-memory-v1` | Next |
 
 **Prerequisite:** Deploy `platform-pre-ai-v1` + adopt `yebo-ai-design-v1` blueprint.
 

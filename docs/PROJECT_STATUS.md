@@ -7,8 +7,9 @@
 **Search tag:** `yebo-ai-search-v1`  
 **Assistant tag:** `yebo-ai-assistant-v1`  
 **Recommend tag:** `yebo-ai-recommend-v1`  
+**Checkout tag:** `yebo-ai-checkout-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-recommend`
+**Current branch:** `feature/yebo-ai-checkout`
 
 ---
 
@@ -100,6 +101,23 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
+## Phase 7.6 — CHECKOUT INTELLIGENCE COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| CheckoutIntelligenceEngine | ✔ Deterministic purchase guidance |
+| CheckoutTool | ✔ Read-only comparisons + availability |
+| Planner checkout routing | ✔ `checkout_request` flow |
+| Tool result reuse | ✔ Search/recommendation context |
+| MockProvider explanations | ✔ Comparison + availability guidance |
+| Observability | ✔ Checkout metrics |
+| No orders / payments / inventory writes | ✔ Enforced |
+| **Phase 7.7+** | **Not started** |
+
+**Tag:** `yebo-ai-checkout-v1` · **Doc:** [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md)
+
+---
+
 ## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
@@ -131,7 +149,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (gateway + tools + NL search + assistant + recommendations)** | Orchestration layer | **7.5 frozen** (`yebo-ai-recommend-v1`) |
+| **YEBO AI (gateway + tools + NL search + assistant + recommendations + checkout)** | Orchestration layer | **7.6 frozen** (`yebo-ai-checkout-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -172,5 +190,5 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 ## Verification
 
 ```bash
-npm run verify:yebo-ai-recommend
+npm run verify:yebo-ai-checkout
 ```

@@ -93,7 +93,7 @@ describe("AI Tools — Phase 7.2", () => {
     const registry = new AIToolRegistry();
     registry.registerProductionTools({ marketplaceCore: core, platforms: createStubPlatforms() });
 
-    assert.equal(registry.list().length, 7);
+    assert.equal(registry.list().length, 8);
     for (const tool of registry.list()) {
       assert.equal(tool.hasExecute, true);
       assert.ok(Array.isArray(tool.capabilities));
@@ -273,7 +273,7 @@ describe("AI Tools — Phase 7.2", () => {
     registry.registerProductionTools({ marketplaceCore: core, platforms: createStubPlatforms() });
     const health = registry.healthCheck();
     assert.equal(health.healthy, true);
-    assert.equal(health.tools.length, 7);
+    assert.equal(health.tools.length, 8);
   });
 
   it("ToolResult helpers normalize success and failure", () => {
@@ -296,8 +296,8 @@ describe("AI Tools — Phase 7.2", () => {
     const platform = new AIPlatform({ marketplaceCore: core });
     platform.initialize();
 
-    assert.equal(platform.config.version, "7.5.0");
-    assert.equal(platform.toolRegistry.list().length, 7);
+    assert.equal(platform.config.version, "7.6.0");
+    assert.equal(platform.toolRegistry.list().length, 8);
     assert.ok(platform.capabilityRegistry.listCapabilities().length >= 7);
   });
 });

@@ -19,6 +19,35 @@ class MockProvider extends BaseAIProvider {
     };
   }
 
+  _formatCheckoutExplanation(toolResults = []) {
+    const tool = toolResults.find(
+      (entry) =>
+        entry?.success &&
+        (Array.isArray(entry?.data?.guidance) ||
+          Array.isArray(entry?.data?.comparisons) ||
+          entry?.data?.availability)
+    );
+    if (!tool) return null;
+
+    const data = tool.data;
+    if (data.availability && !data.comparisons?.length) {
+      return data.guidance?.[0] || "Availability guidance is based on current catalog stock data.";
+    }
+
+    if (Array.isArray(data.comparisons) && data.comparisons.length > 0) {
+      const winner = data.comparisons[0];
+      const name = winner.preview?.name || winner.product?.name || "the leading option";
+      const points = (data.guidance || winner.considerations || []).slice(0, 3).join("; ");
+      return `For your purchase decision, ${name} stands out.${points ? ` Why: ${points}.` : ""}`;
+    }
+
+    if (Array.isArray(data.guidance) && data.guidance.length > 0) {
+      return data.guidance.slice(0, 3).join(" ");
+    }
+
+    return null;
+  }
+
   _formatRecommendationExplanation(toolResults = []) {
     const tool = toolResults.find(
       (entry) => entry?.success && Array.isArray(entry?.data?.recommendations) && entry.data.recommendations.length > 0
@@ -34,6 +63,17 @@ class MockProvider extends BaseAIProvider {
 
   async chat(input, options = {}) {
     const text = typeof input === "string" ? input : JSON.stringify(input);
+    const checkoutMessage = this._formatCheckoutExplanation(options.toolResults || []);
+    if (checkoutMessage) {
+      return {
+        providerId: this.id,
+        model: this.model,
+        mock: true,
+        content: checkoutMessage,
+        usage: { inputTokens: text.length, outputTokens: checkoutMessage.length },
+      };
+    }
+
     const recommendationMessage = this._formatRecommendationExplanation(options.toolResults || []);
     if (recommendationMessage) {
       return {

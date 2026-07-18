@@ -1,10 +1,10 @@
 # YEBO AI — Tool Architecture
 
-**Tag:** `yebo-ai-recommend-v1`  
+**Tag:** `yebo-ai-checkout-v1`  
 **Baseline:** `yebo-ai-tools-v1`  
-**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search + Phase 7.5 recommendations)
+**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search + Phase 7.5 recommendations + Phase 7.6 checkout)
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md) · [AI_SECURITY.md](./AI_SECURITY.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md) · [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md) · [AI_SECURITY.md](./AI_SECURITY.md)
 
 ---
 
@@ -133,6 +133,22 @@ Mutations deferred to Phase 8+ with human-in-the-loop confirmation tool.
 | **Never** | ML scores, invented attributes, direct DB access |
 
 See [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md).
+
+---
+
+### CheckoutTool
+
+| Field | Value |
+|-------|-------|
+| **ID** | `checkout.guide` |
+| **Platform** | `CatalogTool` + `CheckoutIntelligenceEngine` |
+| **Logic** | Read-only purchase guidance, comparisons, availability checks |
+| **Input** | `{ action: "guide", sourceProducts?, message, mode? }` |
+| **Output** | `{ guidance[], comparisons[], availability, meta }` |
+| **Reuse** | Session search/recommendation products before new tool calls |
+| **Never** | Order creation, payment execution, inventory modification |
+
+See [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md).
 
 Replaces: `YIPShoppingIntelligence`, `YEBOIntelligenceEngine` mock paths.
 

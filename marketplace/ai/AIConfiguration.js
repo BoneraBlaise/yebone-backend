@@ -1,10 +1,10 @@
 /**
- * YEBO AI platform configuration — Phase 7.5 contextual recommendations.
+ * YEBO AI platform configuration — Phase 7.6 checkout intelligence.
  */
 class AIConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone AI Platform";
-    this.version = options.version || "7.5.0";
+    this.version = options.version || "7.6.0";
     this.primaryProvider = options.primaryProvider || process.env.AI_PRIMARY_PROVIDER || "mock";
     this.mockProvidersOnly = options.mockProvidersOnly !== false;
     this.maxMessageLength = Number(options.maxMessageLength || process.env.AI_MAX_MESSAGE_LENGTH || 4000);

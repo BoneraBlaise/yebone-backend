@@ -36,6 +36,11 @@ class AIMetrics {
     this.recommendationReuseCount = 0;
     this.recommendationLatencyMs = 0;
     this.recommendationReasons = {};
+    this.checkoutRequests = 0;
+    this.checkoutComparisons = 0;
+    this.checkoutGuidanceGenerations = 0;
+    this.checkoutReuseCount = 0;
+    this.checkoutLatencyMs = 0;
   }
 
   startTimer() {
@@ -195,6 +200,37 @@ class AIMetrics {
     if (correlationId) this.lastCorrelationId = correlationId;
   }
 
+  recordCheckoutRequest({
+    sessionId = null,
+    reused = false,
+    comparison = false,
+    correlationId = null,
+  } = {}) {
+    this.checkoutRequests += 1;
+    if (comparison) this.checkoutComparisons += 1;
+    if (reused) this.checkoutReuseCount += 1;
+    if (sessionId) this.conversationSessions.add(String(sessionId));
+    if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
+  recordCheckoutGeneration({
+    comparisonCount = 0,
+    latencyMs = 0,
+    reused = false,
+    guidance = [],
+    correlationId = null,
+  } = {}) {
+    this.checkoutGuidanceGenerations += 1;
+    this.checkoutLatencyMs += latencyMs;
+    if (comparisonCount > 1) this.checkoutComparisons += 1;
+    if (reused) this.checkoutReuseCount += 1;
+    if (comparisonCount === 0 && guidance.length === 0) {
+      this.recommendationReasons.checkout_empty =
+        (this.recommendationReasons.checkout_empty || 0) + 1;
+    }
+    if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -233,6 +269,14 @@ class AIMetrics {
           ? Math.round(this.recommendationLatencyMs / this.recommendationGenerations)
           : 0,
       recommendationReasons: { ...this.recommendationReasons },
+      checkoutRequests: this.checkoutRequests,
+      checkoutComparisons: this.checkoutComparisons,
+      checkoutGuidanceGenerations: this.checkoutGuidanceGenerations,
+      checkoutReuseCount: this.checkoutReuseCount,
+      averageCheckoutLatencyMs:
+        this.checkoutGuidanceGenerations > 0
+          ? Math.round(this.checkoutLatencyMs / this.checkoutGuidanceGenerations)
+          : 0,
     });
   }
 }

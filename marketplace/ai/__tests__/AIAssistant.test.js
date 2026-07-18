@@ -231,7 +231,7 @@ describe("AI Assistant — Phase 7.4", () => {
     assert.equal(first.body.data.meta.commerceAssistant, true);
     assert.equal(first.body.data.provider.mock, true);
     assert.equal(second.body.data.conversation.followUp, true);
-    assert.equal(second.body.data.meta.phase, "7.5");
+    assert.equal(second.body.data.meta.phase, "7.6");
   });
 
   it("continues to enforce authorization for protected tools", async () => {

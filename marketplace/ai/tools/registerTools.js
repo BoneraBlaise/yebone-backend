@@ -8,6 +8,7 @@ const VendorTool = require("./VendorTool");
 const OrderTool = require("./OrderTool");
 const PaymentTool = require("./PaymentTool");
 const RecommendationTool = require("./RecommendationTool");
+const CheckoutTool = require("./CheckoutTool");
 const KnowledgeTool = require("./KnowledgeTool");
 
 function resolvePlatform(getter, Factory, marketplaceCore) {
@@ -62,6 +63,9 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     searchTool,
     catalogTool,
   }).initialize();
+  const checkoutTool = new CheckoutTool({
+    catalogTool,
+  }).initialize();
 
   return [
     searchTool,
@@ -70,6 +74,7 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     orderTool,
     paymentTool,
     recommendationTool,
+    checkoutTool,
     knowledgeTool,
   ];
 }
@@ -82,5 +87,6 @@ module.exports = {
   OrderTool,
   PaymentTool,
   RecommendationTool,
+  CheckoutTool,
   KnowledgeTool,
 };

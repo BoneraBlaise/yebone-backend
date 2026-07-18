@@ -47,6 +47,7 @@ module.exports = {
   AIConversationContext: require("./conversation/AIConversationContext"),
   ConversationFlowAnalyzer: require("./conversation/ConversationFlowAnalyzer"),
   RecommendationEngine: require("./recommendations/RecommendationEngine"),
+  CheckoutIntelligenceEngine: require("./checkout/CheckoutIntelligenceEngine"),
   AIPromptRegistry: require("./AIPromptRegistry"),
   AIProviderManager: require("./AIProviderManager"),
   AIHealth: require("./AIHealth"),

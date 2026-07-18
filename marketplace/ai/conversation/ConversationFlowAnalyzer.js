@@ -1,12 +1,19 @@
 /**
- * Follow-up analysis for commerce assistant turns (Phase 7.4 + 7.5 recommendations).
+ * Follow-up analysis for commerce assistant turns (Phase 7.4–7.6).
  */
 class ConversationFlowAnalyzer {
+  static CHECKOUT_PATTERNS =
+    /should i buy|is it worth buying|is it worth it|can i buy|can i purchase|purchase now|buy this today|buy today|compare these|compare them|which is cheaper|cheaper overall|better value|product a or| or product |is this product.*available|currently available|availability|is it available|can i order|worth buying|which is better|which one is better|gives me better value/i;
+
   static RECOMMENDATION_PATTERNS =
-    /what do you recommend|which one do you recommend|which one should i buy|which is better|best option|what would you recommend|you recommend|recommend one from|recommend one\b/i;
+    /what do you recommend|which one do you recommend|best option|what would you recommend|you recommend|recommend one from|recommend one\b/i;
 
   constructor({ searchParameterExtractor } = {}) {
     this.searchParameterExtractor = searchParameterExtractor;
+  }
+
+  isCheckoutRequest(message = "") {
+    return ConversationFlowAnalyzer.CHECKOUT_PATTERNS.test(String(message || ""));
   }
 
   isRecommendationRequest(message = "") {
@@ -42,6 +49,22 @@ class ConversationFlowAnalyzer {
   analyze(message, sessionContext = {}) {
     const text = String(message || "").toLowerCase().trim();
     const followUp = this.isFollowUp(message, sessionContext);
+
+    if (this.isCheckoutRequest(message)) {
+      const hasProducts =
+        (sessionContext.currentProducts?.length || 0) > 0 ||
+        (sessionContext.lastToolResult?.data?.products?.length || 0) > 0 ||
+        (sessionContext.lastToolResult?.data?.recommendations?.length || 0) > 0 ||
+        Boolean(sessionContext.currentProduct);
+      return {
+        followUp: sessionContext.turnCount > 1,
+        type: "checkout_request",
+        intent: "checkout",
+        toolStrategy: "execute",
+        reason: hasProducts ? "checkout_from_existing_results" : "checkout_needs_product_context",
+        reuseToolResults: hasProducts,
+      };
+    }
 
     if (this.isRecommendationRequest(message)) {
       const hasProducts =

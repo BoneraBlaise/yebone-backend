@@ -8,6 +8,7 @@ module.exports = {
   OrderTool: require("./OrderTool"),
   PaymentTool: require("./PaymentTool"),
   RecommendationTool: require("./RecommendationTool"),
+  CheckoutTool: require("./CheckoutTool"),
   KnowledgeTool: require("./KnowledgeTool"),
   BaseTool: require("./BaseTool"),
   ToolResult: require("./ToolResult"),

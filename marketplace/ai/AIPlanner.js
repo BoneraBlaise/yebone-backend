@@ -1,5 +1,5 @@
 /**
- * AI planner — commerce assistant + contextual recommendations (Phase 7.5).
+ * AI planner — commerce assistant, recommendations, checkout intelligence (Phase 7.6).
  */
 const SearchParameterExtractor = require("./search/SearchParameterExtractor");
 const AIConversationContext = require("./conversation/AIConversationContext");
@@ -69,6 +69,8 @@ class AIPlanner {
         capabilities = ["keyword", "pagination", "filters", "sort"];
       } else if (flow.intent === "recommend") {
         capabilities = ["recommendations", "candidate_composition"];
+      } else if (flow.intent === "checkout") {
+        capabilities = ["checkout_guidance", "product_comparison", "purchase_readiness"];
       }
       return {
         intent: flow.intent,
@@ -111,6 +113,14 @@ class AIPlanner {
       };
     }
 
+    if (this.conversationFlowAnalyzer.isCheckoutRequest(message)) {
+      return {
+        intent: "checkout",
+        capabilities: ["checkout_guidance", "product_comparison", "purchase_readiness"],
+        confidence: 0.82,
+      };
+    }
+
     if (text.includes("recommend") || text.includes("suggest")) {
       return {
         intent: "recommend",
@@ -120,7 +130,7 @@ class AIPlanner {
     }
 
     if (
-      /best option|which one should i buy|which is better|what do you recommend|what would you recommend/i.test(
+      /best option|what do you recommend|what would you recommend/i.test(
         text
       )
     ) {
@@ -131,7 +141,19 @@ class AIPlanner {
       };
     }
 
-    if (text.includes("pay") || text.includes("checkout")) {
+    if (
+      /should i buy|is it worth|can i buy|can i purchase|compare these|better value|cheaper overall|currently available|purchase now/i.test(
+        text
+      )
+    ) {
+      return {
+        intent: "checkout",
+        capabilities: ["checkout_guidance", "product_comparison", "purchase_readiness"],
+        confidence: 0.8,
+      };
+    }
+
+    if (/\bpay\b|\bpayment\b|\bcheckout payment\b/i.test(text)) {
       return {
         intent: "payment",
         capabilities: ["readiness", "payment_availability", "health"],
@@ -248,6 +270,16 @@ class AIPlanner {
           limit: context.limit || 5,
         };
       }
+      case "checkout": {
+        const sessionContext = context.sessionContext || {};
+        return {
+          ...base,
+          action: "guide",
+          sourceProducts: context.sourceProducts || sessionContext.currentProducts || [],
+          productId: context.productId || sessionContext.currentProduct?._id || null,
+          mode: context.mode || null,
+        };
+      }
       case "payment":
         return { ...base, action: "readiness" };
       case "catalog":
@@ -259,6 +291,9 @@ class AIPlanner {
 
   _extractProducts(toolResult) {
     const data = toolResult?.data || {};
+    if (Array.isArray(data.comparisons) && data.comparisons.length > 0) {
+      return data.comparisons.map((entry) => entry.product || entry.preview).filter(Boolean);
+    }
     if (Array.isArray(data.recommendations) && data.recommendations.length > 0) {
       return data.recommendations
         .map((entry) => entry.product || entry.searchPreview)
@@ -274,6 +309,15 @@ class AIPlanner {
   _extractRecommendations(toolResult) {
     const recommendations = toolResult?.data?.recommendations;
     return Array.isArray(recommendations) ? recommendations : [];
+  }
+
+  _extractCheckoutGuidance(toolResult) {
+    const data = toolResult?.data || {};
+    return {
+      guidance: Array.isArray(data.guidance) ? data.guidance : [],
+      comparisons: Array.isArray(data.comparisons) ? data.comparisons : [],
+      availability: data.availability || null,
+    };
   }
 
   async createPlan(request = {}) {
@@ -356,6 +400,15 @@ class AIPlanner {
       });
     }
 
+    if (intent.intent === "checkout") {
+      this.metrics.recordCheckoutRequest({
+        sessionId: resolvedSessionId,
+        reused: Boolean(flow.reuseToolResults),
+        comparison: /compare|cheaper|better value|which is better/i.test(String(request.message || "")),
+        correlationId: request.requestId,
+      });
+    }
+
     return plan;
   }
 
@@ -421,6 +474,16 @@ class AIPlanner {
             correlationId: plan.correlationId,
           });
         }
+        if (plan.intent.intent === "checkout" && toolResult.success) {
+          const checkout = this._extractCheckoutGuidance(toolResult);
+          this.metrics.recordCheckoutGeneration({
+            comparisonCount: checkout.comparisons.length,
+            latencyMs: toolResult.latency || 0,
+            reused: Boolean(toolResult.data?.meta?.sourceReused),
+            guidance: checkout.guidance.slice(0, 5),
+            correlationId: plan.correlationId,
+          });
+        }
         await this.hooks.emit("afterTool", { toolId: plan.toolId, toolResult });
       } catch (err) {
         toolResult = this._failureToolResult(
@@ -451,6 +514,7 @@ class AIPlanner {
 
     const products = this._extractProducts(toolResult);
     const recommendations = this._extractRecommendations(toolResult);
+    const checkout = this._extractCheckoutGuidance(toolResult);
     this.conversationContext.recordTurn(plan.sessionId, {
       message: context.message || context.query,
       plan,
@@ -459,7 +523,14 @@ class AIPlanner {
       products,
     });
 
-    const response = this.formatResponse(plan, providerResult, toolResult, products, recommendations);
+    const response = this.formatResponse(
+      plan,
+      providerResult,
+      toolResult,
+      products,
+      recommendations,
+      checkout
+    );
     await this.hooks.emit("afterResponse", { plan, response });
     return response;
   }
@@ -480,7 +551,14 @@ class AIPlanner {
     };
   }
 
-  formatResponse(plan, providerResult, toolResult, products = [], recommendations = []) {
+  formatResponse(
+    plan,
+    providerResult,
+    toolResult,
+    products = [],
+    recommendations = [],
+    checkout = { guidance: [], comparisons: [], availability: null }
+  ) {
     return {
       requestId: plan.requestId,
       sessionId: plan.sessionId,
@@ -498,6 +576,7 @@ class AIPlanner {
       tool: toolResult,
       message: providerResult.content,
       recommendations,
+      checkout,
       searchRequest: plan.searchRequest || null,
       conversation: {
         turnCount: plan.sessionContextSnapshot?.turnCount || 0,
@@ -506,15 +585,20 @@ class AIPlanner {
         flowType: plan.conversationFlow?.type || "new_turn",
         productCount: products.length,
         recommendationCount: recommendations.length,
+        comparisonCount: checkout.comparisons.length,
       },
       meta: {
-        phase: "7.5",
+        phase: "7.6",
         gateway: true,
         streamingPrepared: true,
         productionTools: true,
         naturalLanguageSearch: plan.intent.intent === "search",
         commerceAssistant: true,
         contextualRecommendations: plan.intent.intent === "recommend" || recommendations.length > 0,
+        checkoutIntelligence:
+          plan.intent.intent === "checkout" ||
+          checkout.guidance.length > 0 ||
+          checkout.comparisons.length > 0,
       },
     };
   }
