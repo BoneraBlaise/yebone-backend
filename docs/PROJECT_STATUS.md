@@ -6,8 +6,9 @@
 **Tools tag:** `yebo-ai-tools-v1`  
 **Search tag:** `yebo-ai-search-v1`  
 **Assistant tag:** `yebo-ai-assistant-v1`  
+**Recommend tag:** `yebo-ai-recommend-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-assistant`
+**Current branch:** `feature/yebo-ai-recommend`
 
 ---
 
@@ -82,6 +83,23 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
+## Phase 7.5 — CONTEXTUAL RECOMMENDATIONS COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| RecommendationEngine | ✔ Deterministic rule ranking |
+| RecommendationTool upgrade | ✔ Reuses SearchTool session results |
+| Planner recommendation routing | ✔ `recommendation_request` flow |
+| Transparent reasons | ✔ Per-product `reasons[]` |
+| MockProvider explanations | ✔ References tool output only |
+| Observability | ✔ Recommendation metrics |
+| Frontend card rendering | ✔ Existing conversation UI |
+| **Phase 7.6+** | **Not started** |
+
+**Tag:** `yebo-ai-recommend-v1` · **Doc:** [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md)
+
+---
+
 ## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
@@ -113,7 +131,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (gateway + tools + NL search + assistant)** | Orchestration layer | **7.4 frozen** (`yebo-ai-assistant-v1`) |
+| **YEBO AI (gateway + tools + NL search + assistant + recommendations)** | Orchestration layer | **7.5 frozen** (`yebo-ai-recommend-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -154,5 +172,5 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 ## Verification
 
 ```bash
-npm run verify:yebo-ai-gateway
+npm run verify:yebo-ai-recommend
 ```

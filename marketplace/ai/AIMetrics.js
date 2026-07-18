@@ -31,6 +31,11 @@ class AIMetrics {
     this.newToolExecutions = 0;
     this.conversationSessions = new Set();
     this.averageTurns = 0;
+    this.recommendationRequests = 0;
+    this.recommendationGenerations = 0;
+    this.recommendationReuseCount = 0;
+    this.recommendationLatencyMs = 0;
+    this.recommendationReasons = {};
   }
 
   startTimer() {
@@ -163,6 +168,33 @@ class AIMetrics {
     }
   }
 
+  recordRecommendationRequest({ sessionId = null, reused = false, correlationId = null } = {}) {
+    this.recommendationRequests += 1;
+    if (reused) this.recommendationReuseCount += 1;
+    if (sessionId) this.conversationSessions.add(String(sessionId));
+    if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
+  recordRecommendationGeneration({
+    count = 0,
+    latencyMs = 0,
+    reused = false,
+    reasons = [],
+    correlationId = null,
+  } = {}) {
+    this.recommendationGenerations += 1;
+    this.recommendationLatencyMs += latencyMs;
+    if (reused) this.recommendationReuseCount += 1;
+    for (const reason of reasons) {
+      const key = String(reason).slice(0, 80);
+      this.recommendationReasons[key] = (this.recommendationReasons[key] || 0) + 1;
+    }
+    if (count === 0) {
+      this.recommendationReasons.empty = (this.recommendationReasons.empty || 0) + 1;
+    }
+    if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -193,6 +225,14 @@ class AIMetrics {
       toolReuseCount: this.toolReuseCount,
       newToolExecutions: this.newToolExecutions,
       averageTurns: this.averageTurns || 0,
+      recommendationRequests: this.recommendationRequests,
+      recommendationGenerations: this.recommendationGenerations,
+      recommendationReuseCount: this.recommendationReuseCount,
+      averageRecommendationLatencyMs:
+        this.recommendationGenerations > 0
+          ? Math.round(this.recommendationLatencyMs / this.recommendationGenerations)
+          : 0,
+      recommendationReasons: { ...this.recommendationReasons },
     });
   }
 }

@@ -1,9 +1,16 @@
 /**
- * Follow-up analysis for commerce assistant turns (Phase 7.4).
+ * Follow-up analysis for commerce assistant turns (Phase 7.4 + 7.5 recommendations).
  */
 class ConversationFlowAnalyzer {
+  static RECOMMENDATION_PATTERNS =
+    /what do you recommend|which one do you recommend|which one should i buy|which is better|best option|what would you recommend|you recommend|recommend one from|recommend one\b/i;
+
   constructor({ searchParameterExtractor } = {}) {
     this.searchParameterExtractor = searchParameterExtractor;
+  }
+
+  isRecommendationRequest(message = "") {
+    return ConversationFlowAnalyzer.RECOMMENDATION_PATTERNS.test(String(message || ""));
   }
 
   isFollowUp(message, sessionContext = {}) {
@@ -36,8 +43,22 @@ class ConversationFlowAnalyzer {
     const text = String(message || "").toLowerCase().trim();
     const followUp = this.isFollowUp(message, sessionContext);
 
+    if (this.isRecommendationRequest(message)) {
+      const hasProducts =
+        (sessionContext.currentProducts?.length || 0) > 0 ||
+        (sessionContext.lastToolResult?.data?.products?.length || 0) > 0;
+      return {
+        followUp: sessionContext.turnCount > 1,
+        type: "recommendation_request",
+        intent: "recommend",
+        toolStrategy: "execute",
+        reason: hasProducts ? "recommend_from_existing_results" : "recommend_with_search",
+        reuseSearchResults: hasProducts,
+      };
+    }
+
     if (
-      /which one|best battery|compare them|tell me about (this|the)|what about the first|recommend one from/i.test(
+      /which one|best battery|compare them|tell me about (this|the)|what about the first/i.test(
         text
       )
     ) {

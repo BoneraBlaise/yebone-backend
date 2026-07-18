@@ -1,5 +1,5 @@
 /**
- * AI planner — commerce assistant conversation flow (Phase 7.4).
+ * AI planner — commerce assistant + contextual recommendations (Phase 7.5).
  */
 const SearchParameterExtractor = require("./search/SearchParameterExtractor");
 const AIConversationContext = require("./conversation/AIConversationContext");
@@ -64,12 +64,15 @@ class AIPlanner {
     }
 
     if (flow?.intent) {
+      let capabilities = ["faq", "platform_docs"];
+      if (flow.intent === "search") {
+        capabilities = ["keyword", "pagination", "filters", "sort"];
+      } else if (flow.intent === "recommend") {
+        capabilities = ["recommendations", "candidate_composition"];
+      }
       return {
         intent: flow.intent,
-        capabilities:
-          flow.intent === "search"
-            ? ["keyword", "pagination", "filters", "sort"]
-            : ["faq", "platform_docs"],
+        capabilities,
         confidence: 0.85,
         followUp: flow.followUp,
       };
@@ -113,6 +116,18 @@ class AIPlanner {
         intent: "recommend",
         capabilities: ["recommendations", "candidate_composition"],
         confidence: 0.75,
+      };
+    }
+
+    if (
+      /best option|which one should i buy|which is better|what do you recommend|what would you recommend/i.test(
+        text
+      )
+    ) {
+      return {
+        intent: "recommend",
+        capabilities: ["recommendations", "candidate_composition"],
+        confidence: 0.8,
       };
     }
 
@@ -222,8 +237,17 @@ class AIPlanner {
         };
       case "vendor_lookup":
         return { ...base, action: "shop_lookup", shopId: context.shopId };
-      case "recommend":
-        return { ...base, action: "compose" };
+      case "recommend": {
+        const sessionContext = context.sessionContext || {};
+        return {
+          ...base,
+          action: "rank",
+          sourceProducts: context.sourceProducts || sessionContext.currentProducts || [],
+          searchRequest: context.lastSearchRequest || sessionContext.lastSearchRequest || null,
+          preferAffordable: /\baffordable\b|\bcheaper\b|\bbudget\b/i.test(message),
+          limit: context.limit || 5,
+        };
+      }
       case "payment":
         return { ...base, action: "readiness" };
       case "catalog":
@@ -235,11 +259,21 @@ class AIPlanner {
 
   _extractProducts(toolResult) {
     const data = toolResult?.data || {};
+    if (Array.isArray(data.recommendations) && data.recommendations.length > 0) {
+      return data.recommendations
+        .map((entry) => entry.product || entry.searchPreview)
+        .filter(Boolean);
+    }
     if (Array.isArray(data.products)) return data.products;
     if (Array.isArray(data.candidates)) {
       return data.candidates.map((entry) => entry.product || entry.searchPreview).filter(Boolean);
     }
     return [];
+  }
+
+  _extractRecommendations(toolResult) {
+    const recommendations = toolResult?.data?.recommendations;
+    return Array.isArray(recommendations) ? recommendations : [];
   }
 
   async createPlan(request = {}) {
@@ -314,6 +348,14 @@ class AIPlanner {
       turnCount: sessionContext.turnCount,
     });
 
+    if (intent.intent === "recommend") {
+      this.metrics.recordRecommendationRequest({
+        sessionId: resolvedSessionId,
+        reused: Boolean(flow.reuseSearchResults),
+        correlationId: request.requestId,
+      });
+    }
+
     return plan;
   }
 
@@ -321,7 +363,13 @@ class AIPlanner {
     await this.hooks.emit("beforeTurn", { plan, context });
 
     let toolResult = null;
-    const toolInput = this.buildToolInput(plan, context);
+    const sessionContext = this.conversationContext.get(plan.sessionId);
+    const toolInput = this.buildToolInput(plan, {
+      ...context,
+      sessionContext,
+      sourceProducts: sessionContext.currentProducts,
+      lastSearchRequest: sessionContext.lastSearchRequest,
+    });
 
     if (plan.permission.allowed === false) {
       toolResult = this._failureToolResult(plan, plan.permission.reason || "permission_denied", 403);
@@ -352,6 +400,8 @@ class AIPlanner {
         toolResult = await this.toolRegistry.execute(plan.toolId, toolInput, {
           userId: context.userId || null,
           correlationId: plan.correlationId,
+          sessionContext,
+          message: context.message || context.query,
         });
         this.metrics.recordToolExecution({
           toolId: plan.toolId,
@@ -360,6 +410,17 @@ class AIPlanner {
           capabilities: plan.capabilities,
           correlationId: plan.correlationId,
         });
+        if (plan.intent.intent === "recommend" && toolResult.success) {
+          const recommendations = this._extractRecommendations(toolResult);
+          const reasonSamples = recommendations.flatMap((entry) => entry.reasons || []).slice(0, 5);
+          this.metrics.recordRecommendationGeneration({
+            count: recommendations.length,
+            latencyMs: toolResult.latency || 0,
+            reused: Boolean(toolResult.data?.meta?.searchReused),
+            reasons: reasonSamples,
+            correlationId: plan.correlationId,
+          });
+        }
         await this.hooks.emit("afterTool", { toolId: plan.toolId, toolResult });
       } catch (err) {
         toolResult = this._failureToolResult(
@@ -389,6 +450,7 @@ class AIPlanner {
     });
 
     const products = this._extractProducts(toolResult);
+    const recommendations = this._extractRecommendations(toolResult);
     this.conversationContext.recordTurn(plan.sessionId, {
       message: context.message || context.query,
       plan,
@@ -397,7 +459,7 @@ class AIPlanner {
       products,
     });
 
-    const response = this.formatResponse(plan, providerResult, toolResult, products);
+    const response = this.formatResponse(plan, providerResult, toolResult, products, recommendations);
     await this.hooks.emit("afterResponse", { plan, response });
     return response;
   }
@@ -418,7 +480,7 @@ class AIPlanner {
     };
   }
 
-  formatResponse(plan, providerResult, toolResult, products = []) {
+  formatResponse(plan, providerResult, toolResult, products = [], recommendations = []) {
     return {
       requestId: plan.requestId,
       sessionId: plan.sessionId,
@@ -435,6 +497,7 @@ class AIPlanner {
       },
       tool: toolResult,
       message: providerResult.content,
+      recommendations,
       searchRequest: plan.searchRequest || null,
       conversation: {
         turnCount: plan.sessionContextSnapshot?.turnCount || 0,
@@ -442,14 +505,16 @@ class AIPlanner {
         toolStrategy: plan.toolStrategy,
         flowType: plan.conversationFlow?.type || "new_turn",
         productCount: products.length,
+        recommendationCount: recommendations.length,
       },
       meta: {
-        phase: "7.4",
+        phase: "7.5",
         gateway: true,
         streamingPrepared: true,
         productionTools: true,
         naturalLanguageSearch: plan.intent.intent === "search",
         commerceAssistant: true,
+        contextualRecommendations: plan.intent.intent === "recommend" || recommendations.length > 0,
       },
     };
   }

@@ -1,7 +1,7 @@
 const BaseAIProvider = require("./BaseAIProvider");
 
 /**
- * Mock provider — sole active provider in Phase 7.1.
+ * Mock provider — sole active provider in Phase 7.1+.
  */
 class MockProvider extends BaseAIProvider {
   constructor(config = {}) {
@@ -19,8 +19,32 @@ class MockProvider extends BaseAIProvider {
     };
   }
 
+  _formatRecommendationExplanation(toolResults = []) {
+    const tool = toolResults.find(
+      (entry) => entry?.success && Array.isArray(entry?.data?.recommendations) && entry.data.recommendations.length > 0
+    );
+    if (!tool) return null;
+
+    const top = tool.data.recommendations[0];
+    const name = top.searchPreview?.name || top.product?.name || "this product";
+    const reasons = (top.reasons || []).slice(0, 3).join("; ");
+    const reused = tool.data.meta?.searchReused ? " from your current search results" : "";
+    return `I recommend ${name}${reused}.${reasons ? ` Why: ${reasons}.` : ""}`;
+  }
+
   async chat(input, options = {}) {
     const text = typeof input === "string" ? input : JSON.stringify(input);
+    const recommendationMessage = this._formatRecommendationExplanation(options.toolResults || []);
+    if (recommendationMessage) {
+      return {
+        providerId: this.id,
+        model: this.model,
+        mock: true,
+        content: recommendationMessage,
+        usage: { inputTokens: text.length, outputTokens: recommendationMessage.length },
+      };
+    }
+
     const toolHint = options.toolResults?.length
       ? ` Tool results: ${options.toolResults.length}.`
       : "";

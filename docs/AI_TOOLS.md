@@ -1,10 +1,10 @@
 # YEBO AI — Tool Architecture
 
-**Tag:** `yebo-ai-search-v1`  
+**Tag:** `yebo-ai-recommend-v1`  
 **Baseline:** `yebo-ai-tools-v1`  
-**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search)
+**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search + Phase 7.5 recommendations)
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_SECURITY.md](./AI_SECURITY.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md) · [AI_SECURITY.md](./AI_SECURITY.md)
 
 ---
 
@@ -124,12 +124,15 @@ Mutations deferred to Phase 8+ with human-in-the-loop confirmation tool.
 
 | Field | Value |
 |-------|-------|
-| **ID** | `recommend.products`, `recommend.contextual` |
-| **Platform** | Composes `SearchTool` + `CatalogTool` + session context |
-| **Logic** | Rank/filter using platform data; LLM explains rankings — does not invent products |
-| **Input** | `{ scope, productId?, category?, cartIds?, limit }` |
-| **Output** | `{ recommendations[], reasons[], confidence }` |
-| **Never** | Client-side Redux-only recommendations |
+| **ID** | `recommend.contextual` |
+| **Platform** | `SearchTool` + `CatalogTool` + `RecommendationEngine` |
+| **Logic** | Deterministic ranking of current search/catalog results; MockProvider explains reasons |
+| **Input** | `{ action: "rank", sourceProducts?, searchRequest?, preferAffordable?, limit }` |
+| **Output** | `{ recommendations[{ rank, product, searchPreview, reasons[], signals }], meta }` |
+| **Reuse** | Session `currentProducts` / prior SearchTool results before new search |
+| **Never** | ML scores, invented attributes, direct DB access |
+
+See [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md).
 
 Replaces: `YIPShoppingIntelligence`, `YEBOIntelligenceEngine` mock paths.
 

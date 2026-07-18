@@ -210,8 +210,9 @@ describe("AI Tools — Phase 7.2", () => {
     const result = await tool.run({ q: "phones" });
 
     assert.equal(result.success, true);
-    assert.equal(result.data.candidates.length, 1);
-    assert.deepEqual(result.data.meta.composedFrom, ["SearchTool", "CatalogTool"]);
+    assert.equal(result.data.recommendations.length, 1);
+    assert.equal(result.data.meta.engine, "RecommendationEngine");
+    assert.deepEqual(result.data.meta.composedFrom.includes("RecommendationEngine"), true);
   });
 
   it("capability registry resolves tools without hardcoded planner names", () => {
@@ -295,7 +296,7 @@ describe("AI Tools — Phase 7.2", () => {
     const platform = new AIPlatform({ marketplaceCore: core });
     platform.initialize();
 
-    assert.equal(platform.config.version, "7.4.0");
+    assert.equal(platform.config.version, "7.5.0");
     assert.equal(platform.toolRegistry.list().length, 7);
     assert.ok(platform.capabilityRegistry.listCapabilities().length >= 7);
   });
