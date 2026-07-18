@@ -16,6 +16,7 @@ class SearchHealth {
       suggestionsReady: this.platform.config.enableSuggestions !== false,
       analyticsReady: this.platform.config.enableAnalytics !== false,
       aiSearchReady: this.platform.config.aiSearchReady === true,
+      productionHardened: this.platform.config.productionHardened === true,
     });
   }
 }

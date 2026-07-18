@@ -1,5 +1,6 @@
 const Product = require("../../model/product");
 const Shop = require("../../model/shop");
+const SearchTextNormalizer = require("../search/SearchTextNormalizer");
 
 const PRODUCT_PROJECTION =
   "name description category tags originalPrice discountPrice stock sold_out ratings featured bestdeal productType condition location shopId shop images createdAt brand likes";
@@ -83,10 +84,10 @@ class SearchService {
   }
 
   async suggestProducts(term, { limit = 8 } = {}) {
-    const cleaned = String(term || "").trim();
+    const cleaned = SearchTextNormalizer.normalizeKeyword(term, 200);
     if (!cleaned) return [];
 
-    const regex = cleaned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = SearchTextNormalizer.escapeRegex(cleaned);
     return Product.find({
       $or: [
         { name: { $regex: regex, $options: "i" } },

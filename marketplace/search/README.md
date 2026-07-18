@@ -1,7 +1,7 @@
-# Search Platform v1
+# Search Platform v1.1 (Production)
 
-Baseline: `orders-production-v1`  
-Tag: `search-v1`
+Baseline: `search-v1`  
+Production tag: `search-production-v1`
 
 Health: `GET /api/v2/marketplace/search/health`
 

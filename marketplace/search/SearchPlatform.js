@@ -42,23 +42,7 @@ class SearchPlatform {
   _prepare(rawQuery = {}) {
     SearchValidation.assertValidQuery(rawQuery);
     const normalized = this.query.normalize(rawQuery);
-
-    const priceValidation = SearchValidation.validatePriceRange(
-      normalized.minPrice,
-      normalized.maxPrice
-    );
-    if (!priceValidation.valid) {
-      const error = new Error("Invalid price range for search");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    if (!this.ranking.isSupported(normalized.sort)) {
-      const error = new Error("Invalid sort option");
-      error.statusCode = 400;
-      throw error;
-    }
-
+    SearchValidation.assertNormalizedQuery(normalized);
     return normalized;
   }
 

@@ -1,3 +1,5 @@
+const SearchTextNormalizer = require("./SearchTextNormalizer");
+
 /**
  * Normalize and deduplicate search query parameters.
  */
@@ -7,22 +9,34 @@ class SearchQuery {
   }
 
   normalize(raw = {}) {
-    const q = this._cleanText(raw.q || raw.search);
-    const category = this._cleanText(raw.category);
-    const tags = this._cleanText(raw.tags);
-    const shopId = this._cleanText(raw.shopId || raw.shop || raw.seller);
-    const productType = this._cleanText(raw.productType);
-    const condition = this._cleanText(raw.condition);
-    const location = this._cleanText(raw.location);
-    const brand = this._cleanText(raw.brand);
-
-    const page = Math.max(1, Number.parseInt(raw.page, 10) || 1);
+    const maxLength = this.config?.maxQueryLength || 200;
     const maxLimit = this.config?.maxLimit || 100;
+    const maxPage = this.config?.maxPage || 500;
     const defaultLimit = this.config?.defaultLimit || 20;
+
+    const q = SearchTextNormalizer.normalizeKeyword(
+      raw.q || raw.search,
+      maxLength
+    );
+    const category = SearchTextNormalizer.normalizeText(raw.category, maxLength);
+    const tags = SearchTextNormalizer.normalizeText(raw.tags, maxLength);
+    const shopId = SearchTextNormalizer.normalizeText(
+      raw.shopId || raw.shop || raw.seller,
+      maxLength
+    );
+    const productType = SearchTextNormalizer.normalizeText(raw.productType, maxLength);
+    const condition = SearchTextNormalizer.normalizeText(raw.condition, maxLength);
+    const location = SearchTextNormalizer.normalizeText(raw.location, maxLength);
+    const brand = SearchTextNormalizer.normalizeText(raw.brand, maxLength);
+
+    const page = Math.min(
+      maxPage,
+      Math.max(1, Number.parseInt(raw.page, 10) || 1)
+    );
     const requestedLimit = Number.parseInt(raw.limit, 10) || defaultLimit;
     const limit = Math.min(maxLimit, Math.max(1, requestedLimit));
 
-    const sort = this._cleanText(raw.sort || raw.sortBy) || "newest";
+    const sort = SearchTextNormalizer.normalizeText(raw.sort || raw.sortBy, 64) || "newest";
 
     const minPrice = this._parseNumber(raw.minPrice || raw.priceMin);
     const maxPrice = this._parseNumber(raw.maxPrice || raw.priceMax);
@@ -52,13 +66,6 @@ class SearchQuery {
       minRating,
       filters,
     });
-  }
-
-  _cleanText(value) {
-    if (value === undefined || value === null) return "";
-    const text = String(value).trim();
-    const maxLength = this.config?.maxQueryLength || 200;
-    return text.slice(0, maxLength);
   }
 
   _parseNumber(value) {

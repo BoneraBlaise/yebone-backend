@@ -17,7 +17,7 @@ describe("Search Platform", () => {
     const platform = new SearchPlatform({ marketplaceCore: core });
 
     assert.equal(platform.searchService.productService, core.services.product);
-    assert.equal(platform.config.version, "1.0.0");
+    assert.equal(platform.config.version, "1.1.0");
   });
 
   it("exposes search health endpoint", async () => {

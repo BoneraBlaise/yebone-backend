@@ -1,7 +1,6 @@
 # Yebone — Frontend Architecture
 
-**Status:** Permanent UI architecture standard for all Yebone development  
-**Checkpoint baseline:** `development-checkpoint-phase4`  
+**Status:** Permanent UI architecture standard — frozen at `search-production-v1`  
 **Production UI:** `src/App.js` (legacy shell — single source of truth)
 
 ---
@@ -174,7 +173,7 @@ Frontend architecture does not duplicate backend modules. UI calls existing v2 A
 | Phase | Frontend rule |
 |-------|---------------|
 | Orders (5) | Upgrade checkout, order details, seller order pages — one responsive implementation each |
-| Search (6) | Extend `ProductsPage` and search UI — no new parallel discovery stack |
+| Search (6) | Extend `ProductsPage`, `/search`, `useProductSearch` — server-backed discovery only |
 | Notifications (7) | Extend existing header/panel patterns — no second notification system |
 | All phases | Follow Inspect → Reuse → Upgrade → Consolidate → Freeze |
 

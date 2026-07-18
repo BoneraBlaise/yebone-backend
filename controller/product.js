@@ -3,7 +3,7 @@ const { isSeller, isAuthenticated, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { getProductPlatform, getSearchPlatform } = require("../marketplace");
-const { hasSearchQuery } = require("./search");
+const { hasSearchQuery } = require("../marketplace/search/SearchCompatibility");
 
 const router = express.Router();
 

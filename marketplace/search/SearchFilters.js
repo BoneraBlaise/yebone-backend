@@ -1,8 +1,5 @@
 const ProductSearch = require("../catalog/ProductSearch");
-
-function escapeRegex(value = "") {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+const SearchTextNormalizer = require("./SearchTextNormalizer");
 
 /**
  * Search filter builder — reuses ProductSearch.prepareFilters and extends it.
@@ -10,6 +7,16 @@ function escapeRegex(value = "") {
 class SearchFilters {
   constructor({ config } = {}) {
     this.productSearch = new ProductSearch({ config });
+    this.config = config;
+  }
+
+  _keywordOrFilter(field, keyword) {
+    const term = SearchTextNormalizer.buildCaseInsensitiveRegex(
+      keyword,
+      this.config?.maxQueryLength || 200
+    );
+    if (!term) return null;
+    return { [field]: { $regex: term, $options: "i" } };
   }
 
   build(query = {}) {
@@ -23,13 +30,13 @@ class SearchFilters {
     const filters = { ...base.filters };
 
     if (query.q) {
-      const term = escapeRegex(query.q);
-      filters.$or = [
-        { name: { $regex: term, $options: "i" } },
-        { description: { $regex: term, $options: "i" } },
-        { tags: { $regex: term, $options: "i" } },
-        { category: { $regex: term, $options: "i" } },
-      ];
+      const clauses = ["name", "description", "tags", "category"]
+        .map((field) => this._keywordOrFilter(field, query.q))
+        .filter(Boolean);
+
+      if (clauses.length) {
+        filters.$or = clauses;
+      }
     }
 
     if (query.brand) {
@@ -89,12 +96,13 @@ class SearchFilters {
     const filters = {};
 
     if (query.q) {
-      const term = escapeRegex(query.q);
-      filters.$or = [
-        { name: { $regex: term, $options: "i" } },
-        { description: { $regex: term, $options: "i" } },
-        { address: { $regex: term, $options: "i" } },
-      ];
+      const clauses = ["name", "description", "address"]
+        .map((field) => this._keywordOrFilter(field, query.q))
+        .filter(Boolean);
+
+      if (clauses.length) {
+        filters.$or = clauses;
+      }
     }
 
     return Object.freeze({ filters });

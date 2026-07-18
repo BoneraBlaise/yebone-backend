@@ -83,6 +83,8 @@ module.exports = {
   SearchAnalytics: require("./SearchAnalytics"),
   SearchHealth: require("./SearchHealth"),
   SearchHooks: require("./SearchHooks"),
+  SearchTextNormalizer: require("./SearchTextNormalizer"),
+  SearchCompatibility: require("./SearchCompatibility"),
   createSearchPlatform,
   getSearchPlatform,
   registerSearchPlatform,
