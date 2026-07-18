@@ -27,25 +27,20 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**AI architecture design is frozen.** Implementation not started.
+**Phase 7.1 gateway frozen.** Phase 7.2 not started.
 
-Restore points:
+Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`
 
-- Foundation: `platform-pre-ai-v1`
-- AI design: `yebo-ai-design-v1`
-
-Branch: `feature/yebo-ai-design`
+Branch: `feature/yebo-ai-gateway`
 
 ---
 
-## Upcoming — Phase 7 Implementation
+## Upcoming — Phase 7 Implementation (continued)
 
-Implementation follows [AI_ROADMAP.md](./AI_ROADMAP.md). Each milestone is independently freezeable.
-
-| Milestone | Name | Target tag |
-|-----------|------|------------|
-| 7.1 | AI Gateway | `yebo-ai-gateway-v1` |
-| 7.2 | Tool Registry | `yebo-ai-tools-v1` |
+| Milestone | Name | Target tag | Status |
+|-----------|------|------------|--------|
+| 7.1 | AI Gateway | `yebo-ai-gateway-v1` | ✅ Complete |
+| 7.2 | Tool Registry | `yebo-ai-tools-v1` | Next |
 | 7.3 | Search Integration | `yebo-ai-search-v1` |
 | 7.4 | Commerce Assistant | `yebo-ai-assistant-v1` |
 | 7.5 | Recommendations | `yebo-ai-recommend-v1` |

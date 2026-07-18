@@ -6,6 +6,14 @@ Format: `[tag]` — summary of architectural impact.
 
 ---
 
+## [yebo-ai-gateway-v1] — Phase 7.1 AI Gateway Foundation
+
+- New `marketplace/ai/` platform module (gateway, planner, tools, prompts, mock provider)
+- Public endpoints: `POST /api/v2/ai/chat`, `POST /api/v2/ai/search`, health probe
+- Frontend YIP wired to backend gateway; browser LLM keys removed from runtime path
+
+---
+
 ## [yebo-ai-design-v1] — YEBO AI Architecture Design Freeze
 
 - Canonical AI orchestration architecture (`docs/YEBO_AI_ARCHITECTURE.md`)

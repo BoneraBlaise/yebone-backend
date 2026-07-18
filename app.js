@@ -72,6 +72,7 @@ const user = require("./controller/user");
 const shop = require("./controller/shop");
 const product = require("./controller/product");
 const search = require("./controller/search");
+const ai = require("./controller/ai");
 const event = require("./controller/event");
 const coupon = require("./controller/coupounCode");
 const payment = require("./controller/payment");
@@ -147,6 +148,8 @@ registerPaymentRuntime(app);
 
 const { registerMarketplaceCore } = require("./marketplace");
 registerMarketplaceCore(app);
+
+app.use("/api/v2/ai", ai);
 
 const { registerPlatformRoutes } = require("./platform/runtime/registerPlatformRoutes");
 registerPlatformRoutes(app);

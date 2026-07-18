@@ -4,7 +4,8 @@ Backend for the Yebone AI-powered African marketplace platform.
 
 **Foundation checkpoint:** `platform-pre-ai-v1`  
 **AI design freeze:** `yebo-ai-design-v1`  
-**Implementation status:** Design complete — not built
+**AI gateway:** `yebo-ai-gateway-v1` (Phase 7.1 complete)  
+**Next:** Phase 7.2 — Tool Registry
 
 ---
 
@@ -61,6 +62,7 @@ npm run verify:platform-pre-ai
 
 | Document | Description |
 |----------|-------------|
+| [docs/AI_GATEWAY.md](docs/AI_GATEWAY.md) | Phase 7.1 gateway reference |
 | [docs/YEBO_AI_ARCHITECTURE.md](docs/YEBO_AI_ARCHITECTURE.md) | **Canonical AI architecture** |
 | [docs/AI_TOOLS.md](docs/AI_TOOLS.md) | Tool registry design |
 | [docs/PROMPT_ARCHITECTURE.md](docs/PROMPT_ARCHITECTURE.md) | Prompt system |
@@ -73,6 +75,6 @@ npm run verify:platform-pre-ai
 
 ## Next Phase
 
-**Phase 7.1 — AI Gateway** — See [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)
+**Phase 7.2 — Tool Registry** — See [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)
 
-Design is frozen at `yebo-ai-design-v1`. Do not implement until milestone 7.1 begins.
+Gateway frozen at `yebo-ai-gateway-v1`. Do not begin 7.2 until deployed.

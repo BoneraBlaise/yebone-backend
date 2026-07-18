@@ -2,8 +2,9 @@
 
 **Last updated:** 2026-07-18  
 **Design tag:** `yebo-ai-design-v1`  
+**Gateway tag:** `yebo-ai-gateway-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-design`
+**Current branch:** `feature/yebo-ai-gateway`
 
 ---
 
@@ -19,7 +20,23 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
-## Phase 7 — DESIGN COMPLETE (Not Implemented)
+## Phase 7 — GATEWAY COMPLETE (7.1)
+
+| Aspect | Status |
+|--------|--------|
+| `marketplace/ai/` module | ✔ Implemented |
+| Gateway endpoints | ✔ `/api/v2/ai/chat`, `/api/v2/ai/search` |
+| Mock provider | ✔ Active |
+| Mock tools (7) | ✔ Registered |
+| Prompt registry | ✔ Versioned templates |
+| Frontend gateway client | ✔ `YIPGatewayClient` |
+| **Phase 7.2+** | **Not started** |
+
+**Tag:** `yebo-ai-gateway-v1` · **Doc:** [AI_GATEWAY.md](./AI_GATEWAY.md)
+
+---
+
+## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
 
@@ -50,7 +67,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (design)** | Orchestration layer blueprint | Design frozen — not built |
+| **YEBO AI (gateway)** | Orchestration layer | **7.1 frozen** (`yebo-ai-gateway-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -62,15 +79,13 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 |-------|------|--------|
 | 1–6 | Foundation modules | Through `search-production-v1` |
 | Checkpoint | Platform Freeze | `platform-pre-ai-v1` |
-| **7 (design)** | **YEBO AI Architecture** | **`yebo-ai-design-v1`** |
+| **7.1 (gateway)** | **AI Gateway Foundation** | **`yebo-ai-gateway-v1`** |
 
 ---
 
 ## Next Step
 
-**Phase 7.1 — AI Gateway implementation** — See [AI_ROADMAP.md](./AI_ROADMAP.md)
-
-Do not implement until explicitly starting milestone 7.1 on a dedicated branch.
+**Phase 7.2 — Tool Registry** — See [AI_ROADMAP.md](./AI_ROADMAP.md)
 
 ---
 
@@ -78,6 +93,7 @@ Do not implement until explicitly starting milestone 7.1 on a dedicated branch.
 
 | Document | Purpose |
 |----------|---------|
+| [AI_GATEWAY.md](./AI_GATEWAY.md) | Phase 7.1 gateway reference |
 | [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) | Canonical AI blueprint |
 | [AI_TOOLS.md](./AI_TOOLS.md) | Tool registry design |
 | [PROMPT_ARCHITECTURE.md](./PROMPT_ARCHITECTURE.md) | Prompt system |
@@ -92,7 +108,5 @@ Do not implement until explicitly starting milestone 7.1 on a dedicated branch.
 ## Verification
 
 ```bash
-npm run verify:platform-pre-ai   # Foundation unchanged
+npm run verify:yebo-ai-gateway
 ```
-
-AI verification scripts will be added per milestone during implementation.
