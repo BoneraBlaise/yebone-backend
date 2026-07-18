@@ -37,8 +37,10 @@
     "test:payment-foundation": "npm run test:providers:all && npm run test:engine && npm run test:foundation && npm run test:phase4",
     "test:marketplace-core": "node --test marketplace/__tests__/MarketplaceCore.test.js",
     "test:vendor-management": "node --test marketplace/vendor/__tests__/VendorPlatform.test.js",
+    "test:product-catalog": "node --test marketplace/catalog/__tests__/ProductPlatform.test.js",
     "verify:marketplace-core": "npm run test:marketplace-core",
     "verify:vendor-management": "npm run test:vendor-management && npm run test:marketplace-core",
+    "verify:product-catalog": "npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },
