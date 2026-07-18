@@ -42,13 +42,13 @@ function postJson(port, path, body) {
   });
 }
 
-describe("AI Gateway — Phase 7.1", () => {
+describe("AI Gateway — Phase 7.1/7.2", () => {
   it("registers AI platform with marketplace core", () => {
     const core = new MarketplaceCore();
     const platform = new AIPlatform({ marketplaceCore: core });
     platform.initialize();
 
-    assert.equal(platform.config.version, "7.1.0");
+    assert.equal(platform.config.version, "7.2.0");
     assert.equal(platform.toolRegistry.list().length, 7);
     assert.equal(platform.providerManager.activeProviderId, "mock");
   });
@@ -87,6 +87,8 @@ describe("AI Gateway — Phase 7.1", () => {
     assert.equal(response.data.healthy, true);
     assert.equal(response.data.mockProviderActive, true);
     assert.equal(response.data.toolsRegistered, 7);
+    assert.equal(response.data.productionTools, true);
+    assert.equal(response.data.phase, "7.2");
   });
 
   it("handles chat gateway requests with mock provider", async () => {
@@ -109,7 +111,9 @@ describe("AI Gateway — Phase 7.1", () => {
     assert.equal(response.body.success, true);
     assert.ok(response.body.data.message.includes("YEBO"));
     assert.equal(response.body.data.provider.mock, true);
-    assert.equal(response.body.data.tool.mock, true);
+    assert.equal(typeof response.body.data.tool.success, "boolean");
+    assert.equal(response.body.data.tool.tool, "search.products");
+    assert.equal(response.body.data.meta.phase, "7.2");
   });
 
   it("handles search gateway requests", async () => {
@@ -157,10 +161,11 @@ describe("AI Gateway — Phase 7.1", () => {
   });
 
   it("tool registry enforces permissions for order tool", async () => {
+    const core = new MarketplaceCore();
     const registry = new AIToolRegistry();
-    registry.registerDefaults();
+    registry.registerProductionTools({ marketplaceCore: core });
     await assert.rejects(
-      () => registry.execute("order.get", { id: "1" }, { userId: null }),
+      () => registry.execute("order.get", { action: "history" }, { userId: null }),
       (err) => err.code === "permission_denied"
     );
   });

@@ -1,31 +1,26 @@
-const { TOOL_DEFINITIONS } = require("./tools/index");
+const { createProductionTools } = require("./tools/registerTools");
 
 /**
- * AI tool registry — Phase 7.1 mock tools only.
+ * AI tool registry — Phase 7.2 production integrations.
  */
 class AIToolRegistry {
-  constructor() {
+  constructor({ metrics } = {}) {
     this.tools = new Map();
+    this.metrics = metrics || null;
   }
 
-  register(definition) {
-    if (!definition?.id) {
+  register(tool) {
+    if (!tool?.id) {
       throw new Error("AIToolRegistry: tool id is required");
     }
-    const entry = {
-      id: definition.id,
-      name: definition.name || definition.id,
-      version: definition.version || "7.1.0",
-      capabilities: definition.capabilities || [],
-      permissions: definition.permissions || ["public"],
-      execute: definition.execute,
-    };
-    this.tools.set(entry.id, entry);
-    return entry;
+    this.tools.set(tool.id, tool);
+    return tool;
   }
 
-  registerDefaults() {
-    TOOL_DEFINITIONS.forEach((tool) => this.register(tool));
+  registerProductionTools({ marketplaceCore, platforms } = {}) {
+    this.tools.clear();
+    const tools = createProductionTools({ marketplaceCore, platforms });
+    tools.forEach((tool) => this.register(tool));
     return this.list();
   }
 
@@ -34,34 +29,61 @@ class AIToolRegistry {
   }
 
   list() {
-    return [...this.tools.values()].map(({ execute, ...rest }) => ({
-      ...rest,
-      hasExecute: typeof execute === "function",
+    return [...this.tools.values()].map((tool) => ({
+      ...tool.metadata(),
+      hasExecute: typeof tool.execute === "function",
+      healthy: tool.health().healthy,
     }));
   }
 
   checkPermission(toolId, context = {}) {
     const tool = this.get(toolId);
     if (!tool) return { allowed: false, reason: "unknown_tool" };
-    const perms = tool.permissions || [];
-    if (perms.includes("public")) return { allowed: true };
-    if (perms.includes("authenticated") && context.userId) return { allowed: true };
-    return { allowed: false, reason: "permission_denied" };
+    return tool.checkAuthorization(context);
   }
 
   async execute(toolId, input = {}, context = {}) {
     const tool = this.get(toolId);
     if (!tool) {
-      throw new Error(`AIToolRegistry: unknown tool ${toolId}`);
+      const error = new Error(`AIToolRegistry: unknown tool ${toolId}`);
+      error.code = "unknown_tool";
+      error.statusCode = 404;
+      throw error;
     }
-    const permission = this.checkPermission(toolId, context);
-    if (!permission.allowed) {
-      const error = new Error(`AIToolRegistry: ${permission.reason}`);
-      error.code = permission.reason;
+
+    const startedAt = Date.now();
+    const result = await tool.run(input, context);
+    const latencyMs = Date.now() - startedAt;
+
+    if (this.metrics) {
+      this.metrics.recordToolExecution({
+        toolId,
+        success: result.success,
+        latencyMs,
+        capabilities: input.capabilities || [],
+        correlationId: context.correlationId || null,
+      });
+    }
+
+    if (!result.success && result.error?.statusCode === 403) {
+      const error = new Error(result.error.message);
+      error.code = result.error.code;
       error.statusCode = 403;
       throw error;
     }
-    return tool.execute(input, context);
+
+    return result;
+  }
+
+  healthCheck() {
+    const results = [];
+    for (const tool of this.tools.values()) {
+      results.push(tool.health());
+    }
+    return {
+      healthy: results.every((entry) => entry.healthy),
+      tools: results,
+    };
   }
 }
 

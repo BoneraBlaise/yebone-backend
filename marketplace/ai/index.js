@@ -42,6 +42,7 @@ module.exports = {
   AIGateway: require("./AIGateway"),
   AIPlanner: require("./AIPlanner"),
   AIToolRegistry: require("./AIToolRegistry"),
+  AICapabilityRegistry: require("./AICapabilityRegistry"),
   AIPromptRegistry: require("./AIPromptRegistry"),
   AIProviderManager: require("./AIProviderManager"),
   AIHealth: require("./AIHealth"),

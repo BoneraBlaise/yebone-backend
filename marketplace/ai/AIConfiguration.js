@@ -1,10 +1,10 @@
 /**
- * YEBO AI platform configuration — Phase 7.1 gateway foundation.
+ * YEBO AI platform configuration — Phase 7.2 tool registry integration.
  */
 class AIConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone AI Platform";
-    this.version = options.version || "7.1.0";
+    this.version = options.version || "7.2.0";
     this.primaryProvider = options.primaryProvider || process.env.AI_PRIMARY_PROVIDER || "mock";
     this.mockProvidersOnly = options.mockProvidersOnly !== false;
     this.maxMessageLength = Number(options.maxMessageLength || process.env.AI_MAX_MESSAGE_LENGTH || 4000);

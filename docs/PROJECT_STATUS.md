@@ -3,8 +3,9 @@
 **Last updated:** 2026-07-18  
 **Design tag:** `yebo-ai-design-v1`  
 **Gateway tag:** `yebo-ai-gateway-v1`  
+**Tools tag:** `yebo-ai-tools-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-gateway`
+**Current branch:** `feature/yebo-ai-tools`
 
 ---
 
@@ -27,12 +28,24 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 | `marketplace/ai/` module | ✔ Implemented |
 | Gateway endpoints | ✔ `/api/v2/ai/chat`, `/api/v2/ai/search` |
 | Mock provider | ✔ Active |
-| Mock tools (7) | ✔ Registered |
 | Prompt registry | ✔ Versioned templates |
 | Frontend gateway client | ✔ `YIPGatewayClient` |
-| **Phase 7.2+** | **Not started** |
 
 **Tag:** `yebo-ai-gateway-v1` · **Doc:** [AI_GATEWAY.md](./AI_GATEWAY.md)
+
+---
+
+## Phase 7.2 — TOOL REGISTRY COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| Production tools (7) | ✔ Platform-integrated |
+| ToolResult contract | ✔ Unified |
+| Capability registry | ✔ Planner routing |
+| Observability | ✔ Tool/planner metrics |
+| **Phase 7.3+** | **Not started** |
+
+**Tag:** `yebo-ai-tools-v1` · **Doc:** [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md)
 
 ---
 
@@ -67,7 +80,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (gateway)** | Orchestration layer | **7.1 frozen** (`yebo-ai-gateway-v1`) |
+| **YEBO AI (gateway + tools)** | Orchestration layer | **7.2 frozen** (`yebo-ai-tools-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 

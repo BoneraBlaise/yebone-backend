@@ -11,19 +11,23 @@ class AIHealth {
     const providers = this.platform.providerManager.getSnapshot();
     const tools = this.platform.toolRegistry.list();
     const prompts = this.platform.promptRegistry.list();
+    const toolHealth = this.platform.toolRegistry.healthCheck();
 
     return {
       name: this.platform.config.name,
       version: this.platform.config.version,
-      phase: "7.1",
-      healthy: true,
+      phase: "7.2",
+      healthy: toolHealth.healthy,
       gateway: true,
+      productionTools: true,
       mockProviderActive: providers.activeProvider === "mock",
       toolsRegistered: tools.length,
+      capabilitiesRegistered: this.platform.capabilityRegistry.listCapabilities().length,
       promptsLoaded: prompts.length,
       hooks: this.platform.hooks.snapshot(),
       metrics,
       providers,
+      tools: toolHealth.tools,
       promptVersions: this.platform.promptRegistry.getActiveVersions(),
     };
   }

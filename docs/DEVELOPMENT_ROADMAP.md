@@ -27,11 +27,11 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**Phase 7.1 gateway frozen.** Phase 7.2 not started.
+**Phase 7.2 tools frozen.** Phase 7.3 not started.
 
-Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`
+Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`
 
-Branch: `feature/yebo-ai-gateway`
+Branch: `feature/yebo-ai-tools`
 
 ---
 
@@ -40,8 +40,8 @@ Branch: `feature/yebo-ai-gateway`
 | Milestone | Name | Target tag | Status |
 |-----------|------|------------|--------|
 | 7.1 | AI Gateway | `yebo-ai-gateway-v1` | ✅ Complete |
-| 7.2 | Tool Registry | `yebo-ai-tools-v1` | Next |
-| 7.3 | Search Integration | `yebo-ai-search-v1` |
+| 7.2 | Tool Registry | `yebo-ai-tools-v1` | ✅ Complete |
+| 7.3 | Search Integration | `yebo-ai-search-v1` | Next |
 | 7.4 | Commerce Assistant | `yebo-ai-assistant-v1` |
 | 7.5 | Recommendations | `yebo-ai-recommend-v1` |
 | 7.6 | Checkout Intelligence | `yebo-ai-checkout-v1` |

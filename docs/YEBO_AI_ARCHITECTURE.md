@@ -1,9 +1,9 @@
 # YEBO AI — Canonical Architecture
 
-**Design tag:** `yebo-ai-design-v1`  
+**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1`  
 **Baseline:** `platform-pre-ai-v1`  
-**Branch:** `feature/yebo-ai-design`  
-**Status:** DESIGN ONLY — no implementation
+**Branch:** `feature/yebo-ai-tools`  
+**Status:** Phase 7.2 tool registry implemented — orchestration only
 
 > YEBO AI is an **orchestration layer**. It is not a business platform. All business logic remains in frozen modules.
 

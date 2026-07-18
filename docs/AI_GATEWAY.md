@@ -1,16 +1,16 @@
-# YEBO AI Gateway — Phase 7.1
+# YEBO AI Gateway — Phase 7.1 / 7.2
 
-**Tag:** `yebo-ai-gateway-v1`  
+**Tags:** `yebo-ai-gateway-v1` · `yebo-ai-tools-v1`  
 **Module:** `marketplace/ai/`  
 **Design baseline:** `yebo-ai-design-v1`
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOLS.md](./AI_TOOLS.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOLS.md](./AI_TOOLS.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md)
 
 ---
 
 ## Overview
 
-Phase 7.1 delivers the production AI platform skeleton. The gateway authenticates, validates, rate-limits, and routes requests through the planner to mock tools and the mock provider. **No frozen platform business logic is duplicated or modified.**
+Phase 7.1 delivered the gateway skeleton. **Phase 7.2 replaces all mock tools with production platform integrations** while keeping the mock LLM provider. The gateway authenticates, validates, rate-limits, and routes requests through the capability-aware planner to real tools and the mock provider. **No frozen platform business logic is duplicated or modified.**
 
 ---
 
@@ -19,7 +19,7 @@ Phase 7.1 delivers the production AI platform skeleton. The gateway authenticate
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `POST` | `/api/v2/ai/chat` | Optional | Assistant turn |
-| `POST` | `/api/v2/ai/search` | Optional | Search gateway (mock tools) |
+| `POST` | `/api/v2/ai/search` | Optional | Search gateway (production SearchTool) |
 | `GET` | `/api/v2/marketplace/ai/health` | Public | AI platform health |
 
 Thin controller: `controller/ai.js` → `AIPlatform.gateway`
@@ -39,8 +39,9 @@ sequenceDiagram
   C->>G: POST /api/v2/ai/chat
   G->>G: validate + rate limit + requestId
   G->>P: createPlan + execute
-  P->>T: execute(mock tool)
-  T-->>P: structured mock result
+  P->>T: execute(production tool)
+  T->>T: Platform → Service
+  T-->>P: ToolResult contract
   P->>M: chat(enriched)
   M-->>P: mock content
   P-->>G: formatted response
@@ -52,11 +53,12 @@ sequenceDiagram
 ## Planner Lifecycle
 
 1. **Detect intent** — rule-based keywords (search, order, vendor, etc.)
-2. **Select tool** — placeholder tool from registry
-3. **Compose prompts** — versioned layers from `AIPromptRegistry`
-4. **Execute tool** — mock `execute()` (Phase 7.2 wires platforms)
-5. **Call provider** — `MockProvider.chat()`
-6. **Format response** — structured JSON with requestId, tool, provider metadata
+2. **Match capabilities** — `AICapabilityRegistry` selects tool (no hardcoded tool names)
+3. **Permission check** — tool authorization before execution
+4. **Compose prompts** — versioned layers from `AIPromptRegistry`
+5. **Execute tool** — production platform delegation (Phase 7.2)
+6. **Call provider** — `MockProvider.chat()`
+7. **Format response** — ToolResult contract + provider metadata
 
 ---
 

@@ -4,6 +4,7 @@ const AIMetrics = require("./AIMetrics");
 const AIPromptRegistry = require("./AIPromptRegistry");
 const AIProviderManager = require("./AIProviderManager");
 const AIToolRegistry = require("./AIToolRegistry");
+const AICapabilityRegistry = require("./AICapabilityRegistry");
 const AIPlanner = require("./AIPlanner");
 const AIGateway = require("./AIGateway");
 const AIHealth = require("./AIHealth");
@@ -25,11 +26,13 @@ class AIPlatform {
     this.metrics = new AIMetrics();
     this.promptRegistry = new AIPromptRegistry(config?.prompts || {});
     this.providerManager = new AIProviderManager(this.config);
-    this.toolRegistry = new AIToolRegistry();
+    this.toolRegistry = new AIToolRegistry({ metrics: this.metrics });
+    this.capabilityRegistry = new AICapabilityRegistry();
     this.validation = new AIGatewayValidation(this.config);
     this.security = new AIRequestSecurity(this.config, this.hooks);
     this.planner = new AIPlanner({
       toolRegistry: this.toolRegistry,
+      capabilityRegistry: this.capabilityRegistry,
       promptRegistry: this.promptRegistry,
       providerManager: this.providerManager,
       hooks: this.hooks,
@@ -43,8 +46,12 @@ class AIPlatform {
 
   initialize() {
     if (this._initialized) return this.getSnapshot();
+
     this.providerManager.initializeAll();
-    this.toolRegistry.registerDefaults();
+    this.toolRegistry.registerProductionTools({
+      marketplaceCore: this.marketplaceCore,
+    });
+    this.capabilityRegistry.registerFromTools([...this.toolRegistry.tools.values()]);
     this._initialized = true;
     return this.getSnapshot();
   }
@@ -55,6 +62,7 @@ class AIPlatform {
       version: this.config.version,
       initialized: this._initialized,
       tools: this.toolRegistry.list().length,
+      capabilities: this.capabilityRegistry.listCapabilities().length,
       providers: this.providerManager.listProviders(),
       metrics: this.metrics.getSnapshot(),
     };

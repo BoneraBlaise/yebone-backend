@@ -1,9 +1,10 @@
 # YEBO AI — Tool Architecture
 
-**Design tag:** `yebo-ai-design-v1`  
-**Status:** DESIGN ONLY
+**Tag:** `yebo-ai-tools-v1`  
+**Baseline:** `yebo-ai-gateway-v1`  
+**Status:** IMPLEMENTED (Phase 7.2)
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_SECURITY.md](./AI_SECURITY.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SECURITY.md](./AI_SECURITY.md)
 
 ---
 
@@ -17,19 +18,22 @@ Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_SECURITY.md
 
 ---
 
-## Tool Interface (design contract)
+## Tool Interface (Phase 7.2 contract)
 
 ```javascript
-// Design contract — not implemented
 {
   id: "search.products",
-  name: "Search Products",
-  description: "Search marketplace products with filters",
-  permissions: ["public"],           // or ["authenticated", "seller", "admin"]
-  inputSchema: { /* JSON Schema */ },
-  outputSchema: { /* JSON Schema */ },
-  platform: "search",                // dependency declaration
-  execute: async (input, context) => { /* calls SearchPlatform only */ }
+  name: "SearchTool",
+  version: "7.2.0",
+  capabilities: ["keyword", "category", "filters", "pagination"],
+  permissions: ["public"],
+  platform: "SearchPlatform",
+  initialize() {},
+  health() {},
+  capabilities() {},
+  execute(input, context) {},
+  metadata() {},
+  run(input, context) // → ToolResult
 }
 ```
 
