@@ -14,6 +14,9 @@ class OrderHealth {
       marketplaceIntegrated: Boolean(this.platform.marketplaceCore),
       orderServiceReady: Boolean(this.platform.orderService),
       paymentHooksReady: Boolean(this.platform.marketplaceCore?.hooks?.payment),
+      idempotencyReady: Boolean(this.platform.idempotency),
+      stateMachineReady: Boolean(this.platform.orderService?.stateMachine),
+      inventoryGuardReady: Boolean(this.platform.orderService?.inventory),
     });
   }
 }

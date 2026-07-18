@@ -6,6 +6,7 @@ const OrderHistory = require("./OrderHistory");
 const OrderAnalytics = require("./OrderAnalytics");
 const OrderHealth = require("./OrderHealth");
 const OrderHooks = require("./OrderHooks");
+const OrderIdempotencyService = require("./OrderIdempotencyService");
 
 /**
  * Order Platform composition root — integrates with Marketplace Core services.
@@ -22,6 +23,7 @@ class OrderPlatform {
     this.lifecycle = new OrderLifecycle();
     this.status = new OrderStatus({ lifecycle: this.lifecycle });
     this.hooks = new OrderHooks({ lifecycle: this.lifecycle });
+    this.idempotency = new OrderIdempotencyService({ scope: "order_create" });
 
     this.orderService = marketplaceCore.services.order;
     this.history = new OrderHistory({ orderService: this.orderService });
@@ -32,18 +34,53 @@ class OrderPlatform {
     this.health = new OrderHealth(this);
   }
 
-  async createOrders(input) {
-    const validation = OrderValidation.validateCreateInput(input);
+  _buildIdempotencyPayload(input = {}) {
+    return {
+      cart: input.cart,
+      wonBid: input.wonBid,
+      shippingAddress: input.shippingAddress,
+      user: input.user,
+      paymentInfo: input.paymentInfo,
+      shipping: input.shipping,
+      subTotalPrice: input.subTotalPrice,
+      totalPrice: input.totalPrice,
+      referralCode: input.referralCode,
+    };
+  }
+
+  async createOrders(input, { idempotencyKey } = {}) {
+    const sanitizedInput = OrderValidation.sanitizeCreateInput(input);
+    const validation = OrderValidation.validateCreateInput(sanitizedInput);
     if (!validation.valid) {
       const error = new Error(`Missing required fields: ${validation.fields.join(", ")}`);
       error.statusCode = 400;
       throw error;
     }
 
-    const { orders } = await this.orderService.createOrders(input);
-    this.hooks.afterCreate(orders);
-    this.marketplaceCore.hooks.order.afterCreate({ orders });
-    return { orders };
+    const requestPayload = this._buildIdempotencyPayload(sanitizedInput);
+
+    const result = await this.idempotency.execute(
+      idempotencyKey,
+      requestPayload,
+      async () => {
+        const { orders } = await this.orderService.createOrders(sanitizedInput);
+
+        let paymentSessions = [];
+        try {
+          paymentSessions = await this.preparePaymentSessions(orders, sanitizedInput.user);
+        } catch (paymentError) {
+          await this.orderService.compensateFailedCreate(orders);
+          throw paymentError;
+        }
+
+        this.hooks.afterCreate(orders);
+        this.marketplaceCore.hooks.order.afterCreate({ orders });
+
+        return { orders, paymentSessions };
+      }
+    );
+
+    return result;
   }
 
   async preparePaymentSessions(orders, user) {
@@ -56,8 +93,8 @@ class OrderPlatform {
     return order;
   }
 
-  async requestRefund(orderId, status) {
-    const order = await this.orderService.requestRefund(orderId, status);
+  async requestRefund(orderId, status, userId) {
+    const order = await this.orderService.requestRefund(orderId, status, userId);
     this.hooks.afterRefundRequested(order);
     return order;
   }

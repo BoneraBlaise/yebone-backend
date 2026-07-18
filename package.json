@@ -39,10 +39,12 @@
     "test:vendor-management": "node --test marketplace/vendor/__tests__/VendorPlatform.test.js",
     "test:product-catalog": "node --test marketplace/catalog/__tests__/ProductPlatform.test.js",
     "test:orders": "node --test marketplace/orders/__tests__/OrderPlatform.test.js",
+    "test:orders-production": "node --test marketplace/orders/__tests__/OrderProduction.test.js marketplace/orders/__tests__/OrderPlatform.test.js",
     "verify:marketplace-core": "npm run test:marketplace-core",
     "verify:vendor-management": "npm run test:vendor-management && npm run test:marketplace-core",
     "verify:product-catalog": "npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core",
     "verify:orders": "npm run test:orders && npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core",
+    "verify:orders-production": "npm run test:orders-production && npm run verify:architecture && npm run verify:legacy-migration",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },

@@ -44,6 +44,20 @@ class OrderValidation {
     }
     return { allowed: false, reason: "INVALID_STATUS" };
   }
+
+  static sanitizeCreateInput(input = {}) {
+    return {
+      cart: input.cart,
+      wonBid: input.wonBid,
+      shippingAddress: input.shippingAddress,
+      user: input.user,
+      paymentInfo: input.paymentInfo,
+      shipping: input.shipping,
+      subTotalPrice: input.subTotalPrice,
+      totalPrice: input.totalPrice,
+      referralCode: input.referralCode,
+    };
+  }
 }
 
 module.exports = OrderValidation;

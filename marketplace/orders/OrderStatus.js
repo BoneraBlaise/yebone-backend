@@ -1,14 +1,21 @@
 const OrderLifecycle = require("./OrderLifecycle");
+const OrderStateMachine = require("./OrderStateMachine");
 
 /**
  * Order status helpers and messaging metadata.
  */
 class OrderStatus {
-  constructor({ lifecycle } = {}) {
+  constructor({ lifecycle, stateMachine } = {}) {
     this.lifecycle = lifecycle || new OrderLifecycle();
+    this.stateMachine = stateMachine || new OrderStateMachine();
   }
 
   getFulfillmentOptions(currentStatus) {
+    const options = this.stateMachine.getFulfillmentOptions(currentStatus);
+    if (options.length) {
+      return options;
+    }
+
     const index = OrderLifecycle.FULFILLMENT_STATUSES.indexOf(currentStatus);
     if (index === -1) {
       return [...OrderLifecycle.FULFILLMENT_STATUSES];
@@ -17,6 +24,11 @@ class OrderStatus {
   }
 
   getRefundOptions(currentStatus) {
+    const options = this.stateMachine.getRefundOptions(currentStatus);
+    if (options.length) {
+      return options;
+    }
+
     const index = OrderLifecycle.REFUND_STATUSES.indexOf(currentStatus);
     if (index === -1) {
       return [...OrderLifecycle.REFUND_STATUSES];

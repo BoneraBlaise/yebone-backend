@@ -43,11 +43,15 @@ const generateShareLink = (productId, referralCode, frontendUrl) => {
 };
 
 // Process commission for an order
-const processOrderCommission = async (order, referralCode) => {
+const processOrderCommission = async (order, referralCode, session = null) => {
   try {
     if (!referralCode) return null;
 
-    const commission = await Commission.findOne({ referralCode });
+    let query = Commission.findOne({ referralCode });
+    if (session) {
+      query = query.session(session);
+    }
+    const commission = await query;
     if (!commission) return null;
 
     let totalCommission = 0;
@@ -88,7 +92,7 @@ const processOrderCommission = async (order, referralCode) => {
         await commission.updateShopStats(update.shop, update.commission, "pending");
       }
 
-      await commission.save();
+      await commission.save(session ? { session } : undefined);
 
       console.log(`✅ Commission assigned to ${referralCode}: ${totalCommission.toFixed(2)} total`);
     } else {
