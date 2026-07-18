@@ -27,11 +27,11 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**YEBO AI v1 complete — frozen at `yebo-ai-memory-v1`.**
+**Phase 8.0 Delivery Module Foundation — frozen at `delivery-foundation-v1`.**
 
-Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`, `yebo-ai-memory-v1`
+Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`, `yebo-ai-memory-v1`, `delivery-foundation-v1`
 
-Branch: `feature/yebo-ai-memory`
+Branch: `feature/delivery-foundation`
 
 ---
 
@@ -47,20 +47,30 @@ Branch: `feature/yebo-ai-memory`
 | 7.6 | Checkout Intelligence | `yebo-ai-checkout-v1` | ✅ Complete |
 | 7.7 | Conversation Memory | `yebo-ai-memory-v1` | ✅ Complete |
 
-**YEBO AI v1 implementation complete.** Next platform work: Delivery (Phase 9+).
+**YEBO AI v1 implementation complete.**
+
+| Milestone | Name | Target tag | Status |
+|-----------|------|------------|--------|
+| 8.0 | Delivery Module Foundation | `delivery-foundation-v1` | ✅ Complete |
+
+**Do not begin Delivery Tracking or Courier Management.**
 
 ---
 
 ## Future
 
-### Phase 8 — Inventory & Categories
+### Phase 8 — Delivery
+
+| Milestone | Name | Status |
+|-----------|------|--------|
+| 8.0 | Delivery Module Foundation | ✅ Complete (`delivery-foundation-v1`) |
+| 8.1 | Delivery Tracking | Next |
+| 8.2 | Courier Management | Planned |
+
+### Phase 9 — Inventory & Categories
 
 - Category taxonomy modernization
 - Inventory tracking redesign
-
-### Phase 9 — Delivery & Fulfillment
-
-- Shipping workflow and fulfillment pipeline
 
 ### Phase 10 — Notifications & Mobile
 

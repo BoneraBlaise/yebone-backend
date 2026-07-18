@@ -93,6 +93,8 @@ flowchart TB
 | Product Catalog | `marketplace/catalog/` | `ProductPlatform` | `ProductService` | `product-catalog-v1` |
 | Orders | `marketplace/orders/` | `OrderPlatform` | `OrderService` | `orders-production-v1` |
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
+| YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
+| Delivery | `marketplace/delivery/` | `DeliveryPlatform` | In-memory repository | `delivery-foundation-v1` |
 
 ---
 
@@ -108,6 +110,8 @@ flowchart BT
   Catalog[marketplace/catalog/]
   Orders[marketplace/orders/]
   Search[marketplace/search/]
+  AI[marketplace/ai/]
+  Delivery[marketplace/delivery/]
   Ctrl[controller/]
 
   Core --> Pay
@@ -115,6 +119,8 @@ flowchart BT
   Catalog --> Core
   Orders --> Core
   Search --> Core
+  AI --> Core
+  Delivery --> Core
   Ctrl --> Vendor
   Ctrl --> Catalog
   Ctrl --> Orders
@@ -160,6 +166,8 @@ Registration order in `marketplace/index.js`:
 3. `registerProductPlatform(app, core)`
 4. `registerSearchPlatform(app, core)`
 5. `registerOrderPlatform(app, core)`
+6. `registerAIPlatform(app, core)`
+7. `registerDeliveryPlatform(app, core)`
 
 Each platform exposes:
 
@@ -306,12 +314,25 @@ AI must **not** bypass services or duplicate business logic.
 
 ---
 
-## Future Delivery Integration
+## Delivery Platform (Phase 8.0)
 
-Delivery (Phase 9) will hook into:
+Delivery foundation is implemented at `marketplace/delivery/` — independent of Orders business logic.
 
-- `OrderPlatform.updateStatus()` for shipped/delivered transitions
-- Order state machine canonical `shipped` / `delivered` paths
+- `DeliveryPlatform` manages lifecycle, courier assignment, tracking, and metrics
+- In-memory repository for foundation phase (no GPS, maps, or fleet)
+- Public tracking lookup by tracking number
+- Future order integration via compatibility hooks only — frozen `orders/` internals unchanged
+
+See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md).
+
+---
+
+## Future Delivery Tracking Integration
+
+Delivery tracking (Phase 8.1+) will extend the foundation platform with:
+
+- Persistent storage migration
+- Order lifecycle compatibility hooks
 - No changes to payment or catalog frozen modules
 
 ---
