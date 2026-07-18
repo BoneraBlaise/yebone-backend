@@ -1,76 +1,104 @@
 # Yebone — Development Roadmap
 
-Objectives only. No implementation details.
+**Checkpoint:** `platform-pre-ai-v1`  
+**Foundation status:** COMPLETE — frozen until Phase 7 begins
+
+Related: [PROJECT_STATUS.md](./PROJECT_STATUS.md) · [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) · [CHANGELOG.md](../CHANGELOG.md)
 
 ---
 
-## Phase 1 — Payment Module ✅
+## Completed ✅
 
-- Establish provider-independent payment foundation
-- Freeze at `payment-foundation-v10`
+### Phase 1 — Payment Module
 
----
+- Provider-independent payment foundation
+- **Tag:** `payment-foundation-v10`
 
-## Phase 2 — Marketplace Core ✅
+### Phase 2 — Marketplace Core
 
-- Canonical marketplace layer
-- Freeze at `marketplace-core-v1`
+- Canonical marketplace composition layer
+- **Tag:** `marketplace-core-v1`
 
----
-
-## Phase 3 — Vendor Management ✅
+### Phase 3 — Vendor Management
 
 - ShopService + vendor platform
-- Freeze at `vendor-management-v1`
+- **Tag:** `vendor-management-v1`
 
----
-
-## Phase 4 — Product Catalog ✅
+### Phase 4 — Product Catalog
 
 - ProductService + catalog platform
-- Freeze at `product-catalog-v1`
+- **Tag:** `product-catalog-v1`
 
----
-
-## Phase 5 — Orders ✅
+### Phase 5 — Orders
 
 - OrderService + orders platform
-- Production hardening at `orders-production-v1`
+- Production hardening: idempotency, transactions, inventory guards
+- **Tags:** `orders-v1` → `orders-production-v1`
 
----
-
-## Phase 6 — Search & Discovery ✅
+### Phase 6 — Search & Discovery
 
 - SearchService + search platform
-- Server-backed discovery APIs
-- Frontend search UI with pagination and filters
-- Production hardening at `search-production-v1`
+- Server-backed discovery APIs, frontend search UI
+- Production hardening: validation, rate limits, unicode normalization
+- **Tags:** `search-v1` → `search-production-v1`
+
+### Platform Freeze Checkpoint
+
+- Canonical architecture documentation
+- Full verification suite
+- Pre-AI release notes and AI integration guide
+- **Tag:** `platform-pre-ai-v1`
 
 ---
 
-## Phase 7 — YEBO AI (Next)
+## Current
+
+**Platform foundation is frozen.** No active development phase.
+
+Restore point: `platform-pre-ai-v1`  
+Branch: `feature/platform-freeze-checkpoint`
+
+---
+
+## Upcoming
+
+### Phase 7 — YEBO AI
 
 - Natural language discovery via SearchPlatform (no duplicate query engine)
 - AI orchestration hooks on frozen search and orders layers
 - Frontend AI components wire to existing `/search` and `/products` shells
-- See `docs/PHASE7_PREPARATION.md`
+- **Guide:** [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md)
+- **Prerequisite:** Deploy and freeze `platform-pre-ai-v1`
 
 ---
 
-## Phase 8 — Inventory & Categories
+## Future
+
+### Phase 8 — Inventory & Categories
 
 - Category taxonomy modernization
 - Inventory tracking redesign
 
----
-
-## Phase 9 — Delivery & Fulfillment
+### Phase 9 — Delivery & Fulfillment
 
 - Shipping workflow and fulfillment pipeline
 
----
-
-## Phase 10 — Notifications & Mobile
+### Phase 10 — Notifications & Mobile
 
 - Notification pipeline
 - Mobile client on shared API contracts
+
+---
+
+## Archive (Obsolete Entries)
+
+The following items were superseded by foundation completion and are no longer active roadmap targets:
+
+| Obsolete Entry | Superseded By |
+|----------------|---------------|
+| "Implement order service from scratch" | `orders-v1` / `orders-production-v1` |
+| "Build search from Product.find()" | `search-v1` / `search-production-v1` |
+| "Migrate payment logic to controllers" | `payment-foundation-v10` facade |
+| "Phase 6 prep only" docs | `platform-pre-ai-v1` checkpoint |
+
+Historical phase prep documents (`PHASE4_PREPARATION.md`, `PHASE5_PREPARATION.md`, `PHASE7_PREPARATION.md`) remain for context; canonical Phase 7 guidance is [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md).

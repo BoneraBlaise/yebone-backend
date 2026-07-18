@@ -1,65 +1,50 @@
 # Phase 7 Preparation — YEBO AI
 
-Baseline: `search-production-v1`  
-Do not begin Phase 7 until this checkpoint is tagged and frozen.
+**Baseline:** `platform-pre-ai-v1`  
+**Status:** Foundation complete — Phase 7 not started
+
+> **Canonical guide:** [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md)
+
+Do not begin Phase 7 until `platform-pre-ai-v1` is tagged, verified, and deployed.
 
 ---
 
-## What YEBO AI Can Reuse
+## Prerequisites (Verified at Checkpoint)
 
-| Asset | Location | Use in Phase 7 |
-|-------|----------|----------------|
-| Search query engine | `SearchService` | All product/shop discovery queries |
-| Search orchestration | `SearchPlatform` | AI query routing and response shaping |
-| Filter builder | `SearchFilters` + `ProductSearch.prepareFilters()` | Structured filter extraction from NL queries |
-| Text normalization | `SearchTextNormalizer` | Safe keyword handling before AI enrichment |
-| Suggestions API | `GET /api/v2/search/suggestions` | Typeahead and AI-assisted discovery UI |
-| Search hooks | `SearchHooks.afterProductSearch()` | Post-query analytics and AI context |
-| Health probe | `GET /api/v2/marketplace/search/health` | AI service readiness checks |
-| Frontend search UI | `/search`, `ProductsPage`, `useProductSearch` | Wire AI overlays without new layouts |
-| Frontend architecture | `docs/FRONTEND_ARCHITECTURE.md` | All AI UI must comply |
+- [x] All foundation modules frozen through `search-production-v1`
+- [x] Platform architecture documented ([PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md))
+- [x] Full verification passing (`npm run verify:platform-pre-ai`)
+- [x] Frontend architecture frozen ([FRONTEND_ARCHITECTURE.md](./FRONTEND_ARCHITECTURE.md))
+- [x] AI integration rules defined ([YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md))
 
 ---
 
-## What YEBO AI Must Never Duplicate
+## Quick Reference
 
-- MongoDB product/shop query execution (use `SearchService` only)
-- Filter building logic (`SearchFilters`)
-- Sort/ranking whitelist (`SearchRanking`)
-- Query validation and NoSQL injection guards (`SearchValidation`)
-- Pagination metadata construction
-- Legacy route compatibility (`SearchCompatibility.hasSearchQuery`)
-- Parallel search result page layouts (extend `ProductsPage` / `SearchPage`)
+| Rule | Detail |
+|------|--------|
+| AI orchestrates | Existing platforms via public APIs and Platform classes |
+| AI never duplicates | SearchService, OrderService, ProductService, ShopService logic |
+| AI never bypasses | Validation, state machines, idempotency, payment facade |
+| Frontend | Extend existing shells — do not create parallel layouts |
 
----
-
-## Integration Pattern for Phase 7
-
-1. AI receives natural language query from frontend (`src/components/ai/`)
-2. AI orchestration maps intent → structured search params
-3. AI calls `SearchPlatform.searchProducts(structuredParams)` — **not** direct Mongo access
-4. AI enriches results (summaries, explanations) without replacing search execution
-5. Frontend displays enriched results in existing `ProductsPage` shell
+See the full integration guide for allowed interfaces, forbidden bypasses, and hook extension points.
 
 ---
 
-## Prerequisites Verified at `search-production-v1`
-
-- [x] Single `SearchService` query engine
-- [x] Production validation and rate limiting
-- [x] Unicode and regex-safe keyword normalization
-- [x] Stable pagination metadata
-- [x] Frontend architecture frozen (`FRONTEND_ARCHITECTURE.md`)
-- [x] Server-backed search with retry and state views
-- [x] All verification tests passing
-
----
-
-## Out of Scope for Phase 7 Prep
+## Out of Scope for Phase 7
 
 - Vector / semantic search indexes
 - Personalization engine
 - Voice search
-- Recommendation models
+- Recommendation ML models
+- Autonomous order/payment mutations without user confirmation
 
-These require explicit Phase 7 design after YEBO AI orchestration is defined.
+---
+
+## Related Documentation
+
+- [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md)
+- [RELEASE_NOTES_PRE_AI.md](./RELEASE_NOTES_PRE_AI.md)
+- [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+- [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)

@@ -1,7 +1,9 @@
 # Yebone — Frontend Architecture
 
-**Status:** Permanent UI architecture standard — frozen at `search-production-v1`  
+**Status:** Permanent UI architecture standard — frozen at `platform-pre-ai-v1`  
 **Production UI:** `src/App.js` (legacy shell — single source of truth)
+
+Related: [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) · [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) · [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ---
 

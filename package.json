@@ -49,6 +49,7 @@
     "verify:orders-production": "npm run test:orders-production && npm run verify:architecture && npm run verify:legacy-migration",
     "verify:search": "npm run test:search && npm run test:orders-production && npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core && npm run test:payment-foundation && npm run verify:architecture && npm run verify:legacy-migration",
     "verify:search-production": "npm run test:search-production && npm run test:orders-production && npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core && npm run test:payment-foundation && npm run verify:architecture && npm run verify:legacy-migration",
+    "verify:platform-pre-ai": "npm run verify:search-production",
     "verify:architecture": "node payments/scripts/verify-architecture.js",
     "verify:legacy-migration": "node payments/scripts/verify-legacy-migration.js"
   },

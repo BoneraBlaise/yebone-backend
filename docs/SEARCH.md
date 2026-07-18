@@ -1,7 +1,10 @@
 # Yebone Search Platform
 
 Baseline: `search-v1`  
-Production tag: `search-production-v1`
+Production tag: `search-production-v1`  
+Platform checkpoint: `platform-pre-ai-v1`
+
+Related: [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) · [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) · [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 
 ## Overview
 
@@ -50,6 +53,7 @@ See `marketplace/search/PRODUCTION.md` and `marketplace/search/INDEXES.md`.
 ```bash
 npm run test:search-production
 npm run verify:search-production
+npm run verify:platform-pre-ai   # full foundation suite
 ```
 
 ## Frozen After Production Tag
