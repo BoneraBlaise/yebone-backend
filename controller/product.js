@@ -2,7 +2,8 @@ const express = require("express");
 const { isSeller, isAuthenticated, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
-const { getProductPlatform } = require("../marketplace");
+const { getProductPlatform, getSearchPlatform } = require("../marketplace");
+const { hasSearchQuery } = require("./search");
 
 const router = express.Router();
 
@@ -66,6 +67,15 @@ router.get(
   "/get-all-products",
   catchAsyncErrors(async (req, res, next) => {
     try {
+      if (hasSearchQuery(req.query)) {
+        const searchPlatform = getSearchPlatform();
+        const result = await searchPlatform.searchProducts(req.query);
+        return res.status(200).json({
+          success: true,
+          products: result.products,
+        });
+      }
+
       const platform = getProductPlatform();
       const products = await platform.catalog.listAll();
 
