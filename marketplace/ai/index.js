@@ -44,6 +44,8 @@ module.exports = {
   AIToolRegistry: require("./AIToolRegistry"),
   AICapabilityRegistry: require("./AICapabilityRegistry"),
   SearchParameterExtractor: require("./search/SearchParameterExtractor"),
+  AIConversationContext: require("./conversation/AIConversationContext"),
+  ConversationFlowAnalyzer: require("./conversation/ConversationFlowAnalyzer"),
   AIPromptRegistry: require("./AIPromptRegistry"),
   AIProviderManager: require("./AIProviderManager"),
   AIHealth: require("./AIHealth"),

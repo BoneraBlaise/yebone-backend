@@ -295,7 +295,7 @@ describe("AI Tools — Phase 7.2", () => {
     const platform = new AIPlatform({ marketplaceCore: core });
     platform.initialize();
 
-    assert.equal(platform.config.version, "7.3.0");
+    assert.equal(platform.config.version, "7.4.0");
     assert.equal(platform.toolRegistry.list().length, 7);
     assert.ok(platform.capabilityRegistry.listCapabilities().length >= 7);
   });

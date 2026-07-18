@@ -5,8 +5,9 @@
 **Gateway tag:** `yebo-ai-gateway-v1`  
 **Tools tag:** `yebo-ai-tools-v1`  
 **Search tag:** `yebo-ai-search-v1`  
+**Assistant tag:** `yebo-ai-assistant-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-search`
+**Current branch:** `feature/yebo-ai-assistant`
 
 ---
 
@@ -65,6 +66,22 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
+## Phase 7.4 — COMMERCE ASSISTANT COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| Multi-turn conversations | ✔ Session-scoped |
+| Follow-up detection | ✔ `ConversationFlowAnalyzer` |
+| Tool reuse | ✔ Prior ToolResult in session |
+| Tool re-execution | ✔ Search refinements / topic switch |
+| No persistent memory | ✔ In-memory TTL context only |
+| MockProvider | ✔ Unchanged |
+| **Phase 7.5+** | **Not started** |
+
+**Tag:** `yebo-ai-assistant-v1` · **Doc:** [AI_ASSISTANT.md](./AI_ASSISTANT.md)
+
+---
+
 ## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
@@ -96,7 +113,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (gateway + tools + NL search)** | Orchestration layer | **7.3 frozen** (`yebo-ai-search-v1`) |
+| **YEBO AI (gateway + tools + NL search + assistant)** | Orchestration layer | **7.4 frozen** (`yebo-ai-assistant-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 

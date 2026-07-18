@@ -16,11 +16,12 @@ class AIHealth {
     return {
       name: this.platform.config.name,
       version: this.platform.config.version,
-      phase: "7.3",
+      phase: "7.4",
       healthy: toolHealth.healthy,
       gateway: true,
       productionTools: true,
       naturalLanguageSearch: true,
+      commerceAssistant: true,
       mockProviderActive: providers.activeProvider === "mock",
       toolsRegistered: tools.length,
       capabilitiesRegistered: this.platform.capabilityRegistry.listCapabilities().length,

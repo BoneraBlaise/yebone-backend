@@ -1,10 +1,10 @@
 /**
- * YEBO AI platform configuration — Phase 7.3 natural language search.
+ * YEBO AI platform configuration — Phase 7.4 commerce assistant.
  */
 class AIConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone AI Platform";
-    this.version = options.version || "7.3.0";
+    this.version = options.version || "7.4.0";
     this.primaryProvider = options.primaryProvider || process.env.AI_PRIMARY_PROVIDER || "mock";
     this.mockProvidersOnly = options.mockProvidersOnly !== false;
     this.maxMessageLength = Number(options.maxMessageLength || process.env.AI_MAX_MESSAGE_LENGTH || 4000);
@@ -16,6 +16,12 @@ class AIConfiguration {
     this.searchRateLimitMax = Number(options.searchRateLimitMax || process.env.AI_SEARCH_RATE_LIMIT_MAX || 30);
     this.searchDefaultLimit = Number(options.searchDefaultLimit || process.env.AI_SEARCH_DEFAULT_LIMIT || 20);
     this.searchDefaultPage = Number(options.searchDefaultPage || process.env.AI_SEARCH_DEFAULT_PAGE || 1);
+    this.conversationTtlMs = Number(
+      options.conversationTtlMs || process.env.AI_CONVERSATION_TTL_MS || 30 * 60 * 1000
+    );
+    this.conversationMaxSessions = Number(
+      options.conversationMaxSessions || process.env.AI_CONVERSATION_MAX_SESSIONS || 1000
+    );
     this.enableAuditEvents = options.enableAuditEvents !== false;
     this.enableInjectionGuards = options.enableInjectionGuards !== false;
   }

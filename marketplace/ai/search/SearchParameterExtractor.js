@@ -380,6 +380,76 @@ class SearchParameterExtractor {
     keyword = keyword.replace(/\b(black|white|red|blue|green|gold|silver|pink)\b/gi, (color) => color);
     return keyword.replace(/\s+/g, " ").trim();
   }
+
+  refine(previous = {}, message = "", options = {}) {
+    const base = {
+      ...previous,
+      originalQuery: String(message || "").trim(),
+      extracted: {
+        ...(previous.extracted || {}),
+        language: previous.language || "en",
+        signals: [...(previous.extracted?.signals || []), "refinement"],
+      },
+    };
+
+    const language = this._detectLanguage(message);
+    base.language = language;
+    let working = this._stripFillerWords(message, language);
+
+    const insteadMatch = message.match(
+      /(?:show|find|switch to|what about)\s+([a-z0-9&+\-.]{2,30})(?:\s+instead)?/i
+    );
+    if (insteadMatch) {
+      const brand = this._normalizeBrandToken(insteadMatch[1]);
+      if (brand) {
+        base.brand = brand;
+        base.extracted.signals.push(`brand_switch:${brand}`);
+      }
+    }
+
+    const sort = this._extractSort(working, base.extracted);
+    if (sort.value) {
+      base.sort = sort.value;
+      working = sort.text;
+    }
+
+    const prices = this._extractPrices(working, language, base.extracted);
+    if (prices.minPrice !== null) base.minPrice = prices.minPrice;
+    if (prices.maxPrice !== null) base.maxPrice = prices.maxPrice;
+    base.priceMin = base.minPrice;
+    base.priceMax = base.maxPrice;
+    working = prices.text;
+
+    const availability = this._extractAvailability(working, language, base.extracted);
+    if (availability.inStock !== null) base.inStock = availability.inStock;
+    working = availability.text;
+
+    const colors = ["black", "white", "red", "blue", "green", "gold", "silver", "pink"];
+    for (const color of colors) {
+      if (new RegExp(`\\b(only|just)?\\s*${color}\\b`, "i").test(message)) {
+        base.extracted.signals.push(`color:${color}`);
+        working = `${color} ${working}`.trim();
+      }
+    }
+
+    const brand = this._extractBrand(working, language, base.extracted);
+    if (brand.value) base.brand = brand.value;
+
+    const category = this._extractCategory(working, language, base.extracted);
+    if (category.value) base.category = category.value;
+
+    const pagination = this._extractPagination(options, base.extracted);
+    base.page = pagination.page;
+    base.limit = pagination.limit;
+
+    base.q =
+      this._normalizeKeyword(working, { brand: base.brand, category: base.category }) ||
+      previous.q ||
+      base.category ||
+      base.brand;
+
+    return Object.freeze(base);
+  }
 }
 
 SearchParameterExtractor.DEFAULT_BRANDS = Object.freeze([

@@ -1,9 +1,9 @@
 # YEBO AI — Canonical Architecture
 
-**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1`  
+**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1`  
 **Baseline:** `platform-pre-ai-v1`  
-**Branch:** `feature/yebo-ai-search`  
-**Status:** Phase 7.3 natural language search implemented — orchestration only
+**Branch:** `feature/yebo-ai-assistant`  
+**Status:** Phase 7.4 commerce assistant implemented — session-scoped multi-turn orchestration
 
 > YEBO AI is an **orchestration layer**. It is not a business platform. All business logic remains in frozen modules.
 

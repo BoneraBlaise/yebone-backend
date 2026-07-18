@@ -48,7 +48,7 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     const platform = new AIPlatform({ marketplaceCore: core });
     platform.initialize();
 
-    assert.equal(platform.config.version, "7.3.0");
+    assert.equal(platform.config.version, "7.4.0");
     assert.equal(platform.toolRegistry.list().length, 7);
     assert.equal(platform.providerManager.activeProviderId, "mock");
   });
@@ -88,8 +88,9 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     assert.equal(response.data.mockProviderActive, true);
     assert.equal(response.data.toolsRegistered, 7);
     assert.equal(response.data.productionTools, true);
-    assert.equal(response.data.phase, "7.3");
+    assert.equal(response.data.phase, "7.4");
     assert.equal(response.data.naturalLanguageSearch, true);
+    assert.equal(response.data.commerceAssistant, true);
   });
 
   it("handles chat gateway requests with mock provider", async () => {
@@ -114,7 +115,7 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     assert.equal(response.body.data.provider.mock, true);
     assert.equal(typeof response.body.data.tool.success, "boolean");
     assert.equal(response.body.data.tool.tool, "search.products");
-    assert.equal(response.body.data.meta.phase, "7.3");
+    assert.equal(response.body.data.meta.phase, "7.4");
   });
 
   it("handles search gateway requests", async () => {

@@ -24,6 +24,13 @@ class AIMetrics {
     this.providerUsage = {};
     this.searchExtractions = 0;
     this.searchExtractionSignals = {};
+    this.conversationCount = 0;
+    this.conversationTurns = 0;
+    this.followUpRequests = 0;
+    this.toolReuseCount = 0;
+    this.newToolExecutions = 0;
+    this.conversationSessions = new Set();
+    this.averageTurns = 0;
   }
 
   startTimer() {
@@ -121,6 +128,41 @@ class AIMetrics {
     }
   }
 
+  recordToolReuse({ toolId, sessionId = null, correlationId = null } = {}) {
+    this.toolUsage[toolId] = this.toolUsage[toolId] || { calls: 0, failures: 0, latencyMs: 0, reuses: 0 };
+    this.toolUsage[toolId].reuses = (this.toolUsage[toolId].reuses || 0) + 1;
+    if (correlationId) this.lastCorrelationId = correlationId;
+    if (sessionId) this.conversationSessions.add(String(sessionId));
+  }
+
+  recordConversationTurn({
+    sessionId = null,
+    followUp = false,
+    toolStrategy = "execute",
+    turnCount = 0,
+  } = {}) {
+    this.conversationTurns += 1;
+    if (sessionId) {
+      const key = String(sessionId);
+      if (!this.conversationSessions.has(key)) {
+        this.conversationSessions.add(key);
+        this.conversationCount += 1;
+      }
+    }
+    if (followUp) this.followUpRequests += 1;
+    if (toolStrategy === "reuse") {
+      this.toolReuseCount += 1;
+    } else {
+      this.newToolExecutions += 1;
+    }
+    if (turnCount > 0) {
+      this.averageTurns =
+        this.conversationCount > 0
+          ? Math.round((this.conversationTurns / this.conversationCount) * 10) / 10
+          : turnCount;
+    }
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -145,6 +187,12 @@ class AIMetrics {
       plannerDecisions: this.plannerDecisions.slice(-10),
       searchExtractions: this.searchExtractions,
       searchExtractionSignals: { ...this.searchExtractionSignals },
+      conversationCount: this.conversationCount,
+      conversationTurns: this.conversationTurns,
+      followUpRequests: this.followUpRequests,
+      toolReuseCount: this.toolReuseCount,
+      newToolExecutions: this.newToolExecutions,
+      averageTurns: this.averageTurns || 0,
     });
   }
 }

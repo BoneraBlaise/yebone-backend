@@ -1,7 +1,9 @@
 /**
- * AI planner — intent detection, NL search extraction, capability routing, tool execution.
+ * AI planner — commerce assistant conversation flow (Phase 7.4).
  */
 const SearchParameterExtractor = require("./search/SearchParameterExtractor");
+const AIConversationContext = require("./conversation/AIConversationContext");
+const ConversationFlowAnalyzer = require("./conversation/ConversationFlowAnalyzer");
 
 class AIPlanner {
   constructor({
@@ -13,6 +15,8 @@ class AIPlanner {
     metrics,
     config,
     searchParameterExtractor,
+    conversationContext,
+    conversationFlowAnalyzer,
   } = {}) {
     this.toolRegistry = toolRegistry;
     this.capabilityRegistry = capabilityRegistry;
@@ -22,13 +26,33 @@ class AIPlanner {
     this.metrics = metrics;
     this.config = config;
     this.searchParameterExtractor =
-      searchParameterExtractor || new SearchParameterExtractor({
+      searchParameterExtractor ||
+      new SearchParameterExtractor({
         defaultLimit: config?.searchDefaultLimit,
         defaultPage: config?.searchDefaultPage,
       });
+    this.conversationContext = conversationContext || new AIConversationContext({
+      ttlMs: config?.conversationTtlMs,
+      maxSessions: config?.conversationMaxSessions,
+    });
+    this.conversationFlowAnalyzer =
+      conversationFlowAnalyzer ||
+      new ConversationFlowAnalyzer({
+        searchParameterExtractor: this.searchParameterExtractor,
+      });
   }
 
-  detectIntent({ message, type = "chat" } = {}) {
+  _looksLikeProductQuery(text = "") {
+    const lower = String(text).toLowerCase();
+    const brandHit = SearchParameterExtractor.DEFAULT_BRANDS.some((brand) =>
+      lower.includes(brand.toLowerCase())
+    );
+    if (brandHit) return true;
+    const categories = Object.values(SearchParameterExtractor.DEFAULT_CATEGORIES).flat();
+    return categories.some((alias) => lower.includes(alias));
+  }
+
+  detectIntent({ message, type = "chat", sessionContext = null, flow = null } = {}) {
     const text = String(message || "").toLowerCase();
 
     if (type === "search") {
@@ -36,6 +60,35 @@ class AIPlanner {
         intent: "search",
         capabilities: ["keyword", "pagination", "filters", "sort"],
         confidence: 0.9,
+      };
+    }
+
+    if (flow?.intent) {
+      return {
+        intent: flow.intent,
+        capabilities:
+          flow.intent === "search"
+            ? ["keyword", "pagination", "filters", "sort"]
+            : ["faq", "platform_docs"],
+        confidence: 0.85,
+        followUp: flow.followUp,
+      };
+    }
+
+    if (sessionContext?.lastIntent === "search" && this.conversationFlowAnalyzer.isFollowUp(message, sessionContext)) {
+      return {
+        intent: "search",
+        capabilities: ["keyword", "filters", "pagination"],
+        confidence: 0.8,
+        followUp: true,
+      };
+    }
+
+    if (/show (me )?/.test(text) && this._looksLikeProductQuery(text)) {
+      return {
+        intent: "search",
+        capabilities: ["keyword", "category", "brand", "filters"],
+        confidence: 0.85,
       };
     }
 
@@ -95,11 +148,20 @@ class AIPlanner {
       };
     }
 
-    if (text.includes("search") || text.includes("find")) {
+    if (text.includes("search") || text.includes("find") || this._looksLikeProductQuery(text)) {
       return {
         intent: "search",
         capabilities: ["keyword", "pagination", "filters"],
         confidence: 0.8,
+      };
+    }
+
+    if (sessionContext?.lastToolResult) {
+      return {
+        intent: "commerce_chat",
+        capabilities: ["faq", "platform_docs"],
+        confidence: 0.55,
+        followUp: true,
       };
     }
 
@@ -117,8 +179,12 @@ class AIPlanner {
     return layers;
   }
 
-  extractSearchRequest(message, options = {}) {
-    const searchRequest = this.searchParameterExtractor.extract(message, options);
+  extractSearchRequest(message, options = {}, sessionContext = null, flow = null) {
+    const searchRequest =
+      flow?.toolStrategy === "execute" && sessionContext?.lastSearchRequest
+        ? this.conversationFlowAnalyzer.buildSearchRequest(message, sessionContext, options)
+        : this.searchParameterExtractor.extract(message, options);
+
     this.metrics.recordSearchExtraction({
       language: searchRequest.language,
       signals: searchRequest.extracted?.signals || [],
@@ -140,13 +206,7 @@ class AIPlanner {
 
     switch (plan.intent.intent) {
       case "search": {
-        const searchRequest =
-          plan.searchRequest ||
-          this.extractSearchRequest(message, {
-            page: context.page,
-            limit: context.limit,
-            sort: context.sort,
-          });
+        const searchRequest = plan.searchRequest;
         return {
           ...base,
           action: "keyword",
@@ -173,20 +233,44 @@ class AIPlanner {
     }
   }
 
+  _extractProducts(toolResult) {
+    const data = toolResult?.data || {};
+    if (Array.isArray(data.products)) return data.products;
+    if (Array.isArray(data.candidates)) {
+      return data.candidates.map((entry) => entry.product || entry.searchPreview).filter(Boolean);
+    }
+    return [];
+  }
+
   async createPlan(request = {}) {
-    const intent = this.detectIntent(request);
+    const { sessionId: resolvedSessionId, context: sessionContext } =
+      this.conversationContext.beginTurn(request.sessionId, { userId: request.userId });
+
+    const flow = this.conversationFlowAnalyzer.analyze(request.message, sessionContext);
+    const intent = this.detectIntent({
+      message: request.message,
+      type: request.type,
+      sessionContext,
+      flow,
+    });
+
     const routing = this.capabilityRegistry.resolveIntent(intent);
     const permission = this.toolRegistry.checkPermission(routing.toolId, {
       userId: request.userId || null,
     });
 
     let searchRequest = null;
-    if (intent.intent === "search") {
-      searchRequest = this.extractSearchRequest(request.message, {
-        page: request.page,
-        limit: request.limit,
-        sort: request.sort,
-      });
+    if (intent.intent === "search" && flow.toolStrategy === "execute") {
+      searchRequest = this.extractSearchRequest(
+        request.message,
+        {
+          page: request.page,
+          limit: request.limit,
+          sort: request.sort,
+        },
+        sessionContext,
+        flow
+      );
     }
 
     const promptLayers = this.buildPromptLayers(intent);
@@ -197,7 +281,7 @@ class AIPlanner {
 
     const plan = {
       requestId: request.requestId,
-      sessionId: request.sessionId || null,
+      sessionId: resolvedSessionId,
       correlationId: request.requestId,
       intent,
       capabilities: intent.capabilities,
@@ -205,6 +289,11 @@ class AIPlanner {
       routing,
       permission,
       searchRequest,
+      conversationFlow: flow,
+      toolStrategy: flow.toolStrategy,
+      sessionContextSnapshot: this.conversationContext.snapshot(resolvedSessionId),
+      reusedToolResult:
+        flow.toolStrategy === "reuse" ? sessionContext.lastToolResult || null : null,
       providerId: this.providerManager.activeProviderId,
       promptVersions: prompts.layers,
       prompts,
@@ -218,34 +307,44 @@ class AIPlanner {
       allowed: permission.allowed,
     });
 
+    this.metrics.recordConversationTurn({
+      sessionId: resolvedSessionId,
+      followUp: flow.followUp,
+      toolStrategy: flow.toolStrategy,
+      turnCount: sessionContext.turnCount,
+    });
+
     return plan;
   }
 
   async execute(plan, context = {}) {
     await this.hooks.emit("beforeTurn", { plan, context });
 
-    const toolInput = this.buildToolInput(plan, context);
     let toolResult = null;
+    const toolInput = this.buildToolInput(plan, context);
 
     if (plan.permission.allowed === false) {
-      toolResult = {
-        success: false,
-        tool: plan.toolId,
-        version: "7.2.0",
-        latency: 0,
-        data: null,
-        metadata: { correlationId: plan.correlationId },
-        error: {
-          code: plan.permission.reason || "permission_denied",
-          message: `AIToolRegistry: ${plan.permission.reason || "permission_denied"}`,
-          statusCode: 403,
-        },
-      };
+      toolResult = this._failureToolResult(plan, plan.permission.reason || "permission_denied", 403);
       this.metrics.recordToolExecution({
         toolId: plan.toolId,
         success: false,
         latencyMs: 0,
         capabilities: plan.capabilities,
+        correlationId: plan.correlationId,
+      });
+    } else if (plan.toolStrategy === "reuse" && plan.reusedToolResult) {
+      toolResult = {
+        ...plan.reusedToolResult,
+        metadata: {
+          ...(plan.reusedToolResult.metadata || {}),
+          correlationId: plan.correlationId,
+          reused: true,
+          toolStrategy: "reuse",
+        },
+      };
+      this.metrics.recordToolReuse({
+        toolId: plan.toolId,
+        sessionId: plan.sessionId,
         correlationId: plan.correlationId,
       });
     } else {
@@ -254,21 +353,21 @@ class AIPlanner {
           userId: context.userId || null,
           correlationId: plan.correlationId,
         });
+        this.metrics.recordToolExecution({
+          toolId: plan.toolId,
+          success: toolResult.success,
+          latencyMs: toolResult.latency || 0,
+          capabilities: plan.capabilities,
+          correlationId: plan.correlationId,
+        });
         await this.hooks.emit("afterTool", { toolId: plan.toolId, toolResult });
       } catch (err) {
-        toolResult = {
-          success: false,
-          tool: plan.toolId,
-          version: "7.2.0",
-          latency: 0,
-          data: null,
-          metadata: { correlationId: plan.correlationId },
-          error: {
-            code: err.code || "tool_execution_failed",
-            message: err.message,
-            statusCode: err.statusCode || 500,
-          },
-        };
+        toolResult = this._failureToolResult(
+          plan,
+          err.code || "tool_execution_failed",
+          err.statusCode || 500,
+          err.message
+        );
         this.metrics.recordToolExecution({
           toolId: plan.toolId,
           success: false,
@@ -289,12 +388,37 @@ class AIPlanner {
       prompt: plan.prompts.instruction,
     });
 
-    const response = this.formatResponse(plan, providerResult, toolResult);
+    const products = this._extractProducts(toolResult);
+    this.conversationContext.recordTurn(plan.sessionId, {
+      message: context.message || context.query,
+      plan,
+      toolResult,
+      toolStrategy: plan.toolStrategy,
+      products,
+    });
+
+    const response = this.formatResponse(plan, providerResult, toolResult, products);
     await this.hooks.emit("afterResponse", { plan, response });
     return response;
   }
 
-  formatResponse(plan, providerResult, toolResult) {
+  _failureToolResult(plan, code, statusCode, message = null) {
+    return {
+      success: false,
+      tool: plan.toolId,
+      version: "7.3.0",
+      latency: 0,
+      data: null,
+      metadata: { correlationId: plan.correlationId },
+      error: {
+        code,
+        message: message || `AIToolRegistry: ${code}`,
+        statusCode,
+      },
+    };
+  }
+
+  formatResponse(plan, providerResult, toolResult, products = []) {
     return {
       requestId: plan.requestId,
       sessionId: plan.sessionId,
@@ -312,12 +436,20 @@ class AIPlanner {
       tool: toolResult,
       message: providerResult.content,
       searchRequest: plan.searchRequest || null,
+      conversation: {
+        turnCount: plan.sessionContextSnapshot?.turnCount || 0,
+        followUp: plan.conversationFlow?.followUp || false,
+        toolStrategy: plan.toolStrategy,
+        flowType: plan.conversationFlow?.type || "new_turn",
+        productCount: products.length,
+      },
       meta: {
-        phase: "7.3",
+        phase: "7.4",
         gateway: true,
         streamingPrepared: true,
         productionTools: true,
         naturalLanguageSearch: plan.intent.intent === "search",
+        commerceAssistant: true,
       },
     };
   }

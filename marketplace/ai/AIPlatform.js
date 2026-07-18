@@ -5,6 +5,7 @@ const AIPromptRegistry = require("./AIPromptRegistry");
 const AIProviderManager = require("./AIProviderManager");
 const AIToolRegistry = require("./AIToolRegistry");
 const AICapabilityRegistry = require("./AICapabilityRegistry");
+const AIConversationContext = require("./conversation/AIConversationContext");
 const AIPlanner = require("./AIPlanner");
 const AIGateway = require("./AIGateway");
 const AIHealth = require("./AIHealth");
@@ -28,6 +29,10 @@ class AIPlatform {
     this.providerManager = new AIProviderManager(this.config);
     this.toolRegistry = new AIToolRegistry({ metrics: this.metrics });
     this.capabilityRegistry = new AICapabilityRegistry();
+    this.conversationContext = new AIConversationContext({
+      ttlMs: this.config.conversationTtlMs,
+      maxSessions: this.config.conversationMaxSessions,
+    });
     this.validation = new AIGatewayValidation(this.config);
     this.security = new AIRequestSecurity(this.config, this.hooks);
     this.planner = new AIPlanner({
@@ -38,6 +43,7 @@ class AIPlatform {
       hooks: this.hooks,
       metrics: this.metrics,
       config: this.config,
+      conversationContext: this.conversationContext,
     });
     this.gateway = new AIGateway(this);
     this.health = new AIHealth(this);

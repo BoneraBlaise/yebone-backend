@@ -114,7 +114,11 @@ describe("AI Search — Phase 7.3", () => {
       promptRegistry: new AIPromptRegistry(),
       providerManager: new AIProviderManager({ primaryProvider: "mock" }),
       hooks: { emit: async () => {} },
-      metrics: { recordPlannerDecision: () => {}, recordSearchExtraction: () => {} },
+      metrics: {
+        recordPlannerDecision: () => {},
+        recordSearchExtraction: () => {},
+        recordConversationTurn: () => {},
+      },
       config: {},
     });
 
@@ -150,7 +154,7 @@ describe("AI Search — Phase 7.3", () => {
     assert.equal(response.body.data.searchRequest.brand, "Samsung");
     assert.equal(response.body.data.searchRequest.maxPrice, 300000);
     assert.equal(typeof response.body.data.tool.success, "boolean");
-    assert.equal(response.body.data.meta.phase, "7.3");
+    assert.equal(response.body.data.meta.phase, "7.4");
   });
 
   it("search gateway rejects empty query", async () => {

@@ -40,6 +40,7 @@ class AIGateway {
       type: "chat",
       region: req.body.region,
       language: req.body.language,
+      userId: req.aiContext?.userId || null,
     });
 
     const context = {
