@@ -16,7 +16,7 @@ Objectives only. No implementation details.
 ## Phase 2 — Marketplace Core ✅
 
 - Canonical marketplace layer (config, lifecycle, health, hooks)
-- Extract order, product create, and commission business logic
+- Extract order create, product create, and commission business logic
 - Payment integration hooks (marketplace → payment only)
 - Freeze at `marketplace-core-v1`
 
@@ -31,17 +31,26 @@ Objectives only. No implementation details.
 
 ---
 
-## Phase 4 — Product Catalog (Next)
+## Phase 4 — Product Catalog ✅
 
-- Formalize product catalog as a canonical layer
-- Extract remaining product controller logic into ProductService
-- Preserve existing product APIs and seller/customer flows
-- Integrate with Marketplace Core and Vendor Platform
+- Expand ProductService as single product business layer
+- Canonical product catalog platform (lifecycle, validation, media, pricing)
+- Upgrade legacy product controller without breaking APIs
 - Freeze at `product-catalog-v1`
 
 ---
 
-## Phase 5 — Search & Discovery
+## Phase 5 — Orders (Next)
+
+- Expand OrderService as single order business layer
+- Canonical orders platform (lifecycle, status, refunds, fulfillment hooks)
+- Preserve payment session integration and legacy order APIs
+- Integrate with Marketplace Core, Vendor Platform, and Product Catalog
+- Freeze at `orders-v1`
+
+---
+
+## Phase 6 — Search & Discovery
 
 - Unified product and shop search
 - Category-aware discovery
@@ -49,7 +58,7 @@ Objectives only. No implementation details.
 
 ---
 
-## Phase 6 — Notifications
+## Phase 7 — Notifications
 
 - Order, seller, and customer notification pipeline
 - Email and in-app notification foundation
@@ -57,15 +66,15 @@ Objectives only. No implementation details.
 
 ---
 
-## Phase 7 — Inventory & Categories
+## Phase 8 — Inventory & Categories
 
-- Inventory tracking redesign
+- Inventory tracking redesign beyond catalog fields
 - Category taxonomy modernization
-- Stock management aligned with catalog layer
+- Stock management aligned with orders and catalog
 
 ---
 
-## Phase 8 — Delivery & Fulfillment
+## Phase 9 — Delivery & Fulfillment
 
 - Shipping and delivery workflow
 - Order fulfillment status pipeline
@@ -73,16 +82,8 @@ Objectives only. No implementation details.
 
 ---
 
-## Phase 9 — YEBO AI
+## Phase 10 — YEBO AI & Mobile
 
-- AI hooks activation across marketplace, vendor, and catalog
-- Product knowledge and seller assistance
-- Customer discovery and recommendations
-
----
-
-## Phase 10 — Mobile App
-
-- Mobile client on shared API contracts
-- Seller and customer mobile experiences
-- Push notifications and offline-ready flows
+- AI hooks activation across marketplace layers
+- Product knowledge, seller assistance, and customer discovery
+- Mobile client on shared API contracts with responsive web parity
