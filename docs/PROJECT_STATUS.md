@@ -4,8 +4,9 @@
 **Design tag:** `yebo-ai-design-v1`  
 **Gateway tag:** `yebo-ai-gateway-v1`  
 **Tools tag:** `yebo-ai-tools-v1`  
+**Search tag:** `yebo-ai-search-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/yebo-ai-tools`
+**Current branch:** `feature/yebo-ai-search`
 
 ---
 
@@ -49,6 +50,21 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
+## Phase 7.3 — NATURAL LANGUAGE SEARCH COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| NL → structured search params | ✔ `SearchParameterExtractor` |
+| English + Kinyarwanda + mixed | ✔ Rule-based extraction |
+| Planner searchRequest attachment | ✔ |
+| SearchTool → SearchPlatform delegation | ✔ No local filtering |
+| Frontend gateway result rendering | ✔ `AISearchNatural` unchanged layout |
+| **Phase 7.4+** | **Not started** |
+
+**Tag:** `yebo-ai-search-v1` · **Doc:** [AI_SEARCH.md](./AI_SEARCH.md)
+
+---
+
 ## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
@@ -80,7 +96,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Product Catalog** | Product CRUD, reviews, media | Frozen |
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
-| **YEBO AI (gateway + tools)** | Orchestration layer | **7.2 frozen** (`yebo-ai-tools-v1`) |
+| **YEBO AI (gateway + tools + NL search)** | Orchestration layer | **7.3 frozen** (`yebo-ai-search-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 

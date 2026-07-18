@@ -1,10 +1,10 @@
 # YEBO AI — Tool Architecture
 
-**Tag:** `yebo-ai-tools-v1`  
-**Baseline:** `yebo-ai-gateway-v1`  
-**Status:** IMPLEMENTED (Phase 7.2)
+**Tag:** `yebo-ai-search-v1`  
+**Baseline:** `yebo-ai-tools-v1`  
+**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search)
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SECURITY.md](./AI_SECURITY.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_SECURITY.md](./AI_SECURITY.md)
 
 ---
 

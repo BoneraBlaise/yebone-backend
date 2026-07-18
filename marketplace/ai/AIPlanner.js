@@ -1,6 +1,8 @@
 /**
- * AI planner — intent detection, capability routing, tool execution, response formatting.
+ * AI planner — intent detection, NL search extraction, capability routing, tool execution.
  */
+const SearchParameterExtractor = require("./search/SearchParameterExtractor");
+
 class AIPlanner {
   constructor({
     toolRegistry,
@@ -10,6 +12,7 @@ class AIPlanner {
     hooks,
     metrics,
     config,
+    searchParameterExtractor,
   } = {}) {
     this.toolRegistry = toolRegistry;
     this.capabilityRegistry = capabilityRegistry;
@@ -18,6 +21,11 @@ class AIPlanner {
     this.hooks = hooks;
     this.metrics = metrics;
     this.config = config;
+    this.searchParameterExtractor =
+      searchParameterExtractor || new SearchParameterExtractor({
+        defaultLimit: config?.searchDefaultLimit,
+        defaultPage: config?.searchDefaultPage,
+      });
   }
 
   detectIntent({ message, type = "chat" } = {}) {
@@ -109,10 +117,21 @@ class AIPlanner {
     return layers;
   }
 
+  extractSearchRequest(message, options = {}) {
+    const searchRequest = this.searchParameterExtractor.extract(message, options);
+    this.metrics.recordSearchExtraction({
+      language: searchRequest.language,
+      signals: searchRequest.extracted?.signals || [],
+      hasBrand: Boolean(searchRequest.brand),
+      hasCategory: Boolean(searchRequest.category),
+      hasPrice: searchRequest.minPrice !== null || searchRequest.maxPrice !== null,
+    });
+    return searchRequest;
+  }
+
   buildToolInput(plan, context = {}) {
     const message = context.message || context.query || "";
     const base = {
-      q: message,
       query: context.query || message,
       message,
       scope: context.scope,
@@ -120,8 +139,21 @@ class AIPlanner {
     };
 
     switch (plan.intent.intent) {
-      case "search":
-        return { ...base, action: "keyword" };
+      case "search": {
+        const searchRequest =
+          plan.searchRequest ||
+          this.extractSearchRequest(message, {
+            page: context.page,
+            limit: context.limit,
+            sort: context.sort,
+          });
+        return {
+          ...base,
+          action: "keyword",
+          ...searchRequest,
+          q: searchRequest.q,
+        };
+      }
       case "order_status":
         return {
           ...base,
@@ -148,6 +180,15 @@ class AIPlanner {
       userId: request.userId || null,
     });
 
+    let searchRequest = null;
+    if (intent.intent === "search") {
+      searchRequest = this.extractSearchRequest(request.message, {
+        page: request.page,
+        limit: request.limit,
+        sort: request.sort,
+      });
+    }
+
     const promptLayers = this.buildPromptLayers(intent);
     const prompts = this.promptRegistry.compose(promptLayers, {
       region: request.region || "RW",
@@ -163,6 +204,7 @@ class AIPlanner {
       toolId: routing.toolId,
       routing,
       permission,
+      searchRequest,
       providerId: this.providerManager.activeProviderId,
       promptVersions: prompts.layers,
       prompts,
@@ -269,11 +311,13 @@ class AIPlanner {
       },
       tool: toolResult,
       message: providerResult.content,
+      searchRequest: plan.searchRequest || null,
       meta: {
-        phase: "7.2",
+        phase: "7.3",
         gateway: true,
         streamingPrepared: true,
         productionTools: true,
+        naturalLanguageSearch: plan.intent.intent === "search",
       },
     };
   }

@@ -84,6 +84,9 @@ class AIGateway {
       sessionId: parsed.sessionId,
       message: parsed.query,
       type: "search",
+      page: parsed.page,
+      limit: parsed.limit,
+      sort: parsed.sort,
     });
 
     const response = await this.platform.planner.execute(plan, {

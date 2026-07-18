@@ -8,7 +8,7 @@ class SearchTool extends BaseTool {
     super({
       id: "search.products",
       name: "SearchTool",
-      version: "7.2.0",
+      version: "7.3.0",
       capabilities: [
         "keyword",
         "category",
@@ -33,26 +33,27 @@ class SearchTool extends BaseTool {
   }
 
   _mapQuery(input = {}) {
+    const structured = input.searchRequest || input;
     return {
-      q: input.q || input.query || input.message,
-      search: input.search,
-      category: input.category,
-      tags: input.tags,
-      shopId: input.shopId || input.shop,
-      productType: input.productType,
-      condition: input.condition,
-      location: input.location,
-      brand: input.brand,
-      page: input.page,
-      limit: input.limit,
-      sort: input.sort || input.sortBy,
-      minPrice: input.minPrice || input.priceMin,
-      maxPrice: input.maxPrice || input.priceMax,
-      minRating: input.minRating || input.rating,
-      featured: input.featured,
-      bestdeal: input.bestdeal,
-      discounted: input.discounted,
-      inStock: input.inStock,
+      q: structured.q || structured.query || input.q || input.query || input.message,
+      search: structured.search || input.search,
+      category: structured.category || input.category,
+      tags: structured.tags || input.tags,
+      shopId: structured.shopId || input.shopId || input.shop,
+      productType: structured.productType || input.productType,
+      condition: structured.condition || input.condition,
+      location: structured.location || input.location,
+      brand: structured.brand || input.brand,
+      page: structured.page || input.page,
+      limit: structured.limit || input.limit,
+      sort: structured.sort || input.sort || input.sortBy,
+      minPrice: structured.minPrice ?? structured.priceMin ?? input.minPrice ?? input.priceMin,
+      maxPrice: structured.maxPrice ?? structured.priceMax ?? input.maxPrice ?? input.priceMax,
+      minRating: structured.minRating ?? structured.rating ?? input.minRating ?? input.rating,
+      featured: structured.featured ?? input.featured,
+      bestdeal: structured.bestdeal ?? input.bestdeal,
+      discounted: structured.discounted ?? input.discounted,
+      inStock: structured.inStock ?? input.inStock,
     };
   }
 

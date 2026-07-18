@@ -38,6 +38,9 @@ class AIGatewayValidation {
     return {
       query,
       sessionId: body.sessionId ? String(body.sessionId) : null,
+      page: body.page,
+      limit: body.limit,
+      sort: body.sort ? String(body.sort) : null,
       stream: body.stream === true,
     };
   }

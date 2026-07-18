@@ -22,6 +22,8 @@ class AIMetrics {
     this.capabilityUsage = {};
     this.plannerDecisions = [];
     this.providerUsage = {};
+    this.searchExtractions = 0;
+    this.searchExtractionSignals = {};
   }
 
   startTimer() {
@@ -100,6 +102,25 @@ class AIMetrics {
     }
   }
 
+  recordSearchExtraction({
+    language = "en",
+    signals = [],
+    hasBrand = false,
+    hasCategory = false,
+    hasPrice = false,
+  } = {}) {
+    this.searchExtractions += 1;
+    this.searchExtractionSignals[language] = (this.searchExtractionSignals[language] || 0) + 1;
+    if (hasBrand) this.searchExtractionSignals.brand = (this.searchExtractionSignals.brand || 0) + 1;
+    if (hasCategory) {
+      this.searchExtractionSignals.category = (this.searchExtractionSignals.category || 0) + 1;
+    }
+    if (hasPrice) this.searchExtractionSignals.price = (this.searchExtractionSignals.price || 0) + 1;
+    for (const signal of signals) {
+      this.searchExtractionSignals[signal] = (this.searchExtractionSignals[signal] || 0) + 1;
+    }
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -122,6 +143,8 @@ class AIMetrics {
       capabilityUsage: { ...this.capabilityUsage },
       providerUsage: { ...this.providerUsage },
       plannerDecisions: this.plannerDecisions.slice(-10),
+      searchExtractions: this.searchExtractions,
+      searchExtractionSignals: { ...this.searchExtractionSignals },
     });
   }
 }
