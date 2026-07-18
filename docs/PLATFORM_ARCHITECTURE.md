@@ -94,7 +94,7 @@ flowchart TB
 | Orders | `marketplace/orders/` | `OrderPlatform` | `OrderService` | `orders-production-v1` |
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
-| Delivery | `marketplace/delivery/` | `DeliveryPlatform` | In-memory repository | `delivery-foundation-v1` |
+| Delivery | `marketplace/delivery/` | `DeliveryPlatform` | In-memory repository + timeline | `delivery-tracking-v1` |
 
 ---
 
@@ -314,22 +314,22 @@ AI must **not** bypass services or duplicate business logic.
 
 ---
 
-## Delivery Platform (Phase 8.0)
+## Delivery Platform (Phase 8.0–8.1)
 
-Delivery foundation is implemented at `marketplace/delivery/` — independent of Orders business logic.
+Delivery is implemented at `marketplace/delivery/` — independent of Orders business logic.
 
-- `DeliveryPlatform` manages lifecycle, courier assignment, tracking, and metrics
+- **8.0 Foundation:** lifecycle, courier assignment, tracking numbers, metrics
+- **8.1 Tracking:** append-only timeline, latest status, public timeline API
 - In-memory repository for foundation phase (no GPS, maps, or fleet)
-- Public tracking lookup by tracking number
 - Future order integration via compatibility hooks only — frozen `orders/` internals unchanged
 
-See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md).
+See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) and [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md).
 
 ---
 
-## Future Delivery Tracking Integration
+## Future Courier Management Integration
 
-Delivery tracking (Phase 8.1+) will extend the foundation platform with:
+Courier management (Phase 8.2+) will extend delivery without modifying frozen foundation internals:
 
 - Persistent storage migration
 - Order lifecycle compatibility hooks

@@ -11,6 +11,8 @@ function createDeliveryPlatform(marketplaceCore, options = {}) {
     marketplaceCore,
     config: options.config,
     repository: options.repository,
+    trackingService: options.trackingService,
+    trackingAnalytics: options.trackingAnalytics,
   });
   return deliveryPlatformInstance;
 }
@@ -81,6 +83,14 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
   );
 
   router.get(
+    "/tracking/:trackingNumber/timeline",
+    catchAsyncErrors(async (req, res) => {
+      const result = platform.getTrackingTimelineByTrackingNumber(req.params.trackingNumber);
+      res.status(200).json({ success: true, data: result });
+    })
+  );
+
+  router.get(
     "/tracking/:trackingNumber",
     catchAsyncErrors(async (req, res) => {
       const delivery = platform.getDeliveryByTracking(req.params.trackingNumber);
@@ -104,6 +114,26 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
       }
 
       res.status(200).json({ success: true, data: delivery });
+    })
+  );
+
+  router.get(
+    "/:deliveryId/tracking",
+    catchAsyncErrors(async (req, res) => {
+      const timeline = platform.getTrackingTimeline(req.params.deliveryId);
+      res.status(200).json({
+        success: true,
+        data: timeline,
+        meta: { count: timeline.length },
+      });
+    })
+  );
+
+  router.get(
+    "/:deliveryId/status",
+    catchAsyncErrors(async (req, res) => {
+      const status = platform.getCurrentTrackingStatus(req.params.deliveryId);
+      res.status(200).json({ success: true, data: status });
     })
   );
 
@@ -157,6 +187,7 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
 
       const delivery = platform.updateStatus(req.params.deliveryId, req.body.status, {
         reason: req.body.reason || null,
+        actor: req.user?._id ? String(req.user._id) : "system",
       });
       res.status(200).json({ success: true, data: delivery });
     })
@@ -171,7 +202,9 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
         return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
       }
 
-      const delivery = platform.assignCourier(req.params.deliveryId, req.body.courierId);
+      const delivery = platform.assignCourier(req.params.deliveryId, req.body.courierId, {
+        actor: req.user?._id ? String(req.user._id) : "system",
+      });
       res.status(200).json({ success: true, data: delivery });
     })
   );
@@ -230,6 +263,9 @@ module.exports = {
   DeliveryAnalytics: require("./DeliveryAnalytics"),
   DeliveryHealth: require("./DeliveryHealth"),
   DeliverySecurity: require("./DeliverySecurity"),
+  DeliveryTrackingTimeline: require("./tracking/DeliveryTrackingTimeline"),
+  TrackingService: require("./tracking/TrackingService"),
+  DeliveryTrackingAnalytics: require("./tracking/DeliveryTrackingAnalytics"),
   createDeliveryPlatform,
   getDeliveryPlatform,
   registerDeliveryPlatform,

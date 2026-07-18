@@ -6,12 +6,14 @@ const DeliveryRepository = require("./DeliveryRepository");
 const DeliveryHistory = require("./DeliveryHistory");
 const DeliveryAnalytics = require("./DeliveryAnalytics");
 const DeliveryHealth = require("./DeliveryHealth");
+const TrackingService = require("./tracking/TrackingService");
+const DeliveryTrackingAnalytics = require("./tracking/DeliveryTrackingAnalytics");
 
 /**
  * Delivery Platform composition root — independent delivery domain.
  */
 class DeliveryPlatform {
-  constructor({ marketplaceCore, config, repository } = {}) {
+  constructor({ marketplaceCore, config, repository, trackingService, trackingAnalytics } = {}) {
     this.marketplaceCore = marketplaceCore || null;
     this.config = new DeliveryConfiguration(config);
     this.stateMachine = new DeliveryStateMachine();
@@ -19,7 +21,14 @@ class DeliveryPlatform {
     this.repository = repository || new DeliveryRepository();
     this.history = new DeliveryHistory({ repository: this.repository });
     this.analytics = new DeliveryAnalytics({ config: this.config });
+    this.trackingAnalytics = trackingAnalytics || new DeliveryTrackingAnalytics();
+    this.trackingService =
+      trackingService || new TrackingService({ analytics: this.trackingAnalytics });
     this.health = new DeliveryHealth(this);
+  }
+
+  _appendTimelineEvent(deliveryId, status, { actor = "system", note = null } = {}) {
+    return this.trackingService.recordEvent(deliveryId, { status, actor, note });
   }
 
   _buildError(message, statusCode = 400, reason = "VALIDATION_ERROR") {
@@ -85,6 +94,9 @@ class DeliveryPlatform {
       message: "Delivery created",
     });
     this.analytics.recordCreated();
+    this._appendTimelineEvent(created.deliveryId, created.status, {
+      actor: sanitized.metadata?.actor || "system",
+    });
 
     return created;
   }
@@ -123,7 +135,7 @@ class DeliveryPlatform {
     return delivery;
   }
 
-  assignCourier(deliveryId, courierId) {
+  assignCourier(deliveryId, courierId, { actor = "system" } = {}) {
     const delivery = this.getDelivery(deliveryId);
     const courierValidation = DeliveryValidation.validateCourierId(courierId);
 
@@ -159,10 +171,20 @@ class DeliveryPlatform {
     });
     this.analytics.recordAssignment();
 
+    if (updated.status !== delivery.status) {
+      this._appendTimelineEvent(deliveryId, updated.status, { actor });
+    } else if (previousCourierId) {
+      this.recordTrackingEvent(deliveryId, {
+        status: updated.status,
+        actor,
+        note: "Courier reassigned",
+      });
+    }
+
     return updated;
   }
 
-  removeCourierAssignment(deliveryId) {
+  removeCourierAssignment(deliveryId, { actor = "system" } = {}) {
     const delivery = this.getDelivery(deliveryId);
 
     if (delivery.status !== DeliveryStateMachine.STATUS.ASSIGNED) {
@@ -185,11 +207,12 @@ class DeliveryPlatform {
       previousCourierId,
       message: "Courier assignment removed",
     });
+    this._appendTimelineEvent(deliveryId, updated.status, { actor, note: "Courier assignment removed" });
 
     return updated;
   }
 
-  updateStatus(deliveryId, nextStatus, { reason = null } = {}) {
+  updateStatus(deliveryId, nextStatus, { reason = null, actor = "system" } = {}) {
     const delivery = this.getDelivery(deliveryId);
     const statusValidation = DeliveryValidation.validateStatusInput(nextStatus);
 
@@ -213,6 +236,20 @@ class DeliveryPlatform {
     });
     this.analytics.recordStatusChange();
 
+    const timelineBefore = this.trackingService.getTimeline(deliveryId);
+    const priorTimestamp =
+      timelineBefore.length > 0
+        ? timelineBefore[timelineBefore.length - 1].timestamp
+        : delivery.createdAt;
+
+    this._appendTimelineEvent(deliveryId, updated.status, {
+      actor,
+      note: reason || undefined,
+    });
+
+    const progressionMs = Date.parse(updated.updatedAt) - Date.parse(priorTimestamp);
+    this.trackingAnalytics.recordProgressionDuration(progressionMs);
+
     if (updated.status === DeliveryStateMachine.STATUS.DELIVERED) {
       const durationMs = Date.parse(updated.updatedAt) - Date.parse(updated.createdAt);
       this.analytics.recordLifecycleDuration(durationMs);
@@ -221,14 +258,17 @@ class DeliveryPlatform {
     return updated;
   }
 
-  cancelDelivery(deliveryId, { reason = null } = {}) {
+  cancelDelivery(deliveryId, { reason = null, actor = "system" } = {}) {
     const delivery = this.getDelivery(deliveryId);
 
     if (this.stateMachine.isTerminal(delivery.status)) {
       throw this._buildError(`Cannot cancel delivery in ${delivery.status} state`, 409, "INVALID_STATE");
     }
 
-    const updated = this.updateStatus(deliveryId, DeliveryStateMachine.STATUS.CANCELLED, { reason });
+    const updated = this.updateStatus(deliveryId, DeliveryStateMachine.STATUS.CANCELLED, {
+      reason,
+      actor,
+    });
 
     this.history.record(deliveryId, {
       type: "cancelled",
@@ -239,6 +279,51 @@ class DeliveryPlatform {
     this.analytics.recordCancellation();
 
     return updated;
+  }
+
+  recordTrackingEvent(deliveryId, { status, actor = "system", note = null } = {}) {
+    this.getDelivery(deliveryId);
+    const statusValidation = DeliveryValidation.validateStatusInput(status);
+    if (!statusValidation.valid) {
+      throw this._buildError("Invalid delivery status", 400, statusValidation.reason);
+    }
+    return this.trackingService.recordEvent(deliveryId, {
+      status: statusValidation.status,
+      actor,
+      note,
+    });
+  }
+
+  getTrackingTimeline(deliveryId) {
+    this.getDelivery(deliveryId);
+    this.trackingService.recordLookup();
+    return this.trackingService.getTimeline(deliveryId);
+  }
+
+  getTrackingTimelineByTrackingNumber(trackingNumber) {
+    const delivery = this.getDeliveryByTracking(trackingNumber);
+    this.trackingService.recordLookup();
+    return {
+      deliveryId: delivery.deliveryId,
+      trackingNumber: delivery.trackingNumber,
+      timeline: this.trackingService.getTimeline(delivery.deliveryId),
+    };
+  }
+
+  getLatestTracking(deliveryId) {
+    this.getDelivery(deliveryId);
+    this.trackingService.recordLookup();
+    return this.trackingService.getLatestEvent(deliveryId);
+  }
+
+  getCurrentTrackingStatus(deliveryId) {
+    this.getDelivery(deliveryId);
+    this.trackingService.recordLookup();
+    return this.trackingService.getCurrentStatus(deliveryId);
+  }
+
+  getTrackingHistory(deliveryId) {
+    return this.getTrackingTimeline(deliveryId);
   }
 
   listDeliveries(filters = {}) {
@@ -262,7 +347,10 @@ class DeliveryPlatform {
   }
 
   getMetrics() {
-    return this.analytics.getSummary();
+    return {
+      ...this.analytics.getSummary(),
+      tracking: this.trackingAnalytics.getSummary(),
+    };
   }
 }
 

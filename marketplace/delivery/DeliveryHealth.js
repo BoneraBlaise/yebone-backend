@@ -16,6 +16,7 @@ class DeliveryHealth {
       repositoryReady: Boolean(this.platform.repository),
       stateMachineReady: Boolean(this.platform.stateMachine),
       trackingReady: Boolean(this.platform.tracking),
+      trackingServiceReady: Boolean(this.platform.trackingService),
       analyticsReady: Boolean(this.platform.analytics),
     });
   }

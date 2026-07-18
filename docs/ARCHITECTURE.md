@@ -19,22 +19,19 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | Orders Platform | `marketplace/orders/` | Frozen |
 | Search Platform | `marketplace/search/` | Frozen |
 | YEBO AI | `marketplace/ai/` | Frozen (`yebo-ai-memory-v1`) |
-| **Delivery Platform** | `marketplace/delivery/` | **8.0 frozen** (`delivery-foundation-v1`) |
+| **Delivery Platform** | `marketplace/delivery/` | **8.1 frozen** (`delivery-tracking-v1`) |
 
 ---
 
-## Delivery Platform (Phase 8.0)
+## Delivery Platform (Phase 8.0–8.1)
 
-Independent delivery domain for marketplace fulfillment:
+Independent delivery domain with lifecycle foundation and append-only tracking timeline:
 
-- `DeliveryPlatform` composition root
-- Validated lifecycle state machine
-- Structured addresses and tracking numbers
-- Courier assign / reassign / remove
-- Session-scoped in-memory repository (foundation)
-- Health + metrics at `/api/v2/marketplace/delivery/*`
+- `DeliveryTrackingTimeline` + `TrackingService`
+- Public timeline and status endpoints
+- Automatic event recording on status transitions
 
-See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) for API and lifecycle details.
+See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) and [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md).
 
 ---
 

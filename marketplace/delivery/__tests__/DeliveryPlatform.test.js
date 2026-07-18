@@ -49,7 +49,7 @@ describe("Delivery Platform", () => {
     const core = new MarketplaceCore();
     const integrated = new DeliveryPlatform({ marketplaceCore: core });
     assert.equal(integrated.marketplaceCore, core);
-    assert.equal(integrated.config.version, "8.0.0");
+    assert.equal(integrated.config.version, "8.1.0");
   });
 
   it("creates delivery with unique tracking number", () => {
@@ -177,7 +177,7 @@ describe("Delivery Platform", () => {
     server.close();
     assert.equal(response.success, true);
     assert.equal(response.data.healthy, true);
-    assert.equal(response.data.phase, "8.0");
+    assert.equal(response.data.phase, "8.1");
   });
 });
 

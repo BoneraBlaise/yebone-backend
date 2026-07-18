@@ -9,9 +9,10 @@
 **Recommend tag:** `yebo-ai-recommend-v1`  
 **Checkout tag:** `yebo-ai-checkout-v1`  
 **Memory tag:** `yebo-ai-memory-v1`  
-**Delivery tag:** `delivery-foundation-v1`  
+**Delivery tag:** `delivery-tracking-v1`  
+**Delivery foundation tag:** `delivery-foundation-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/delivery-foundation`
+**Current branch:** `feature/delivery-tracking`
 
 ---
 
@@ -158,6 +159,25 @@ Frozen at `platform-pre-ai-v1`. Business modules unchanged.
 
 ---
 
+## Phase 8.1 — DELIVERY TRACKING COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| DeliveryTrackingTimeline | ✔ Append-only event store |
+| TrackingService | ✔ Record/retrieve timeline |
+| Automatic timeline on transitions | ✔ Every status change |
+| Latest status derivation | ✔ From newest event |
+| Tracking API endpoints | ✔ Timeline + status lookup |
+| Observability | ✔ Lookups, events, progression, latency |
+| Foundation APIs unchanged | ✔ Compatible |
+| Timeline immutable | ✔ No edit/delete |
+
+**Tag:** `delivery-tracking-v1` · **Doc:** [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md)
+
+**Do not begin Courier Management.**
+
+---
+
 ## Phase 7 Design — COMPLETE
 
 YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1`.
@@ -190,7 +210,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
 | **YEBO AI (gateway → memory — full v1 stack)** | Orchestration layer | **7.7 frozen** (`yebo-ai-memory-v1`) |
-| **Delivery Platform** | Delivery lifecycle + tracking foundation | **8.0 frozen** (`delivery-foundation-v1`) |
+| **Delivery Platform** | Delivery lifecycle + tracking timeline | **8.1 frozen** (`delivery-tracking-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -208,7 +228,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 
 ## Next Step
 
-**Phase 8.1 — Delivery Tracking** (not started) — See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
+**Phase 8.2 — Courier Management** (not started) — See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 
 ---
 
@@ -226,6 +246,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | [PLATFORM_ARCHITECTURE.md](./PLATFORM_ARCHITECTURE.md) | Platform architecture |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Architecture index |
 | [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) | Phase 8.0 delivery foundation |
+| [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md) | Phase 8.1 delivery tracking |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -233,5 +254,5 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 ## Verification
 
 ```bash
-npm run verify:delivery
+npm run verify:delivery-tracking
 ```
