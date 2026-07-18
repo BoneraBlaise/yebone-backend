@@ -1,26 +1,26 @@
 const express = require("express");
-const router = express.Router();
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
-const Order = require("../model/order");
-const Shop = require("../model/shop");
-const Product = require("../model/product");
-const Commission = require("../model/commission");
-const calculateCommissionRate = require("../utils/calculateCommission");
-const { processOrderCommission, updateCommissionStatus } = require("../utils/referralUtils");
-const { getMarketplaceCore } = require("../marketplace");
+const { getOrderPlatform } = require("../marketplace");
 
+const router = express.Router();
 
-// create new order
+function handleServiceError(error, next) {
+  return next(new ErrorHandler(error.message, error.statusCode || 500));
+}
+
+function resolveSellerId(req) {
+  return req.seller?._id || req.seller?.id;
+}
+
 router.post(
   "/create-order",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const core = getMarketplaceCore();
-      const { orders } = await core.services.order.createOrders(req.body);
-      const paymentSessions = await core.hooks.payment.prepareForOrders(orders, req.body.user);
-      core.hooks.order.afterCreate({ orders });
+      const platform = getOrderPlatform();
+      const { orders } = await platform.createOrders(req.body);
+      const paymentSessions = await platform.preparePaymentSessions(orders, req.body.user);
 
       res.status(201).json({
         success: true,
@@ -28,154 +28,76 @@ router.post(
         paymentSessions,
       });
     } catch (error) {
-      console.error("Order creation error:", error);
-      return next(new ErrorHandler(error.message || "Internal server error", error.statusCode || 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-
-// get all orders of user
 router.get(
   "/get-all-orders/:userId",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const orders = await Order.find({ "user._id": req.params.userId }).sort({
-        createdAt: -1,
-      });
+      const platform = getOrderPlatform();
+      const orders = await platform.history.listForUser(req.params.userId);
 
       res.status(200).json({
         success: true,
         orders,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// get all orders of seller
 router.get(
   "/get-seller-all-orders/:shopId",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const orders = await Order.find({
-        "cart.shopId": req.params.shopId,
-      }).sort({
-        createdAt: -1,
-      });
+      const platform = getOrderPlatform();
+      const orders = await platform.history.listForShop(req.params.shopId);
 
       res.status(200).json({
         success: true,
         orders,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// update order status for seller
 router.put(
   "/update-order-status/:id",
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const order = await Order.findById(req.params.id);
-
-      if (!order) {
-        return next(new ErrorHandler("Order not found with this id", 400));
-      }
-      if (req.body.status === "Transferred to delivery partner") {
-        order.cart.forEach(async (o) => {
-          await updateOrder(o._id, o.qty);
-        });
-      }
-
-      order.status = req.body.status;
-
-      if (req.body.status === "Delivered") {
-        order.deliveredAt = Date.now();
-        order.paymentInfo.status = "Succeeded";
-        
-        // Calculate service charge and commission
-        const serviceCharge = order.totalPrice * 0.10;
-        
-        // If order has referral code, update commission status
-        if (order.referralCode) {
-          const commission = await Commission.findOne({ referralCode: order.referralCode });
-          if (commission) {
-            let orderCommission = 0;
-            
-            // Update each sale status and shop stats
-            for (const sale of commission.sales) {
-              if (sale.order.toString() === order._id.toString()) {
-                sale.status = "paid";
-                orderCommission += sale.commission;
-                
-                // Update shop stats for this sale
-                await commission.updateShopStats(sale.shop, sale.commission, 'paid');
-              }
-            }
-            
-            // Update user's commission balance
-            commission.balance.pending -= orderCommission;
-            commission.balance.available += orderCommission;
-            
-            await commission.save();
-          }
-        }
-
-        await updateSellerInfo(order.totalPrice - serviceCharge);
-
-        if (order.referralCode && req.body.status === "Delivered") {
-          await updateCommissionStatus(order._id, order.referralCode, 'paid');
-        }
-      }
-
-      await order.save({ validateBeforeSave: false });
+      const platform = getOrderPlatform();
+      const order = await platform.updateStatus(
+        req.params.id,
+        req.body.status,
+        resolveSellerId(req)
+      );
 
       res.status(200).json({
         success: true,
         order,
       });
-
-      async function updateOrder(id, qty) {
-        const product = await Product.findById(id);
-
-        product.stock -= qty;
-        product.sold_out += qty;
-
-        await product.save({ validateBeforeSave: false });
-      }
-
-      async function updateSellerInfo(amount) {
-        const seller = await Shop.findById(req.seller.id);
-        
-        seller.availableBalance = amount;
-
-        await seller.save();
-      }
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// give a refund ----- user
 router.put(
   "/order-refund/:id",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const order = await Order.findById(req.params.id);
-
-      if (!order) {
-        return next(new ErrorHandler("Order not found with this id", 400));
-      }
-
-      order.status = req.body.status;
-
-      await order.save({ validateBeforeSave: false });
+      const platform = getOrderPlatform();
+      const order = await platform.requestRefund(
+        req.params.id,
+        req.body.status || "Processing refund"
+      );
 
       res.status(200).json({
         success: true,
@@ -183,69 +105,44 @@ router.put(
         message: "Order Refund Request successfully!",
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// accept the refund ---- seller
 router.put(
   "/order-refund-success/:id",
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const order = await Order.findById(req.params.id);
-
-      if (!order) {
-        return next(new ErrorHandler("Order not found with this id", 400));
-      }
-
-      order.status = req.body.status;
-
-      await order.save();
+      const platform = getOrderPlatform();
+      await platform.acceptRefund(req.params.id, req.body.status, resolveSellerId(req));
 
       res.status(200).json({
         success: true,
         message: "Order Refund successfull!",
       });
-
-      if (req.body.status === "Refund Success") {
-        order.cart.forEach(async (o) => {
-          await updateOrder(o._id, o.qty);
-        });
-      }
-
-      async function updateOrder(id, qty) {
-        const product = await Product.findById(id);
-
-        product.stock += qty;
-        product.sold_out -= qty;
-
-        await product.save({ validateBeforeSave: false });
-      }
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );
 
-// all orders --- for admin
 router.get(
   "/admin-all-orders",
   isAuthenticated,
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const orders = await Order.find().sort({
-        deliveredAt: -1,
-        createdAt: -1,
-      });
+      const platform = getOrderPlatform();
+      const orders = await platform.history.listForAdmin();
+
       res.status(201).json({
         success: true,
         orders,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return handleServiceError(error, next);
     }
   })
 );

@@ -37,6 +37,9 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerProductPlatform } = require("./catalog");
   registerProductPlatform(app, core, options.catalog || {});
 
+  const { registerOrderPlatform } = require("./orders");
+  registerOrderPlatform(app, core, options.orders || {});
+
   return core;
 }
 
@@ -47,4 +50,5 @@ module.exports = {
   MarketplaceCore: require("./core/MarketplaceCore"),
   getVendorPlatform: () => require("./vendor").getVendorPlatform(),
   getProductPlatform: () => require("./catalog").getProductPlatform(),
+  getOrderPlatform: () => require("./orders").getOrderPlatform(),
 };
