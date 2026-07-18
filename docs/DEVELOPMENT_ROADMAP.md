@@ -27,11 +27,11 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**Phase 8.1 Delivery Tracking — frozen at `delivery-tracking-v1`.**
+**Phase 8.2 Courier Management — frozen at `courier-management-v1`.**
 
-Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`, `yebo-ai-memory-v1`, `delivery-foundation-v1`, `delivery-tracking-v1`
+Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`, `yebo-ai-memory-v1`, `delivery-foundation-v1`, `delivery-tracking-v1`, `courier-management-v1`
 
-Branch: `feature/delivery-tracking`
+Branch: `feature/courier-management`
 
 ---
 
@@ -53,8 +53,9 @@ Branch: `feature/delivery-tracking`
 |-----------|------|------------|--------|
 | 8.0 | Delivery Module Foundation | `delivery-foundation-v1` | ✅ Complete |
 | 8.1 | Delivery Tracking | `delivery-tracking-v1` | ✅ Complete |
+| 8.2 | Courier Management | `courier-management-v1` | ✅ Complete |
 
-**Do not begin Courier Management.**
+**Do not begin Delivery Pricing.**
 
 ---
 
@@ -66,7 +67,8 @@ Branch: `feature/delivery-tracking`
 |-----------|------|--------|
 | 8.0 | Delivery Module Foundation | ✅ Complete (`delivery-foundation-v1`) |
 | 8.1 | Delivery Tracking | ✅ Complete (`delivery-tracking-v1`) |
-| 8.2 | Courier Management | Next |
+| 8.2 | Courier Management | ✅ Complete (`courier-management-v1`) |
+| 8.3 | Delivery Pricing | Next |
 
 ### Phase 9 — Inventory & Categories
 

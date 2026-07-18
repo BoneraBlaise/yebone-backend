@@ -94,7 +94,7 @@ flowchart TB
 | Orders | `marketplace/orders/` | `OrderPlatform` | `OrderService` | `orders-production-v1` |
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
-| Delivery | `marketplace/delivery/` | `DeliveryPlatform` | In-memory repository + timeline | `delivery-tracking-v1` |
+| Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` | In-memory + timeline + couriers | `courier-management-v1` |
 
 ---
 
@@ -168,6 +168,7 @@ Registration order in `marketplace/index.js`:
 5. `registerOrderPlatform(app, core)`
 6. `registerAIPlatform(app, core)`
 7. `registerDeliveryPlatform(app, core)`
+8. `registerCourierPlatform(app, core)`
 
 Each platform exposes:
 
@@ -314,22 +315,21 @@ AI must **not** bypass services or duplicate business logic.
 
 ---
 
-## Delivery Platform (Phase 8.0–8.1)
+## Delivery Platform (Phase 8.0–8.2)
 
 Delivery is implemented at `marketplace/delivery/` — independent of Orders business logic.
 
-- **8.0 Foundation:** lifecycle, courier assignment, tracking numbers, metrics
-- **8.1 Tracking:** append-only timeline, latest status, public timeline API
-- In-memory repository for foundation phase (no GPS, maps, or fleet)
-- Future order integration via compatibility hooks only — frozen `orders/` internals unchanged
+- **8.0 Foundation:** lifecycle, tracking numbers, structured addresses
+- **8.1 Tracking:** append-only timeline and status visibility
+- **8.2 Courier Management:** courier registry, availability, capacity, assignment bridge
 
-See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) and [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md).
+See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md), [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md), and [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md).
 
 ---
 
-## Future Courier Management Integration
+## Future Delivery Pricing Integration
 
-Courier management (Phase 8.2+) will extend delivery without modifying frozen foundation internals:
+Delivery pricing (Phase 8.3+) will extend delivery without modifying frozen foundation/tracking internals:
 
 - Persistent storage migration
 - Order lifecycle compatibility hooks
