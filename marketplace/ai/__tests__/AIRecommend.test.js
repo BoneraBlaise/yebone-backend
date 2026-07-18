@@ -297,7 +297,7 @@ describe("AI Recommend — Phase 7.5", () => {
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
     assert.equal(second.body.data.intent, "recommend");
-    assert.equal(second.body.data.meta.phase, "7.6");
+    assert.equal(second.body.data.meta.phase, "7.7");
     assert.equal(second.body.data.meta.contextualRecommendations, true);
     assert.match(second.body.data.message, /recommend/i);
   });

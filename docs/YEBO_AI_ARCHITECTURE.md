@@ -1,9 +1,9 @@
 # YEBO AI — Canonical Architecture
 
-**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1` · `yebo-ai-recommend-v1` · `yebo-ai-checkout-v1`  
+**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1` · `yebo-ai-recommend-v1` · `yebo-ai-checkout-v1` · `yebo-ai-memory-v1`  
 **Baseline:** `platform-pre-ai-v1`  
-**Branch:** `feature/yebo-ai-checkout`  
-**Status:** Phase 7.6 checkout intelligence implemented — read-only purchase guidance before checkout
+**Branch:** `feature/yebo-ai-memory`  
+**Status:** Phase 7.7 conversation memory implemented — YEBO AI v1 complete and frozen
 
 > YEBO AI is an **orchestration layer**. It is not a business platform. All business logic remains in frozen modules.
 

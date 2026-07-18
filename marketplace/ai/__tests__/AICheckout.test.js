@@ -283,7 +283,7 @@ describe("AI Checkout — Phase 7.6", () => {
     assert.equal(first.status, 200);
     assert.equal(second.status, 200);
     assert.equal(second.body.data.intent, "checkout");
-    assert.equal(second.body.data.meta.phase, "7.6");
+    assert.equal(second.body.data.meta.phase, "7.7");
     assert.equal(second.body.data.meta.checkoutIntelligence, true);
     assert.equal(second.body.data.toolId, "checkout.guide");
     assert.ok(Array.isArray(second.body.data.checkout?.guidance));

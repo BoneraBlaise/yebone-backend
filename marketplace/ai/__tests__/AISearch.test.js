@@ -118,6 +118,7 @@ describe("AI Search — Phase 7.3", () => {
         recordPlannerDecision: () => {},
         recordSearchExtraction: () => {},
         recordConversationTurn: () => {},
+        recordMemoryResolution: () => {},
       },
       config: {},
     });
@@ -154,7 +155,7 @@ describe("AI Search — Phase 7.3", () => {
     assert.equal(response.body.data.searchRequest.brand, "Samsung");
     assert.equal(response.body.data.searchRequest.maxPrice, 300000);
     assert.equal(typeof response.body.data.tool.success, "boolean");
-    assert.equal(response.body.data.meta.phase, "7.6");
+    assert.equal(response.body.data.meta.phase, "7.7");
   });
 
   it("search gateway rejects empty query", async () => {

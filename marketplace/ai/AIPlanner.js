@@ -1,9 +1,10 @@
 /**
- * AI planner — commerce assistant, recommendations, checkout intelligence (Phase 7.6).
+ * AI planner — commerce assistant through conversation memory (Phase 7.7).
  */
 const SearchParameterExtractor = require("./search/SearchParameterExtractor");
 const AIConversationContext = require("./conversation/AIConversationContext");
 const ConversationFlowAnalyzer = require("./conversation/ConversationFlowAnalyzer");
+const ConversationMemoryEngine = require("./conversation/ConversationMemoryEngine");
 
 class AIPlanner {
   constructor({
@@ -17,6 +18,7 @@ class AIPlanner {
     searchParameterExtractor,
     conversationContext,
     conversationFlowAnalyzer,
+    conversationMemoryEngine,
   } = {}) {
     this.toolRegistry = toolRegistry;
     this.capabilityRegistry = capabilityRegistry;
@@ -35,10 +37,12 @@ class AIPlanner {
       ttlMs: config?.conversationTtlMs,
       maxSessions: config?.conversationMaxSessions,
     });
+    this.conversationMemoryEngine = conversationMemoryEngine || new ConversationMemoryEngine();
     this.conversationFlowAnalyzer =
       conversationFlowAnalyzer ||
       new ConversationFlowAnalyzer({
         searchParameterExtractor: this.searchParameterExtractor,
+        conversationMemoryEngine: this.conversationMemoryEngine,
       });
   }
 
@@ -71,6 +75,8 @@ class AIPlanner {
         capabilities = ["recommendations", "candidate_composition"];
       } else if (flow.intent === "checkout") {
         capabilities = ["checkout_guidance", "product_comparison", "purchase_readiness"];
+      } else if (flow.intent === "catalog") {
+        capabilities = ["product_lookup", "product_details"];
       }
       return {
         intent: flow.intent,
@@ -234,6 +240,14 @@ class AIPlanner {
 
   buildToolInput(plan, context = {}) {
     const message = context.message || context.query || "";
+    const memory = plan.memoryResolution || context.memoryResolution || {};
+    const sessionContext = context.sessionContext || {};
+    const resolvedProducts =
+      memory.resolvedProducts?.length > 0
+        ? memory.resolvedProducts
+        : memory.resolvedProduct
+          ? [memory.resolvedProduct]
+          : sessionContext.currentProducts || [];
     const base = {
       query: context.query || message,
       message,
@@ -260,30 +274,43 @@ class AIPlanner {
       case "vendor_lookup":
         return { ...base, action: "shop_lookup", shopId: context.shopId };
       case "recommend": {
-        const sessionContext = context.sessionContext || {};
         return {
           ...base,
           action: "rank",
-          sourceProducts: context.sourceProducts || sessionContext.currentProducts || [],
+          sourceProducts: context.sourceProducts || resolvedProducts,
           searchRequest: context.lastSearchRequest || sessionContext.lastSearchRequest || null,
           preferAffordable: /\baffordable\b|\bcheaper\b|\bbudget\b/i.test(message),
           limit: context.limit || 5,
         };
       }
       case "checkout": {
-        const sessionContext = context.sessionContext || {};
         return {
           ...base,
           action: "guide",
-          sourceProducts: context.sourceProducts || sessionContext.currentProducts || [],
-          productId: context.productId || sessionContext.currentProduct?._id || null,
-          mode: context.mode || null,
+          sourceProducts: context.sourceProducts || resolvedProducts,
+          productId:
+            context.productId ||
+            memory.resolvedProduct?._id ||
+            memory.resolvedProduct?.id ||
+            sessionContext.currentProduct?._id ||
+            null,
+          mode: context.mode || plan.conversationFlow?.memoryMode || null,
         };
       }
       case "payment":
         return { ...base, action: "readiness" };
       case "catalog":
-        return { ...base, action: "product_lookup", productId: context.productId };
+        return {
+          ...base,
+          action: "product_details",
+          productId:
+            context.productId ||
+            memory.resolvedProduct?._id ||
+            memory.resolvedProduct?.id ||
+            sessionContext.currentProduct?._id ||
+            sessionContext.currentProduct?.id ||
+            null,
+        };
       default:
         return { ...base, action: "faq", topic: context.scope || "general" };
     }
@@ -324,11 +351,27 @@ class AIPlanner {
     const { sessionId: resolvedSessionId, context: sessionContext } =
       this.conversationContext.beginTurn(request.sessionId, { userId: request.userId });
 
-    const flow = this.conversationFlowAnalyzer.analyze(request.message, sessionContext);
+    const memoryResolution = this.conversationMemoryEngine.resolve(
+      request.message,
+      sessionContext
+    );
+    if (memoryResolution.hit && memoryResolution.resolvedProduct) {
+      this.conversationContext.update(resolvedSessionId, {
+        currentProduct: memoryResolution.resolvedProduct,
+      });
+    }
+    if (memoryResolution.hit && memoryResolution.resolvedProducts.length > 0) {
+      this.conversationContext.update(resolvedSessionId, {
+        currentProducts: memoryResolution.resolvedProducts,
+      });
+    }
+
+    const activeContext = this.conversationContext.get(resolvedSessionId);
+    const flow = this.conversationFlowAnalyzer.analyze(request.message, activeContext);
     const intent = this.detectIntent({
       message: request.message,
       type: request.type,
-      sessionContext,
+      sessionContext: activeContext,
       flow,
     });
 
@@ -346,7 +389,7 @@ class AIPlanner {
           limit: request.limit,
           sort: request.sort,
         },
-        sessionContext,
+        activeContext,
         flow
       );
     }
@@ -368,10 +411,11 @@ class AIPlanner {
       permission,
       searchRequest,
       conversationFlow: flow,
+      memoryResolution,
       toolStrategy: flow.toolStrategy,
       sessionContextSnapshot: this.conversationContext.snapshot(resolvedSessionId),
       reusedToolResult:
-        flow.toolStrategy === "reuse" ? sessionContext.lastToolResult || null : null,
+        flow.toolStrategy === "reuse" ? activeContext.lastToolResult || null : null,
       providerId: this.providerManager.activeProviderId,
       promptVersions: prompts.layers,
       prompts,
@@ -389,7 +433,16 @@ class AIPlanner {
       sessionId: resolvedSessionId,
       followUp: flow.followUp,
       toolStrategy: flow.toolStrategy,
-      turnCount: sessionContext.turnCount,
+      turnCount: activeContext.turnCount,
+    });
+
+    this.metrics.recordMemoryResolution({
+      sessionId: resolvedSessionId,
+      hit: memoryResolution.hit,
+      miss: memoryResolution.miss,
+      references: memoryResolution.references,
+      depth: activeContext.turnCount,
+      correlationId: request.requestId,
     });
 
     if (intent.intent === "recommend") {
@@ -420,8 +473,20 @@ class AIPlanner {
     const toolInput = this.buildToolInput(plan, {
       ...context,
       sessionContext,
-      sourceProducts: sessionContext.currentProducts,
+      memoryResolution: plan.memoryResolution,
+      sourceProducts:
+        plan.memoryResolution?.resolvedProducts?.length > 0
+          ? plan.memoryResolution.resolvedProducts
+          : plan.memoryResolution?.resolvedProduct
+            ? [plan.memoryResolution.resolvedProduct]
+            : sessionContext.currentProducts,
       lastSearchRequest: sessionContext.lastSearchRequest,
+      productId:
+        plan.memoryResolution?.resolvedProduct?._id ||
+        plan.memoryResolution?.resolvedProduct?.id ||
+        sessionContext.currentProduct?._id ||
+        null,
+      mode: plan.conversationFlow?.memoryMode || null,
     });
 
     if (plan.permission.allowed === false) {
@@ -510,17 +575,25 @@ class AIPlanner {
     const providerResult = await this.providerManager.chat(context.message || context.query, {
       toolResults: toolResult ? [toolResult] : [],
       prompt: plan.prompts.instruction,
+      memory: plan.memoryResolution || null,
     });
 
     const products = this._extractProducts(toolResult);
     const recommendations = this._extractRecommendations(toolResult);
     const checkout = this._extractCheckoutGuidance(toolResult);
+    const memoryPatch = this.conversationMemoryEngine.buildContextPatch(sessionContext, {
+      plan,
+      products,
+      recommendations,
+      checkout,
+    });
     this.conversationContext.recordTurn(plan.sessionId, {
       message: context.message || context.query,
       plan,
       toolResult,
       toolStrategy: plan.toolStrategy,
       products,
+      memoryPatch,
     });
 
     const response = this.formatResponse(
@@ -529,7 +602,8 @@ class AIPlanner {
       toolResult,
       products,
       recommendations,
-      checkout
+      checkout,
+      plan.memoryResolution
     );
     await this.hooks.emit("afterResponse", { plan, response });
     return response;
@@ -557,7 +631,8 @@ class AIPlanner {
     toolResult,
     products = [],
     recommendations = [],
-    checkout = { guidance: [], comparisons: [], availability: null }
+    checkout = { guidance: [], comparisons: [], availability: null },
+    memory = null
   ) {
     return {
       requestId: plan.requestId,
@@ -577,6 +652,17 @@ class AIPlanner {
       message: providerResult.content,
       recommendations,
       checkout,
+      memory: memory
+        ? {
+            hit: memory.hit,
+            miss: memory.miss,
+            references: memory.references || [],
+            resolvedProductId:
+              memory.resolvedProduct?._id || memory.resolvedProduct?.id || null,
+            resolvedProductName: memory.resolvedProduct?.name || null,
+            depth: memory.depth || 0,
+          }
+        : null,
       searchRequest: plan.searchRequest || null,
       conversation: {
         turnCount: plan.sessionContextSnapshot?.turnCount || 0,
@@ -586,9 +672,10 @@ class AIPlanner {
         productCount: products.length,
         recommendationCount: recommendations.length,
         comparisonCount: checkout.comparisons.length,
+        memoryHit: Boolean(memory?.hit),
       },
       meta: {
-        phase: "7.6",
+        phase: "7.7",
         gateway: true,
         streamingPrepared: true,
         productionTools: true,
@@ -599,6 +686,7 @@ class AIPlanner {
           plan.intent.intent === "checkout" ||
           checkout.guidance.length > 0 ||
           checkout.comparisons.length > 0,
+        conversationMemory: Boolean(memory?.hit || memory?.miss),
       },
     };
   }

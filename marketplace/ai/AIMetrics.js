@@ -41,6 +41,11 @@ class AIMetrics {
     this.checkoutGuidanceGenerations = 0;
     this.checkoutReuseCount = 0;
     this.checkoutLatencyMs = 0;
+    this.memoryHits = 0;
+    this.memoryMisses = 0;
+    this.referenceResolutions = 0;
+    this.conversationDepthTotal = 0;
+    this.resolvedReferenceTotal = 0;
   }
 
   startTimer() {
@@ -231,6 +236,25 @@ class AIMetrics {
     if (correlationId) this.lastCorrelationId = correlationId;
   }
 
+  recordMemoryResolution({
+    sessionId = null,
+    hit = false,
+    miss = false,
+    references = [],
+    depth = 0,
+    correlationId = null,
+  } = {}) {
+    if (hit) this.memoryHits += 1;
+    if (miss) this.memoryMisses += 1;
+    if (references.length > 0) {
+      this.referenceResolutions += 1;
+      this.resolvedReferenceTotal += references.length;
+    }
+    if (depth > 0) this.conversationDepthTotal += depth;
+    if (sessionId) this.conversationSessions.add(String(sessionId));
+    if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -276,6 +300,17 @@ class AIMetrics {
       averageCheckoutLatencyMs:
         this.checkoutGuidanceGenerations > 0
           ? Math.round(this.checkoutLatencyMs / this.checkoutGuidanceGenerations)
+          : 0,
+      memoryHits: this.memoryHits,
+      memoryMisses: this.memoryMisses,
+      referenceResolutions: this.referenceResolutions,
+      averageConversationDepth:
+        this.referenceResolutions > 0
+          ? Math.round((this.conversationDepthTotal / this.referenceResolutions) * 10) / 10
+          : 0,
+      averageResolvedReferences:
+        this.referenceResolutions > 0
+          ? Math.round((this.resolvedReferenceTotal / this.referenceResolutions) * 10) / 10
           : 0,
     });
   }

@@ -1,10 +1,10 @@
 # YEBO AI — Tool Architecture
 
-**Tag:** `yebo-ai-checkout-v1`  
+**Tag:** `yebo-ai-memory-v1`  
 **Baseline:** `yebo-ai-tools-v1`  
-**Status:** IMPLEMENTED (Phase 7.2 tools + Phase 7.3 NL search + Phase 7.5 recommendations + Phase 7.6 checkout)
+**Status:** IMPLEMENTED — YEBO AI v1 complete (Phases 7.2–7.7)
 
-Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md) · [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md) · [AI_SECURITY.md](./AI_SECURITY.md)
+Related: [YEBO_AI_ARCHITECTURE.md](./YEBO_AI_ARCHITECTURE.md) · [AI_TOOL_CONTRACTS.md](./AI_TOOL_CONTRACTS.md) · [AI_SEARCH.md](./AI_SEARCH.md) · [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md) · [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md) · [AI_CONVERSATION_MEMORY.md](./AI_CONVERSATION_MEMORY.md) · [AI_SECURITY.md](./AI_SECURITY.md)
 
 ---
 
@@ -149,6 +149,20 @@ See [AI_RECOMMENDATIONS.md](./AI_RECOMMENDATIONS.md).
 | **Never** | Order creation, payment execution, inventory modification |
 
 See [AI_CHECKOUT_INTELLIGENCE.md](./AI_CHECKOUT_INTELLIGENCE.md).
+
+---
+
+## Conversation Memory (Phase 7.7)
+
+Session-scoped reference resolution via `ConversationMemoryEngine` — not a tool, but orchestration consumed by the planner.
+
+| Capability | Implementation |
+|------------|----------------|
+| Reference resolution | `it`, ordinals, `cheaper one`, `the vendor` |
+| Entity tracking | Search, products, recommendation, comparison, checkout |
+| Lifetime | Session TTL only — no persistence |
+
+See [AI_CONVERSATION_MEMORY.md](./AI_CONVERSATION_MEMORY.md).
 
 Replaces: `YIPShoppingIntelligence`, `YEBOIntelligenceEngine` mock paths.
 

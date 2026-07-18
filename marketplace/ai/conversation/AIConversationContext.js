@@ -1,5 +1,5 @@
 /**
- * Lightweight in-memory session context — no persistent memory (Phase 7.4).
+ * Lightweight in-memory session context — session-scoped conversation memory (Phase 7.7).
  */
 class AIConversationContext {
   constructor({ ttlMs = 30 * 60 * 1000, maxSessions = 1000 } = {}) {
@@ -16,10 +16,15 @@ class AIConversationContext {
       lastToolId: null,
       lastToolResult: null,
       lastSearchRequest: null,
+      currentSearch: null,
       currentProducts: [],
       currentFilters: null,
       currentProduct: null,
+      currentRecommendation: null,
+      currentComparison: null,
+      currentCheckoutContext: null,
       currentVendor: null,
+      memoryReferences: [],
       lastMessage: null,
       updatedAt: Date.now(),
     };
@@ -72,7 +77,10 @@ class AIConversationContext {
     return next;
   }
 
-  recordTurn(sessionId, { message, plan, toolResult, toolStrategy, products = [] } = {}) {
+  recordTurn(
+    sessionId,
+    { message, plan, toolResult, toolStrategy, products = [], memoryPatch = null } = {}
+  ) {
     if (!sessionId) return this._empty();
 
     const patch = {
@@ -83,6 +91,7 @@ class AIConversationContext {
       currentFilters: plan?.searchRequest || null,
       currentProducts: products,
       toolStrategy: toolStrategy || null,
+      ...(memoryPatch || {}),
     };
 
     if (toolStrategy === "reuse") {
@@ -91,7 +100,7 @@ class AIConversationContext {
       patch.lastToolResult = toolResult;
     }
 
-    if (products.length === 1) {
+    if (products.length === 1 && !patch.currentProduct) {
       patch.currentProduct = products[0];
     }
 
@@ -108,6 +117,8 @@ class AIConversationContext {
       hasToolResult: Boolean(context.lastToolResult),
       productCount: context.currentProducts?.length || 0,
       hasSearchRequest: Boolean(context.lastSearchRequest),
+      hasActiveProduct: Boolean(context.currentProduct),
+      memoryReferenceCount: context.memoryReferences?.length || 0,
       updatedAt: context.updatedAt,
     });
   }

@@ -19,6 +19,27 @@ class MockProvider extends BaseAIProvider {
     };
   }
 
+  _formatMemoryAwareResponse(input, options = {}) {
+    const memory = options.memory;
+    if (!memory?.hit) return null;
+
+    const text = String(input || "").toLowerCase();
+    const productName =
+      memory.resolvedProduct?.name ||
+      options.toolResults?.[0]?.data?.product?.name ||
+      "the product from your conversation";
+
+    if (/warranty|does it have|tell me about it|details about/i.test(text)) {
+      const product = options.toolResults?.find(
+        (entry) => entry?.success && entry?.data?.product
+      )?.data?.product;
+      const description = product?.description || "the product listing";
+      return `About ${productName} from your current conversation: ${description}. Refer to the vendor listing for warranty details when available.`;
+    }
+
+    return null;
+  }
+
   _formatCheckoutExplanation(toolResults = []) {
     const tool = toolResults.find(
       (entry) =>
@@ -63,6 +84,17 @@ class MockProvider extends BaseAIProvider {
 
   async chat(input, options = {}) {
     const text = typeof input === "string" ? input : JSON.stringify(input);
+    const memoryMessage = this._formatMemoryAwareResponse(text, options);
+    if (memoryMessage) {
+      return {
+        providerId: this.id,
+        model: this.model,
+        mock: true,
+        content: memoryMessage,
+        usage: { inputTokens: text.length, outputTokens: memoryMessage.length },
+      };
+    }
+
     const checkoutMessage = this._formatCheckoutExplanation(options.toolResults || []);
     if (checkoutMessage) {
       return {

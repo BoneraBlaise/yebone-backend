@@ -1,6 +1,8 @@
 /**
- * Follow-up analysis for commerce assistant turns (Phase 7.4–7.6).
+ * Follow-up analysis for commerce assistant turns (Phase 7.4–7.7).
  */
+const ConversationMemoryEngine = require("./ConversationMemoryEngine");
+
 class ConversationFlowAnalyzer {
   static CHECKOUT_PATTERNS =
     /should i buy|is it worth buying|is it worth it|can i buy|can i purchase|purchase now|buy this today|buy today|compare these|compare them|which is cheaper|cheaper overall|better value|product a or| or product |is this product.*available|currently available|availability|is it available|can i order|worth buying|which is better|which one is better|gives me better value/i;
@@ -8,8 +10,17 @@ class ConversationFlowAnalyzer {
   static RECOMMENDATION_PATTERNS =
     /what do you recommend|which one do you recommend|best option|what would you recommend|you recommend|recommend one from|recommend one\b/i;
 
-  constructor({ searchParameterExtractor } = {}) {
+  constructor({ searchParameterExtractor, conversationMemoryEngine } = {}) {
     this.searchParameterExtractor = searchParameterExtractor;
+    this.conversationMemoryEngine =
+      conversationMemoryEngine || new ConversationMemoryEngine();
+  }
+
+  isMemoryReference(message = "", sessionContext = {}) {
+    return (
+      sessionContext.turnCount > 1 &&
+      this.conversationMemoryEngine.hasReference(message)
+    );
   }
 
   isCheckoutRequest(message = "") {
@@ -49,6 +60,37 @@ class ConversationFlowAnalyzer {
   analyze(message, sessionContext = {}) {
     const text = String(message || "").toLowerCase().trim();
     const followUp = this.isFollowUp(message, sessionContext);
+    const memory = this.conversationMemoryEngine.resolve(message, sessionContext);
+
+    if (memory.hit && sessionContext.turnCount > 1) {
+      const intentHint = this.conversationMemoryEngine.inferIntentFromReference(
+        message,
+        memory,
+        sessionContext
+      );
+      return {
+        followUp: true,
+        type: "memory_reference",
+        intent: intentHint.intent,
+        toolStrategy: intentHint.toolStrategy,
+        reason: "resolved_conversation_reference",
+        memory,
+        memoryAction: intentHint.action,
+        memoryMode: intentHint.mode,
+        reuseToolResults: intentHint.toolStrategy === "reuse",
+      };
+    }
+
+    if (memory.miss && this.isMemoryReference(message, sessionContext)) {
+      return {
+        followUp: true,
+        type: "memory_miss",
+        intent: "commerce_chat",
+        toolStrategy: "execute",
+        reason: "unresolved_conversation_reference",
+        memory,
+      };
+    }
 
     if (this.isCheckoutRequest(message)) {
       const hasProducts =

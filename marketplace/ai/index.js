@@ -46,6 +46,7 @@ module.exports = {
   SearchParameterExtractor: require("./search/SearchParameterExtractor"),
   AIConversationContext: require("./conversation/AIConversationContext"),
   ConversationFlowAnalyzer: require("./conversation/ConversationFlowAnalyzer"),
+  ConversationMemoryEngine: require("./conversation/ConversationMemoryEngine"),
   RecommendationEngine: require("./recommendations/RecommendationEngine"),
   CheckoutIntelligenceEngine: require("./checkout/CheckoutIntelligenceEngine"),
   AIPromptRegistry: require("./AIPromptRegistry"),
