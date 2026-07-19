@@ -95,6 +95,7 @@ flowchart TB
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
 | Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` + `DeliveryConfigurationPlatform` | Persistent config + couriers | `delivery-configuration-v1` |
+| Growth | `marketplace/growth/` | `GrowthPlatform` + `GrowthConfigurationPlatform` | Referral, coupons, commission orchestration | `growth-platform-v1` |
 
 ---
 
@@ -112,6 +113,7 @@ flowchart BT
   Search[marketplace/search/]
   AI[marketplace/ai/]
   Delivery[marketplace/delivery/]
+  Growth[marketplace/growth/]
   Ctrl[controller/]
 
   Core --> Pay
@@ -121,6 +123,7 @@ flowchart BT
   Search --> Core
   AI --> Core
   Delivery --> Core
+  Growth --> Core
   Ctrl --> Vendor
   Ctrl --> Catalog
   Ctrl --> Orders
@@ -166,10 +169,11 @@ Registration order in `marketplace/index.js`:
 3. `registerProductPlatform(app, core)`
 4. `registerSearchPlatform(app, core)`
 5. `registerOrderPlatform(app, core)`
-6. `registerAIPlatform(app, core)`
-7. `registerDeliveryConfigurationPlatform(app)`
-8. `registerDeliveryPlatform(app, core)`
-9. `registerCourierPlatform(app, core)`
+6. `registerGrowthPlatform(app)`
+7. `registerAIPlatform(app, core)`
+8. `registerDeliveryConfigurationPlatform(app)`
+9. `registerDeliveryPlatform(app, core)`
+10. `registerCourierPlatform(app, core)`
 
 Each platform exposes:
 
@@ -331,6 +335,18 @@ See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md), [DELIVERY_TRACKING.md](./DELIVER
 
 ---
 
+## Growth Platform (Phase 9.0)
+
+Growth is implemented at `marketplace/growth/` — orchestrates referral, affiliate, coupons, promotions, commission rules, and reward ledger without duplicating Payments commission math.
+
+- **9.0 MVP:** configuration, feature flags, signed attribution, coupon/promotion validation, commission orchestration, reward ledger, legacy adapters
+
+See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
+
+**Growth Platform MVP frozen at `growth-platform-v1`.**
+
+---
+
 ## Future Delivery Pricing Integration
 
 Delivery pricing (post-MVP) will extend delivery without modifying frozen foundation/tracking/courier/configuration cores:
@@ -338,15 +354,6 @@ Delivery pricing (post-MVP) will extend delivery without modifying frozen founda
 - Persistent storage migration
 - Order lifecycle compatibility hooks
 - No changes to payment or catalog frozen modules
-
----
-
-## Future Affiliate Integration
-
-Affiliate/referral today uses `utils/referralUtils.js` inside order transactions. Future affiliate engine should:
-
-- Consume order lifecycle hooks (`OrderHooks`)
-- Not duplicate commission calculation in controllers
 
 ---
 

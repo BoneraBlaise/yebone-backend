@@ -27,13 +27,13 @@ See [CHANGELOG.md](../CHANGELOG.md). Foundation complete at `platform-pre-ai-v1`
 
 ## Current
 
-**Phase 8.3 Delivery Configuration — frozen at `delivery-configuration-v1`.**
+**Phase 9.0 Growth Platform MVP — frozen at `growth-platform-v1`.**
 
-**Delivery MVP complete.**
+**Growth Platform MVP complete.**
 
-Restore points: `platform-pre-ai-v1`, `yebo-ai-design-v1`, `yebo-ai-gateway-v1`, `yebo-ai-tools-v1`, `yebo-ai-search-v1`, `yebo-ai-assistant-v1`, `yebo-ai-recommend-v1`, `yebo-ai-checkout-v1`, `yebo-ai-memory-v1`, `delivery-foundation-v1`, `delivery-tracking-v1`, `courier-management-v1`, `delivery-configuration-v1`
+Restore points include: `delivery-configuration-v1`, `growth-platform-v1`
 
-Branch: `feature/delivery-configuration`
+Branch: `feature/growth-platform`
 
 ---
 
@@ -57,8 +57,9 @@ Branch: `feature/delivery-configuration`
 | 8.1 | Delivery Tracking | `delivery-tracking-v1` | ✅ Complete |
 | 8.2 | Courier Management | `courier-management-v1` | ✅ Complete |
 | 8.3 | Delivery Configuration | `delivery-configuration-v1` | ✅ Complete |
+| 9.0 | Growth Platform MVP | `growth-platform-v1` | ✅ Complete |
 
-**Delivery MVP complete. Do not begin Delivery Pricing, GPS, Affiliate, or Driver App until the next approved roadmap phase.**
+**Growth Platform MVP complete. Do not implement campaign scheduling, loyalty, cashback, wallet payouts, or advanced analytics until the next approved roadmap phase.**
 
 ---
 

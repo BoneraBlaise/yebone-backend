@@ -20,6 +20,22 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | Search Platform | `marketplace/search/` | Frozen |
 | YEBO AI | `marketplace/ai/` | Frozen (`yebo-ai-memory-v1`) |
 | **Delivery Platform** | `marketplace/delivery/` | **8.3 frozen** (`delivery-configuration-v1`) |
+| **Growth Platform** | `marketplace/growth/` | **9.0 frozen** (`growth-platform-v1`) |
+
+---
+
+## Growth Platform (Phase 9.0)
+
+Unified growth orchestration at `marketplace/growth/`:
+
+- `GrowthPlatform` orchestrates referral, coupon, promotion validation, commission, and reward ledger
+- `GrowthConfigurationPlatform` + `GrowthFeatureFlagService` + route guards
+- Payments Commission Engine is the only commission calculator
+- Legacy adapters preserve existing Commission, Coupon, FlashSale, and Event data
+
+See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
+
+**Growth Platform MVP complete.**
 
 ---
 

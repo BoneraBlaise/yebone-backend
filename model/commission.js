@@ -66,9 +66,20 @@ const commissionSchema = new mongoose.Schema({
     commissionRate: Number,
     status: {
       type: String,
-      enum: ["pending", "paid", "cancelled"],
+      enum: ["pending", "paid", "cancelled", "approved", "refunded"],
       default: "pending"
     },
+    rewardStatus: {
+      type: String,
+      enum: ["pending", "approved", "paid", "cancelled", "refunded"],
+      default: "pending"
+    },
+    ruleUsed: { type: String, default: null },
+    referralUsed: { type: String, default: null },
+    couponUsed: { type: String, default: null },
+    approvalTimestamp: { type: Date, default: null },
+    paymentReference: { type: String, default: null },
+    walletReference: { type: String, default: null },
     createdAt: {
       type: Date,
       default: Date.now

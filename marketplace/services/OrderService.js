@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../../model/order");
 const Shop = require("../../model/shop");
-const Commission = require("../../model/commission");
-const {
-  processOrderCommission,
-  updateCommissionStatus,
-} = require("../../utils/referralUtils");
 const OrderInventoryService = require("../orders/OrderInventoryService");
 const OrderStateMachine = require("../orders/OrderStateMachine");
 
@@ -67,9 +62,20 @@ class OrderService {
     return order;
   }
 
-  async _processReferral(order, referralCode, session) {
+  async _processReferral(order, referralCode, session, options = {}) {
     if (!referralCode) return;
-    await processOrderCommission(order, referralCode, session);
+    try {
+      const { getGrowthPlatform } = require("../growth");
+      const growth = getGrowthPlatform();
+      const resolved = growth.resolveReferralCode({
+        referralCode,
+        attributionTokens: options.attributionTokens || [],
+      });
+      if (!resolved) return;
+      await growth.processOrderCommission(order, resolved, session, options);
+    } catch (error) {
+      console.error("Growth referral commission failed:", error.message);
+    }
   }
 
   async createOrders(input = {}) {
@@ -80,7 +86,9 @@ class OrderService {
       user,
       paymentInfo,
       shipping = 0,
-      referralCode,
+      referralCode: inputReferralCode,
+      attributionTokens = [],
+      couponCode,
     } = input;
 
     if (!shippingAddress || !user) {
@@ -96,6 +104,22 @@ class OrderService {
     }
 
     return this.stateMachine.runInTransaction(async (session) => {
+      const referralOptions = { attributionTokens, couponCode };
+      let resolvedReferralCode = inputReferralCode;
+
+      if (attributionTokens.length) {
+        try {
+          const { getGrowthPlatform } = require("../growth");
+          resolvedReferralCode =
+            getGrowthPlatform().resolveReferralCode({
+              referralCode: inputReferralCode,
+              attributionTokens,
+            }) || inputReferralCode;
+        } catch (_error) {
+          // Growth platform unavailable — fall back to explicit referral code.
+        }
+      }
+
       if (wonBid) {
         const productId = wonBid._id || wonBid.productId;
         await this.inventory.reserveStock(productId, 1, session);
@@ -121,12 +145,12 @@ class OrderService {
               status: "Pending",
             },
             orderType: "won_bid",
-            referralCode,
+            referralCode: resolvedReferralCode,
           },
           session
         );
 
-        await this._processReferral(order, referralCode, session);
+        await this._processReferral(order, resolvedReferralCode, session, referralOptions);
         return { orders: [order] };
       }
 
@@ -147,6 +171,8 @@ class OrderService {
 
       for (const [, items] of shopItemsMap) {
         const shopTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const itemReferralCode = items.find((item) => item.referralCode)?.referralCode;
+        const orderReferralCode = resolvedReferralCode || itemReferralCode;
 
         const order = await this._createOrderDocument(
           {
@@ -164,12 +190,12 @@ class OrderService {
               status: "Pending",
             },
             orderType: "regular",
-            referralCode,
+            referralCode: orderReferralCode,
           },
           session
         );
 
-        await this._processReferral(order, referralCode, session);
+        await this._processReferral(order, orderReferralCode, session, referralOptions);
         orders.push(order);
       }
 
@@ -241,21 +267,11 @@ class OrderService {
       const serviceCharge = order.totalPrice * 0.1;
 
       if (order.referralCode) {
-        const commission = await Commission.findOne({ referralCode: order.referralCode });
-        if (commission) {
-          let orderCommission = 0;
-
-          for (const sale of commission.sales) {
-            if (sale.order.toString() === order._id.toString()) {
-              sale.status = "paid";
-              orderCommission += sale.commission;
-              await commission.updateShopStats(sale.shop, sale.commission, "paid");
-            }
-          }
-
-          commission.balance.pending -= orderCommission;
-          commission.balance.available += orderCommission;
-          await commission.save();
+        try {
+          const { getGrowthPlatform } = require("../growth");
+          await getGrowthPlatform().settleOrderCommission(order._id, order.referralCode);
+        } catch (error) {
+          console.error("Growth commission settlement failed:", error.message);
         }
       }
 
@@ -265,10 +281,6 @@ class OrderService {
           seller.availableBalance = order.totalPrice - serviceCharge;
           await seller.save();
         }
-      }
-
-      if (order.referralCode) {
-        await updateCommissionStatus(order._id, order.referralCode, "paid");
       }
     }
 

@@ -43,6 +43,9 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerOrderPlatform } = require("./orders");
   registerOrderPlatform(app, core, options.orders || {});
 
+  const { registerGrowthPlatform } = require("./growth");
+  registerGrowthPlatform(app, options.growth || {});
+
   const { registerAIPlatform } = require("./ai");
   registerAIPlatform(app, core, options.ai || {});
 
@@ -72,4 +75,5 @@ module.exports = {
   getCourierPlatform: () => require("./delivery/courier").getCourierPlatform(),
   getDeliveryConfigurationPlatform: () =>
     require("./delivery/configuration").getDeliveryConfigurationPlatform(),
+  getGrowthPlatform: () => require("./growth").getGrowthPlatform(),
 };

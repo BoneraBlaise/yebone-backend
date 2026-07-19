@@ -52,10 +52,12 @@ class OrderValidation {
       shippingAddress: input.shippingAddress,
       user: input.user,
       paymentInfo: input.paymentInfo,
-      shipping: input.shipping,
+      shipping: input.      shipping,
       subTotalPrice: input.subTotalPrice,
       totalPrice: input.totalPrice,
       referralCode: input.referralCode,
+      attributionTokens: input.attributionTokens,
+      couponCode: input.couponCode,
     };
   }
 }
