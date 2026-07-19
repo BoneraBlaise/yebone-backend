@@ -1,34 +1,24 @@
+const PlatformAuthService = require("../../integration/auth/PlatformAuthService");
+
 /**
- * Courier endpoint security helpers.
+ * Courier endpoint security helpers — delegates to PlatformAuthService.
  */
 class CourierSecurity {
   static assertAuthenticatedUser(req) {
-    if (!req.user?._id) {
-      return { valid: false, reason: "UNAUTHENTICATED", statusCode: 401 };
-    }
-    return { valid: true, userId: String(req.user._id), role: req.user.role || "user" };
+    return PlatformAuthService.assertAuthenticatedUser(req);
   }
 
   static assertAdmin(req) {
-    const auth = CourierSecurity.assertAuthenticatedUser(req);
-    if (!auth.valid) return auth;
-
-    if (!["admin", "super-admin"].includes(auth.role)) {
-      return { valid: false, reason: "FORBIDDEN", statusCode: 403 };
-    }
-
-    return auth;
+    return PlatformAuthService.assertSuperAdmin(req);
   }
 
   static assertOperationalAccess(req) {
-    const auth = CourierSecurity.assertAuthenticatedUser(req);
-    if (!auth.valid) return auth;
-
-    if (!["admin", "super-admin", "courier", "vendor"].includes(auth.role)) {
-      return { valid: false, reason: "FORBIDDEN", statusCode: 403 };
-    }
-
-    return auth;
+    return PlatformAuthService.assertOperationalAccess(req, [
+      PlatformAuthService.ROLES.ADMIN,
+      PlatformAuthService.ROLES.SUPER_ADMIN,
+      PlatformAuthService.ROLES.COURIER,
+      PlatformAuthService.ROLES.VENDOR,
+    ]);
   }
 }
 

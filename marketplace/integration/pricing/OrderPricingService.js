@@ -79,6 +79,7 @@ class OrderPricingService {
     if (this.audit) {
       await this.audit.record({
         platform: "orders",
+        resource: "cart",
         action: "cart.repriced",
         actor: "system",
         correlationId,
@@ -89,6 +90,38 @@ class OrderPricingService {
     }
 
     return Object.freeze({ items: repriced, subtotal, itemCount: repriced.length });
+  }
+
+  resolveTaxRate() {
+    const configured = Number(process.env.ORDER_TAX_RATE);
+    if (Number.isFinite(configured) && configured >= 0) return configured;
+    return 0;
+  }
+
+  calculateTax(taxableAmount, { rate = null } = {}) {
+    const amount = Number(taxableAmount);
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    const taxRate = rate == null ? this.resolveTaxRate() : Number(rate);
+    if (!Number.isFinite(taxRate) || taxRate <= 0) return 0;
+    return Math.round(amount * taxRate * 100) / 100;
+  }
+
+  buildOrderTotals({ subtotal = 0, shipping = 0, discount = 0, taxRate = null } = {}) {
+    const normalizedSubtotal = Math.max(0, Number(subtotal) || 0);
+    const normalizedDiscount = Math.max(0, Number(discount) || 0);
+    const normalizedShipping = Math.max(0, Number(shipping) || 0);
+    const taxableBase = Math.max(0, normalizedSubtotal - normalizedDiscount);
+    const taxAmount = this.calculateTax(taxableBase, { rate: taxRate });
+    const total = Math.max(0, taxableBase + normalizedShipping + taxAmount);
+
+    return Object.freeze({
+      subtotal: normalizedSubtotal,
+      discount: normalizedDiscount,
+      shipping: normalizedShipping,
+      taxRate: taxRate == null ? this.resolveTaxRate() : Number(taxRate),
+      taxAmount,
+      total,
+    });
   }
 
   async repriceWonBid(wonBid, session = null) {

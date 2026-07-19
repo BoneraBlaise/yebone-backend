@@ -1,10 +1,19 @@
+const { getPlatformFeatureFlags } = require("../integration/features/PlatformFeatureFlagResolver");
+
 class GrowthFeatureFlagService {
   constructor(store) {
     if (!store) throw new Error("GrowthFeatureFlagService requires GrowthConfigStore");
     this.store = store;
   }
 
+  _usePlatformAuthority() {
+    return Boolean(getPlatformFeatureFlags()) && !this.store.useMemoryOnly;
+  }
+
   _flag(key) {
+    if (this._usePlatformAuthority()) {
+      return getPlatformFeatureFlags().isEnabledSync("growth", `${key}.enabled`);
+    }
     return Boolean(this.store.getSettings()?.[key]?.enabled);
   }
 

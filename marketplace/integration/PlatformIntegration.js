@@ -52,6 +52,7 @@ class PlatformIntegration {
     if (this.orderService === orderService) return this;
     this.orderService = orderService;
     orderService.setIntegration(this);
+    this.deliveryBridge.orderService = orderService;
     this.refundBridge = new RefundLifecycleBridge({
       paymentBridge: this.paymentBridge,
       audit: this.audit,
@@ -74,7 +75,7 @@ class PlatformIntegration {
 
   getHealth() {
     return {
-      phase: "9.2",
+      phase: "9.2.1",
       initialized: this._initialized,
       observability: this.observability.getHealth(),
     };

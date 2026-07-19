@@ -21,7 +21,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | YEBO AI | `marketplace/ai/` | Frozen (`yebo-ai-memory-v1`) |
 | **Delivery Platform** | `marketplace/delivery/` | **8.3 frozen** (`delivery-configuration-v1`) |
 | **Growth Platform** | `marketplace/growth/` | **9.2 integrated** (`platform-integration-v1`) |
-| **Platform Integration** | `marketplace/integration/` | **9.2 frozen** (`platform-integration-v1`) |
+| **Platform Integration** | `marketplace/integration/` | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
 
 ---
 
@@ -39,6 +39,8 @@ Unified growth orchestration at `marketplace/growth/`:
 See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
 
 **Platform Integration frozen at `platform-integration-v1`.**
+
+**Enterprise Certification Remediation (9.2.1) frozen at `enterprise-certification-remediation-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

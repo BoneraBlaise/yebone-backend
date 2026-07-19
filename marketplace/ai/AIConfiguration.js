@@ -1,6 +1,8 @@
 /**
  * YEBO AI platform configuration — Phase 7.7 conversation memory (YEBO AI v1).
  */
+const { isPlatformFeatureEnabled } = require("../integration/features/PlatformFeatureFlagResolver");
+
 class AIConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone AI Platform";
@@ -24,6 +26,10 @@ class AIConfiguration {
     );
     this.enableAuditEvents = options.enableAuditEvents !== false;
     this.enableInjectionGuards = options.enableInjectionGuards !== false;
+  }
+
+  isRuntimeEnabled() {
+    return isPlatformFeatureEnabled("ai");
   }
 }
 

@@ -111,9 +111,9 @@ class GrowthPlatform {
     return referralCode || null;
   }
 
-  async cancelOrderCommission(orderId, referralCode, reason = "cancelled") {
+  async cancelOrderCommission(orderId, referralCode, reason = "cancelled", session = null) {
     this.configPlatform.getGuard().assertCommissionEnabled();
-    return this.commission.cancelOrderCommission(orderId, referralCode, reason);
+    return this.commission.cancelOrderCommission(orderId, referralCode, reason, session);
   }
 
   async trackReferralClick(referralCode) {

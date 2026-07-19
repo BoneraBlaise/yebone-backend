@@ -89,7 +89,7 @@ describe("Platform Integration Phase 9.2", () => {
   it("PlatformIntegration composition root initializes", async () => {
     const integration = createPlatformIntegration({ useMemoryOnly: true });
     await integration.initialize();
-    assert.equal(integration.getHealth().phase, "9.2");
+    assert.equal(integration.getHealth().phase, "9.2.1");
     assert.ok(integration.pricing);
     assert.ok(integration.paymentBridge);
     assert.ok(integration.audit);

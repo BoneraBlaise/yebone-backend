@@ -170,54 +170,23 @@ router.post(
         return next(new ErrorHandler("Product ID is required", 400));
       }
 
-      // Log the user ID for debugging purposes
-      console.log("Authenticated user ID:", req.user.id);
-
-      // Find commission details for the authenticated user
-      let commission = await Commission.findOne({ user: req.user.id });
-
-      // Log commission data for debugging purposes
-      console.log("Found commission:", commission);
-
-      // If no commission is found, create one for the user
-      if (!commission) {
-        const referralCode = generateReferralCode(req.user.id);
-
-        // Create a new commission record
-        commission = await Commission.create({
-          user: req.user.id,
-          referralCode,
-          balance: { available: 0, pending: 0 }
-        });
-
-        // Update user record
-        const user = await User.findById(req.user.id);
-        user.isCommissioner = true;
-        user.commissionProgramId = commission._id;
-        await user.save();
-      }
-
-      // Check if FRONTEND_URL is set
       if (!process.env.FRONTEND_URL) {
         return next(new ErrorHandler("Frontend URL is not defined in environment variables", 500));
       }
 
-      // Generate the share link
-      const shareLink = `${process.env.FRONTEND_URL}/product/${productId}?ref=${commission.referralCode}`;
+      const { getGrowthPlatform } = require("../marketplace/growth");
+      const result = await getGrowthPlatform().generateShareLink(
+        req.user.id,
+        productId,
+        process.env.FRONTEND_URL
+      );
 
-      // Increment clicks counter
-      commission.clicks += 1;
-      await commission.save();
-
-      // Send the response
       res.status(200).json({
         success: true,
-        shareLink,
-        referralCode: commission.referralCode
+        shareLink: result.shareLink,
+        referralCode: result.referralCode,
       });
-
     } catch (error) {
-      console.error("Error in generate-share-link route:", error);
       return next(new ErrorHandler(error.message || "Server Error", 500));
     }
   })

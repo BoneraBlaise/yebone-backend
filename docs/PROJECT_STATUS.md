@@ -279,6 +279,31 @@ See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md)
 
 ---
 
+## Phase 9.2.1 — ENTERPRISE CERTIFICATION REMEDIATION
+
+**Tag:** `enterprise-certification-remediation-v1`  
+**Branch:** `feature/enterprise-certification-remediation`  
+**Baseline:** `platform-integration-v1`
+
+Resolves Enterprise Certification Audit v2 findings:
+
+- Atomic refund MongoDB transaction
+- Authoritative `paymentId` persistence and reuse
+- `PlatformFeatureFlagService` / `PlatformAuditService` / `PlatformAuthService` as runtime authorities
+- Server-side promotion validation and tax in order pipeline
+- Delivery → order status synchronization + optional auto courier assignment
+- Legacy coupon/commission controller delegation and secured coupon metadata
+- Mandatory `REFERRAL_ATTRIBUTION_SECRET` in production
+- Batched commission shop stat updates; single coupon lookup on redemption
+
+```bash
+npm run verify:enterprise-certification-remediation
+```
+
+**Enterprise Certification Remediation frozen at `enterprise-certification-remediation-v1`.**
+
+---
+
 ## Current Architecture
 
 | Layer | Role | Status |

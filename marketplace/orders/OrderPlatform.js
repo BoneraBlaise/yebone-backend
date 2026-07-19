@@ -68,6 +68,7 @@ class OrderPlatform {
         let paymentSessions = [];
         try {
           paymentSessions = await this.preparePaymentSessions(orders, sanitizedInput.user, correlationId);
+          await this._persistPaymentIds(orders, paymentSessions);
         } catch (paymentError) {
           await this.orderService.compensateFailedCreate(orders);
           throw paymentError;
@@ -101,6 +102,22 @@ class OrderPlatform {
       return integration.paymentBridge.prepareOrderPayments(orders, user, { correlationId });
     } catch (_error) {
       return this.marketplaceCore.hooks.payment.prepareForOrders(orders, user);
+    }
+  }
+
+  async _persistPaymentIds(orders = [], paymentSessions = []) {
+    for (let index = 0; index < orders.length; index += 1) {
+      const order = orders[index];
+      const session = paymentSessions[index];
+      const paymentId = session?.paymentId;
+      if (!paymentId) continue;
+
+      order.paymentInfo = {
+        ...(order.paymentInfo?.toObject?.() || order.paymentInfo || {}),
+        paymentId: String(paymentId),
+        status: order.paymentInfo?.status || "Pending",
+      };
+      await order.save({ validateBeforeSave: false });
     }
   }
 

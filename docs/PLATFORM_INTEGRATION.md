@@ -166,6 +166,55 @@ Used by Growth, Delivery, and integration admin routes.
 ```bash
 npm run test:platform-integration
 npm run verify:platform-integration
+npm run test:enterprise-certification-remediation
+npm run verify:enterprise-certification-remediation
 ```
 
 **Platform Integration frozen at `platform-integration-v1`.**
+
+---
+
+## Phase 9.2.1 — Enterprise Certification Remediation
+
+**Tag:** `enterprise-certification-remediation-v1`  
+**Baseline:** `platform-integration-v1`
+
+### Atomic refund lifecycle
+
+`OrderService.acceptRefund` runs status update, payment refund, growth commission reversal, coupon restore, inventory restore, and audit inside one MongoDB transaction via `RefundLifecycleBridge`.
+
+### Payment ID persistence
+
+`OrderPlatform._persistPaymentIds` stores `paymentInfo.paymentId` after payment sessions. Capture, refund, and settlement require the stored identifier (no synthetic IDs).
+
+### Authoritative order pipeline
+
+Server repricing → promotion validation → coupon validation → tax calculation (`ORDER_TAX_RATE`) → commission base → total → payment → persistence → audit.
+
+### Unified governance
+
+| Service | Role |
+|---------|------|
+| `PlatformFeatureFlagService` | Runtime authority; Growth/Delivery flag services are adapters |
+| `PlatformAuditService` | Runtime authority; financial/AI/config events delegate via `PlatformAuditAdapter` |
+| `PlatformAuthService` | Single RBAC authority (`middleware/auth`, `CourierSecurity`, Growth/Delivery) |
+
+### Delivery bidirectional sync
+
+`OrderDeliveryBridge.onDeliveryStatusChanged` updates order status when delivery reaches `DELIVERED`. Optional auto courier assignment when `delivery.autoAssignment.enabled`.
+
+### Commission responsibilities
+
+| Type | Owner |
+|------|-------|
+| Referral commission | `GrowthCommissionOrchestrator` + Payments Commission Engine |
+| Platform fee / vendor settlement | Payments settlement facade |
+| Legacy `utils/calculateCommission.js` | Deprecated adapter only |
+
+### Security
+
+- `REFERRAL_ATTRIBUTION_SECRET` mandatory in production/staging
+- `/get-coupon-value/:name` requires authentication; validates via Growth Platform (no raw metadata leak)
+- Legacy commission share-link delegates to `GrowthPlatform.generateShareLink`
+
+**Enterprise Certification Remediation frozen at `enterprise-certification-remediation-v1`.**

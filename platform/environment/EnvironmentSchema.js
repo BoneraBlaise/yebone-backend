@@ -27,6 +27,7 @@ class EnvironmentSchema {
       { key: "SMPT_PASSWORD", description: "SMTP password", required: false, placeholder: PLACEHOLDER },
       { key: "STRIPE_SECRET_KEY", description: "Stripe secret key placeholder", required: false, placeholder: PLACEHOLDER },
       { key: "STRIPE_API_KEY", description: "Stripe publishable key placeholder", required: false, placeholder: PLACEHOLDER },
+      { key: "REFERRAL_ATTRIBUTION_SECRET", description: "HMAC secret for referral attribution tokens", required: true, placeholder: PLACEHOLDER },
       { key: "LOG_LEVEL", description: "Logging level", required: false, defaultValue: "info" },
     ]);
   }

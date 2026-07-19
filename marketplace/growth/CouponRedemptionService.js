@@ -25,14 +25,14 @@ class CouponRedemptionService {
       return validation;
     }
 
-    const coupon = await CoupounCode.findOne({ name: String(code).trim() }).session(session || null);
-    if (!coupon) {
+    const couponId = validation.coupon?.id;
+    if (!couponId) {
       if (this.analytics) this.analytics.recordCouponFailure();
       return { valid: false, reason: "COUPON_NOT_FOUND" };
     }
 
     const query = {
-      _id: coupon._id,
+      _id: couponId,
       isActive: { $ne: false },
       $or: [{ usageLimit: null }, { $expr: { $lt: ["$usageCount", "$usageLimit"] } }],
     };

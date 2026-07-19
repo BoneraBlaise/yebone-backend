@@ -136,6 +136,7 @@ class GrowthCommissionOrchestrator {
 
     let orderCommission = 0;
     const now = new Date();
+    const shopTotals = new Map();
 
     for (const sale of commission.sales) {
       if (sale.order.toString() === String(orderId) && sale.status === "pending") {
@@ -143,8 +144,13 @@ class GrowthCommissionOrchestrator {
         sale.rewardStatus = "approved";
         sale.approvalTimestamp = now;
         orderCommission += sale.commission;
-        await commission.updateShopStats(sale.shop, sale.commission, "paid");
+        const current = shopTotals.get(String(sale.shop)) || 0;
+        shopTotals.set(String(sale.shop), current + sale.commission);
       }
+    }
+
+    for (const [shopId, amount] of shopTotals.entries()) {
+      await commission.updateShopStats(shopId, amount, "paid");
     }
 
     if (orderCommission <= 0) return commission;
@@ -156,9 +162,11 @@ class GrowthCommissionOrchestrator {
     return commission;
   }
 
-  async cancelOrderCommission(orderId, referralCode, reason = "cancelled") {
+  async cancelOrderCommission(orderId, referralCode, reason = "cancelled", session = null) {
     if (!referralCode) return null;
-    const commission = await Commission.findOne({ referralCode });
+    let query = Commission.findOne({ referralCode });
+    if (session) query = query.session(session);
+    const commission = await query;
     if (!commission) return null;
 
     for (const sale of commission.sales) {
@@ -168,7 +176,7 @@ class GrowthCommissionOrchestrator {
         commission.balance.pending = Math.max(0, commission.balance.pending - sale.commission);
       }
     }
-    await commission.save();
+    await commission.save(session ? { session } : undefined);
     return commission;
   }
 }

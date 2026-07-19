@@ -96,7 +96,7 @@ flowchart TB
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
 | Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` + `DeliveryConfigurationPlatform` | Persistent config + couriers | `delivery-configuration-v1` |
 | Growth | `marketplace/growth/` | `GrowthPlatform` + `GrowthConfigurationPlatform` | Referral, coupons, commission orchestration | `platform-integration-v1` |
-| Integration | `marketplace/integration/` | `PlatformIntegration` | Cross-platform bridges, audit, RBAC, flags | `platform-integration-v1` |
+| Integration | `marketplace/integration/` | `PlatformIntegration` | Cross-platform bridges, audit, RBAC, flags | `enterprise-certification-remediation-v1` |
 
 ---
 
@@ -345,6 +345,8 @@ Growth is implemented at `marketplace/growth/` — orchestrates referral, affili
 See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
 
 **Platform Integration frozen at `platform-integration-v1`.**
+
+**Enterprise Certification Remediation (9.2.1) frozen at `enterprise-certification-remediation-v1`.**
 
 ---
 

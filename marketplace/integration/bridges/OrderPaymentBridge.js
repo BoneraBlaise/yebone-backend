@@ -48,12 +48,13 @@ class OrderPaymentBridge {
       if (this.audit) {
         await this.audit.record({
           platform: "payments",
+          resource: orderId,
           action: "order_payment.created",
           actor: userId,
           orderId,
           transactionId: result.workflowResult?.paymentId || null,
           correlationId,
-          newValue: { amount, status: result.workflowResult?.status },
+          newValue: { amount, status: result.workflowResult?.status, paymentId: result.workflowResult?.paymentId },
           reason: "order_create",
         });
       }
@@ -74,6 +75,11 @@ class OrderPaymentBridge {
 
   async captureAndSettle(order, { correlationId = null, vendorId = null } = {}) {
     const orderId = order._id?.toString?.() || order.id;
+    const paymentId = order.paymentInfo?.paymentId;
+    if (!paymentId) {
+      throw this._error(`Authoritative paymentId missing for order ${orderId}`, 400);
+    }
+
     const facade = getMarketplacePaymentFacade();
     const amount = Number(order.totalPrice);
     const shopId = vendorId || order.cart?.[0]?.shopId;
@@ -81,7 +87,7 @@ class OrderPaymentBridge {
     const capture = await facade.orderPayment({
       action: "capture",
       orderId,
-      paymentId: order.paymentInfo?.paymentId,
+      paymentId,
       amount,
       idempotencyKey: `capture:${orderId}`,
       settlement: {
@@ -124,13 +130,18 @@ class OrderPaymentBridge {
 
   async processRefund(order, { amount, reason = "refund", correlationId = null, actor = "system" } = {}) {
     const orderId = order._id?.toString?.() || order.id;
+    const paymentId = order.paymentInfo?.paymentId;
+    if (!paymentId) {
+      throw this._error(`Authoritative paymentId missing for order ${orderId}`, 400);
+    }
+
     const facade = getMarketplacePaymentFacade();
     const refundAmount = Number(amount ?? order.totalPrice);
 
     await facade.refund({
       action: "approve",
       orderId,
-      paymentId: order.paymentInfo?.paymentId,
+      paymentId,
       amount: refundAmount,
       currentState: "REQUESTED",
       metadata: { correlationId },
@@ -139,7 +150,7 @@ class OrderPaymentBridge {
     const completed = await facade.refund({
       action: "complete",
       orderId,
-      paymentId: order.paymentInfo?.paymentId,
+      paymentId,
       refundId: `refund_${orderId}_${Date.now()}`,
       amount: refundAmount,
       currency: order.currency || "RWF",

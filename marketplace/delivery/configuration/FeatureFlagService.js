@@ -1,10 +1,33 @@
+const { getPlatformFeatureFlags } = require("../../integration/features/PlatformFeatureFlagResolver");
+
+const DELIVERY_FLAG_MAP = Object.freeze({
+  vendorDelivery: "vendorDelivery.enabled",
+  customerPickup: "customerPickup.enabled",
+  yeboneDelivery: "yeboneDelivery.enabled",
+  liveTracking: "liveTracking.enabled",
+  eta: "eta.enabled",
+  courierPhoneVisibility: "courierPhoneVisibility.enabled",
+  customerPhoneVisibility: "customerPhoneVisibility.enabled",
+  manualAssignment: "manualAssignment.enabled",
+  autoAssignment: "autoAssignment.enabled",
+  deliveryRatings: "deliveryRatings.enabled",
+});
+
 class FeatureFlagService {
   constructor(store) {
     if (!store) throw new Error("FeatureFlagService requires DeliveryConfigStore");
     this.store = store;
   }
 
+  _usePlatformAuthority() {
+    return Boolean(getPlatformFeatureFlags()) && !this.store.useMemoryOnly;
+  }
+
   _flag(key) {
+    const platformKey = DELIVERY_FLAG_MAP[key];
+    if (this._usePlatformAuthority() && platformKey) {
+      return getPlatformFeatureFlags().isEnabledSync("delivery", platformKey);
+    }
     return Boolean(this.store.getSettings()?.[key]?.enabled);
   }
 

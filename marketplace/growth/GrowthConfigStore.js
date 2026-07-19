@@ -110,11 +110,47 @@ class GrowthConfigStore {
   async _persist(changes) {
     const timestamp = new Date().toISOString();
     changes.forEach((entry) => this.auditLog.push({ ...entry, timestamp }));
+
+    const PlatformAuditAdapter = require("../integration/audit/PlatformAuditAdapter");
+    for (const entry of changes) {
+      PlatformAuditAdapter.recordConfiguration({
+        platform: "growth",
+        resource: entry.setting || "growth.configuration",
+        action: entry.action || "settings.update",
+        actor: entry.admin || "system",
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        reason: entry.reason,
+        correlationId: null,
+      }).catch(() => {});
+    }
+
+    await this._syncPlatformFlags();
+
     if (this.useMemoryOnly) return;
     if (this.GrowthConfigurationModel && mongooseConnected()) {
       await this._saveToMongo(changes);
     } else {
       this._saveToFile();
+    }
+  }
+
+  async _syncPlatformFlags() {
+    if (this.useMemoryOnly) return;
+    try {
+      const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+      const integration = getPlatformIntegration();
+      const current = await integration.featureFlags.getFlags();
+      const growthPatch = {};
+      for (const [key, value] of Object.entries(this.settings)) {
+        growthPatch[key] = { enabled: value.enabled !== false };
+      }
+      await integration.featureFlags.store.updateFlags({
+        growth: { ...(current.growth || {}), ...growthPatch },
+      });
+      await integration.featureFlags.refresh();
+    } catch (_error) {
+      // Platform integration may not be initialized in isolated tests.
     }
   }
 

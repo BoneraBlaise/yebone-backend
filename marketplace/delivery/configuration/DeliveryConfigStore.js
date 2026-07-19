@@ -74,6 +74,21 @@ class DeliveryConfigStore {
     this.settings = next;
     const timestamp = new Date().toISOString();
     changes.forEach((entry) => this.auditLog.push({ ...entry, timestamp }));
+
+    const PlatformAuditAdapter = require("../../integration/audit/PlatformAuditAdapter");
+    for (const entry of changes) {
+      PlatformAuditAdapter.recordConfiguration({
+        platform: "delivery",
+        resource: entry.setting || "delivery.configuration",
+        action: "settings.update",
+        actor: entry.admin || "system",
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        reason: entry.reason,
+      }).catch(() => {});
+    }
+
+    await this._syncPlatformFlags();
     if (!this.useMemoryOnly) {
       if (this.DeliveryConfigurationModel && mongooseConnected()) {
         await this._saveToMongo(changes);
@@ -154,6 +169,25 @@ class DeliveryConfigStore {
 
   _ensureDir() {
     if (!fs.existsSync(this.dataDir)) fs.mkdirSync(this.dataDir, { recursive: true });
+  }
+
+  async _syncPlatformFlags() {
+    if (this.useMemoryOnly) return;
+    try {
+      const { getPlatformIntegration } = require("../../integration/PlatformIntegration");
+      const integration = getPlatformIntegration();
+      const current = await integration.featureFlags.getFlags();
+      const deliveryPatch = {};
+      for (const [key, value] of Object.entries(this.settings)) {
+        deliveryPatch[key] = { enabled: value.enabled !== false };
+      }
+      await integration.featureFlags.store.updateFlags({
+        delivery: { ...(current.delivery || {}), ...deliveryPatch },
+      });
+      await integration.featureFlags.refresh();
+    } catch (_error) {
+      // Platform integration may not be initialized in isolated tests.
+    }
   }
 
   resetForTests() {

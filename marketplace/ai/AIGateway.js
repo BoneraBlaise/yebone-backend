@@ -1,6 +1,8 @@
 /**
  * AI gateway — HTTP boundary orchestration (Phase 7.1).
  */
+const PlatformAuditAdapter = require("../integration/audit/PlatformAuditAdapter");
+
 class AIGateway {
   constructor(platform) {
     this.platform = platform;
@@ -8,21 +10,20 @@ class AIGateway {
 
   _audit(event, payload = {}) {
     if (!this.platform.config.enableAuditEvents) return;
-    // Structured audit hook — no PII in default logs
-    if (process.env.NODE_ENV !== "test") {
-      console.info(
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          service: "yebone-ai-gateway",
-          event,
-          requestId: payload.requestId || null,
-          intent: payload.intent || null,
-          toolId: payload.toolId || null,
-          providerId: payload.providerId || this.platform.providerManager.activeProviderId,
-          mock: true,
-        })
-      );
-    }
+
+    PlatformAuditAdapter.recordRuntime({
+      platform: "ai",
+      resource: payload.requestId || "ai-gateway",
+      action: event,
+      actor: payload.userId || "system",
+      newValue: {
+        intent: payload.intent || null,
+        toolId: payload.toolId || null,
+        providerId: payload.providerId || this.platform.providerManager.activeProviderId,
+      },
+      correlationId: payload.requestId || null,
+      reason: "runtime_event",
+    }).catch(() => {});
   }
 
   async handleChat(req) {

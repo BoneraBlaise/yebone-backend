@@ -77,6 +77,44 @@ class OrderService {
     await getGrowthPlatform().processOrderCommission(order, referralCode, session, options);
   }
 
+  async _validatePromotions(input, repricedItems, integration, correlationId) {
+    const { getGrowthPlatform } = require("../growth");
+    const growth = getGrowthPlatform();
+    const cart = Array.isArray(repricedItems) ? repricedItems : [repricedItems];
+
+    if (input.promotionId || input.promotionType || input.type) {
+      const result = await growth.validatePromotion({ ...input, cart });
+      if (!result.valid) {
+        throw this._error(result.reason || "Invalid promotion", 400);
+      }
+    } else {
+      for (const item of cart) {
+        if (Number(item.serverPrice) < Number(item.originalPrice || item.serverPrice)) {
+          const check = await growth.validatePromotion({
+            type: "product_discount",
+            productId: item._id,
+            cart: [item],
+          });
+          if (!check.valid) {
+            throw this._error(check.reason || "Promotion validation failed", 400);
+          }
+        }
+      }
+    }
+
+    if (integration?.audit) {
+      await integration.audit.record({
+        platform: "growth",
+        resource: "promotion",
+        action: "promotion.validated",
+        actor: "system",
+        correlationId,
+        newValue: { itemCount: cart.length },
+        reason: "order_create",
+      });
+    }
+  }
+
   async createOrders(input = {}) {
     const integration = this._integration();
     const correlationId = integration?.createCorrelationId("order") || null;
@@ -119,10 +157,12 @@ class OrderService {
       if (wonBid) {
         repricedWonBid = await pricing.repriceWonBid(wonBid, session);
         cartSubtotal = repricedWonBid.commissionBase;
+        await this._validatePromotions(input, repricedWonBid, integration, correlationId);
       } else {
         const repriced = await pricing.repriceCart(cart, { session, correlationId });
         repricedCart = repriced.items;
         cartSubtotal = repriced.subtotal;
+        await this._validatePromotions(input, repricedCart, integration, correlationId);
       }
 
       const referralOptions = { attributionTokens, couponCode };
@@ -147,6 +187,12 @@ class OrderService {
       if (repricedWonBid) {
         await this.inventory.reserveStock(repricedWonBid._id, 1, session);
 
+        const wonBidTotals = pricing.buildOrderTotals({
+          subtotal: repricedWonBid.serverPrice,
+          shipping,
+          discount: couponMeta.totalDiscount || 0,
+        });
+
         const order = await this._createOrderDocument(
           {
             cart: [
@@ -161,9 +207,10 @@ class OrderService {
             ],
             shippingAddress,
             user,
-            totalPrice: Math.max(0, repricedWonBid.serverPrice + shipping - (couponMeta.totalDiscount || 0)),
-            subTotalPrice: repricedWonBid.serverPrice,
-            discountPrice: couponMeta.totalDiscount || 0,
+            totalPrice: wonBidTotals.total,
+            subTotalPrice: wonBidTotals.subtotal,
+            discountPrice: wonBidTotals.discount,
+            taxAmount: wonBidTotals.taxAmount,
             couponCode: couponMeta.couponCode,
             shipping,
             paymentInfo: { ...paymentInfo, status: "Pending" },
@@ -185,11 +232,20 @@ class OrderService {
       await this.inventory.reserveCartItems(allItems, session);
 
       const orders = [];
+      const shopCount = shopItemsMap.size;
+      let shopIndex = 0;
       for (const [, items] of shopItemsMap) {
+        shopIndex += 1;
         const shopTotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
         const orderReferralCode = resolvedReferralCode || items.find((item) => item.referralCode)?.referralCode;
         const orderDiscount =
           cartSubtotal > 0 ? (shopTotal / cartSubtotal) * (couponMeta.totalDiscount || 0) : 0;
+        const allocatedShipping = shopIndex === shopCount ? shipping : 0;
+        const shopTotals = pricing.buildOrderTotals({
+          subtotal: shopTotal,
+          shipping: allocatedShipping,
+          discount: orderDiscount,
+        });
 
         const order = await this._createOrderDocument(
           {
@@ -200,10 +256,11 @@ class OrderService {
             })),
             shippingAddress,
             user,
-            totalPrice: Math.max(0, shopTotal + shipping - orderDiscount),
-            shipping,
-            subTotalPrice: shopTotal,
-            discountPrice: orderDiscount,
+            totalPrice: shopTotals.total,
+            shipping: allocatedShipping,
+            subTotalPrice: shopTotals.subtotal,
+            discountPrice: shopTotals.discount,
+            taxAmount: shopTotals.taxAmount,
             couponCode: couponMeta.couponCode,
             paymentInfo: { ...paymentInfo, status: "Pending" },
             orderType: "regular",
@@ -320,22 +377,32 @@ class OrderService {
       throw this._error("You are not allowed to update this order", 403);
     }
     this._assertTransition(order.status, status);
-    order.status = status;
-    await order.save();
 
     if (status === "Refund Success") {
       const integration = this._integration();
-      if (integration?.refundBridge) {
-        await integration.refundBridge.executeRefund(order, {
-          sellerId,
-          actor: sellerId ? String(sellerId) : "system",
-          correlationId: integration.createCorrelationId("refund"),
-        });
-      } else {
-        await this.inventory.restoreCartItems(order.cart || []);
-      }
+      const correlationId = integration?.createCorrelationId("refund") || null;
+
+      return this.stateMachine.runInTransaction(async (session) => {
+        order.status = status;
+        await order.save({ session });
+
+        if (integration?.refundBridge) {
+          await integration.refundBridge.executeRefund(order, {
+            sellerId,
+            actor: sellerId ? String(sellerId) : "system",
+            correlationId,
+            session,
+          });
+        } else {
+          await this.inventory.restoreCartItems(order.cart || [], session);
+        }
+
+        return order;
+      });
     }
 
+    order.status = status;
+    await order.save();
     return order;
   }
 }

@@ -23,6 +23,7 @@ const REQUIRED_ENV_VARS = [
   { key: "CLOUDINARY_API_SECRET", description: "Cloudinary API secret" },
   { key: "STRIPE_SECRET_KEY", description: "Stripe secret key (loaded at payment module init)" },
   { key: "STRIPE_API_KEY", description: "Stripe publishable key returned to clients" },
+  { key: "REFERRAL_ATTRIBUTION_SECRET", description: "HMAC secret for referral attribution tokens" },
 ];
 
 function validateEnvLegacy() {

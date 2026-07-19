@@ -24,7 +24,7 @@ class RefundLifecycleBridge {
 
     if (order.referralCode) {
       const { getGrowthPlatform } = require("../../growth");
-      await getGrowthPlatform().cancelOrderCommission(orderId, order.referralCode, "refunded");
+      await getGrowthPlatform().cancelOrderCommission(orderId, order.referralCode, "refunded", session);
     }
 
     if (order.couponCode) {

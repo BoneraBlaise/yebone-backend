@@ -1,5 +1,7 @@
+const PlatformAuditAdapter = require("../../../marketplace/integration/audit/PlatformAuditAdapter");
+
 /**
- * Immutable financial audit trail — in-memory only, no database.
+ * Immutable financial audit trail — delegates to PlatformAuditService.
  */
 class FinancialAuditService {
   constructor() {
@@ -7,6 +9,15 @@ class FinancialAuditService {
   }
 
   record({ category, action, aggregateId, actorId = "system", payload = {}, metadata = {} }) {
+    PlatformAuditAdapter.recordFinancial({
+      category,
+      action,
+      aggregateId,
+      actorId,
+      payload,
+      metadata,
+    }).catch(() => {});
+
     const entry = {
       id: `audit_${this.records.length + 1}`,
       category,

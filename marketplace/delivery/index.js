@@ -209,6 +209,18 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
         reason: req.body.reason || null,
         actor: req.user?._id ? String(req.user._id) : "system",
       });
+
+      try {
+        const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+        const integration = getPlatformIntegration();
+        await integration.deliveryBridge.onDeliveryStatusChanged(delivery, {
+          actor: req.user?._id ? String(req.user._id) : "system",
+          correlationId: integration.createCorrelationId("delivery"),
+        });
+      } catch (_syncError) {
+        // Delivery platform remains authoritative for delivery state.
+      }
+
       res.status(200).json({ success: true, data: delivery });
     })
   );

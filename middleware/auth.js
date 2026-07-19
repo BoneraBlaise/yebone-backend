@@ -3,6 +3,7 @@ const catchAsyncErrors = require("./catchAsyncErrors");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
 const Shop = require("../model/shop");
+const PlatformAuthService = require("../marketplace/integration/auth/PlatformAuthService");
 
 function extractBearerToken(req) {
   const header = String(req.headers.authorization || "");
@@ -56,9 +57,15 @@ exports.isSeller = catchAsyncErrors(async (req, res, next) => {
 
 exports.isAdmin = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user?._id) {
+      return next(new ErrorHandler("Please login to continue", 401));
+    }
+
+    const normalizedRole = PlatformAuthService.normalizeRole(req.user.role);
+    const normalizedAllowed = roles.map((role) => PlatformAuthService.normalizeRole(role));
+    if (!normalizedAllowed.includes(normalizedRole)) {
       return next(
-        new ErrorHandler(`${req.user.role} can not access this resources!`)
+        new ErrorHandler(`${req.user.role} can not access this resources!`, 403)
       );
     }
     next();

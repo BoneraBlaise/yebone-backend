@@ -2,8 +2,28 @@ const crypto = require("crypto");
 const PlatformFeatureFlags = require("../../../model/platformFeatureFlags");
 
 const DEFAULT_FLAGS = Object.freeze({
-  growth: { enabled: true },
-  delivery: { enabled: true, yeboneDelivery: { enabled: false }, autoAssignment: { enabled: false } },
+  growth: {
+    enabled: true,
+    affiliate: { enabled: true },
+    referral: { enabled: true },
+    coupons: { enabled: true },
+    promotions: { enabled: true },
+    commissionRules: { enabled: true },
+    rewardLedger: { enabled: true },
+  },
+  delivery: {
+    enabled: true,
+    yeboneDelivery: { enabled: false },
+    autoAssignment: { enabled: false },
+    vendorDelivery: { enabled: true },
+    customerPickup: { enabled: true },
+    liveTracking: { enabled: true },
+    eta: { enabled: true },
+    courierPhoneVisibility: { enabled: true },
+    customerPhoneVisibility: { enabled: true },
+    manualAssignment: { enabled: true },
+    deliveryRatings: { enabled: true },
+  },
   search: { enabled: true, aiSearchReady: true },
   marketplace: {
     search: { enabled: true },
@@ -16,14 +36,24 @@ const DEFAULT_FLAGS = Object.freeze({
 class PlatformFeatureFlagStore {
   constructor({ useMemoryOnly = false } = {}) {
     this.useMemoryOnly = useMemoryOnly;
-    this.memory = { ...DEFAULT_FLAGS, key: "global" };
+    this.memory = { key: "global", ...structuredClone(DEFAULT_FLAGS) };
+  }
+
+  _mergeDomainDefaults(defaults, stored = {}) {
+    const merged = { ...defaults, ...stored };
+    for (const key of Object.keys(defaults)) {
+      if (defaults[key] && typeof defaults[key] === "object" && !Array.isArray(defaults[key])) {
+        merged[key] = { ...defaults[key], ...(stored[key] || {}) };
+      }
+    }
+    return merged;
   }
 
   async load() {
     if (this.useMemoryOnly) return this.memory;
     let doc = await PlatformFeatureFlags.findOne({ key: "global" }).lean();
     if (!doc) {
-      doc = await PlatformFeatureFlags.create({ key: "global", ...DEFAULT_FLAGS });
+      doc = await PlatformFeatureFlags.create({ key: "global", ...structuredClone(DEFAULT_FLAGS) });
     }
     this.memory = doc;
     return doc;
@@ -32,8 +62,8 @@ class PlatformFeatureFlagStore {
   async getFlags() {
     const doc = await this.load();
     return {
-      growth: { ...DEFAULT_FLAGS.growth, ...(doc.growth || {}) },
-      delivery: { ...DEFAULT_FLAGS.delivery, ...(doc.delivery || {}) },
+      growth: this._mergeDomainDefaults(DEFAULT_FLAGS.growth, doc.growth || {}),
+      delivery: this._mergeDomainDefaults(DEFAULT_FLAGS.delivery, doc.delivery || {}),
       search: { ...DEFAULT_FLAGS.search, ...(doc.search || {}) },
       marketplace: { ...DEFAULT_FLAGS.marketplace, ...(doc.marketplace || {}) },
       ai: { ...DEFAULT_FLAGS.ai, ...(doc.ai || {}) },
@@ -41,13 +71,30 @@ class PlatformFeatureFlagStore {
   }
 
   async updateFlags(partial = {}, { admin = "system" } = {}) {
+    const current = await this.getFlags();
+    const next = {
+      growth: partial.growth
+        ? this._mergeDomainDefaults(current.growth, partial.growth)
+        : current.growth,
+      delivery: partial.delivery
+        ? this._mergeDomainDefaults(current.delivery, partial.delivery)
+        : current.delivery,
+      search: partial.search ? { ...current.search, ...partial.search } : current.search,
+      marketplace: partial.marketplace
+        ? { ...current.marketplace, ...partial.marketplace }
+        : current.marketplace,
+      ai: partial.ai ? { ...current.ai, ...partial.ai } : current.ai,
+      updatedBy: admin,
+    };
+
     if (this.useMemoryOnly) {
-      this.memory = { ...this.memory, ...partial, updatedBy: admin };
+      this.memory = { key: "global", ...next };
       return this.memory;
     }
+
     const doc = await PlatformFeatureFlags.findOneAndUpdate(
       { key: "global" },
-      { $set: { ...partial, updatedBy: admin } },
+      { $set: next },
       { upsert: true, new: true }
     );
     this.memory = doc.toObject();

@@ -58,6 +58,17 @@ class PlatformAuthService {
     return PlatformAuthService.normalizeRole(req.user?.role) === PlatformAuthService.ROLES.COURIER;
   }
 
+  static assertAuthenticatedUser(req) {
+    if (!req.user?._id) {
+      return { valid: false, reason: "UNAUTHENTICATED", statusCode: 401 };
+    }
+    return {
+      valid: true,
+      userId: String(req.user._id),
+      role: PlatformAuthService.normalizeRole(req.user.role),
+    };
+  }
+
   static assertSuperAdmin(req) {
     if (!req.user?._id) {
       return { valid: false, reason: "UNAUTHENTICATED", statusCode: 401 };
@@ -73,12 +84,14 @@ class PlatformAuthService {
   }
 
   static assertOperationalAccess(req, allowedRoles = []) {
-    const actor = PlatformAuthService.getActor(req);
+    const auth = PlatformAuthService.assertAuthenticatedUser(req);
+    if (!auth.valid) return auth;
+
     const normalizedAllowed = allowedRoles.map((r) => PlatformAuthService.normalizeRole(r));
-    if (!normalizedAllowed.includes(actor.role)) {
+    if (!normalizedAllowed.includes(auth.role)) {
       return { valid: false, reason: "FORBIDDEN", statusCode: 403 };
     }
-    return { valid: true, actor };
+    return auth;
   }
 
   static assertSellerOwnership(req, shopId) {

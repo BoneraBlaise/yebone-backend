@@ -7,6 +7,7 @@ const platformAuditSchema = new mongoose.Schema(
     transactionId: { type: String, index: true },
     orderId: { type: String, index: true },
     platform: { type: String, required: true, index: true },
+    resource: { type: String, default: null, index: true },
     actor: { type: String, required: true },
     action: { type: String, required: true, index: true },
     oldValue: { type: mongoose.Schema.Types.Mixed, default: null },

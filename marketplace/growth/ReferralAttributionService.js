@@ -4,12 +4,14 @@ const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 class ReferralAttributionService {
   constructor({ secret, ttlMs = DEFAULT_TTL_MS } = {}) {
-    this.secret =
-      secret ||
-      process.env.REFERRAL_ATTRIBUTION_SECRET ||
-      process.env.JWT_SECRET_KEY ||
-      "growth-attribution-dev-secret";
     this.ttlMs = ttlMs;
+    this.secret = secret || process.env.REFERRAL_ATTRIBUTION_SECRET || null;
+    if (!this.secret) {
+      if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "staging") {
+        throw new Error("REFERRAL_ATTRIBUTION_SECRET is required in production");
+      }
+      this.secret = process.env.REFERRAL_ATTRIBUTION_SECRET || "test-attribution-secret";
+    }
   }
 
   createAttributionToken({ referralCode, productId = null, shopId = null }) {

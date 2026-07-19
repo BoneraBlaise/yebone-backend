@@ -1,6 +1,8 @@
 /**
  * Search platform configuration — frozen after search-production-v1.
  */
+const { isPlatformFeatureEnabled } = require("../integration/features/PlatformFeatureFlagResolver");
+
 class SearchConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone Search Platform";
@@ -13,6 +15,10 @@ class SearchConfiguration {
     this.enableSuggestions = options.enableSuggestions !== false;
     this.aiSearchReady = options.aiSearchReady !== false;
     this.productionHardened = true;
+  }
+
+  isRuntimeEnabled() {
+    return isPlatformFeatureEnabled("search");
   }
 }
 

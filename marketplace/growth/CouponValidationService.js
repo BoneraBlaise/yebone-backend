@@ -98,6 +98,7 @@ class CouponValidationService {
         eligibleSubtotal,
         shopId: coupon.shopId,
       },
+      couponDoc: coupon,
       segments,
     };
   }

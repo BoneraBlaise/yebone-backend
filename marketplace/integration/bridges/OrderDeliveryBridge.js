@@ -16,10 +16,11 @@ const DELIVERY_TO_ORDER = Object.freeze({
 });
 
 class OrderDeliveryBridge {
-  constructor({ audit, observability, featureFlags } = {}) {
+  constructor({ audit, observability, featureFlags, orderService = null } = {}) {
     this.audit = audit;
     this.observability = observability;
     this.featureFlags = featureFlags;
+    this.orderService = orderService;
   }
 
   _deliveryPlatform() {
@@ -74,6 +75,7 @@ class OrderDeliveryBridge {
         }
 
         created.push(delivery);
+        await this._tryAutoAssignCourier(delivery, correlationId);
       } catch (error) {
         if (error.reason === "ORDER_DELIVERY_EXISTS") continue;
         throw error;
@@ -124,6 +126,88 @@ class OrderDeliveryBridge {
     }
 
     return updated;
+  }
+
+  _resolveOrderService() {
+    if (this.orderService) return this.orderService;
+    try {
+      const { getMarketplaceCore } = require("../../index");
+      return getMarketplaceCore().services.order;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async onDeliveryStatusChanged(delivery, { actor = "system", correlationId = null } = {}) {
+    const orderStatus = this.mapDeliveryStatusToOrder(delivery.status);
+    if (!orderStatus) return null;
+
+    const orderService = this._resolveOrderService();
+    if (!orderService) return null;
+
+    const orderId = delivery.orderId;
+    const order = await orderService.findById(orderId);
+    if (order.status === orderStatus) return order;
+
+    const updated = await orderService.updateOrderStatusIntegrated(orderId, orderStatus, null, {
+      skipDeliverySync: true,
+      correlationId,
+      actor,
+    });
+
+    if (this.audit) {
+      await this.audit.record({
+        platform: "delivery",
+        resource: delivery.deliveryId,
+        action: "order.status_synced",
+        actor,
+        orderId,
+        correlationId,
+        oldValue: order.status,
+        newValue: updated.status,
+        reason: `from_delivery_${delivery.status}`,
+      });
+    }
+
+    return updated;
+  }
+
+  async _tryAutoAssignCourier(delivery, correlationId = null) {
+    if (!this.featureFlags?.isEnabledSync("delivery", "autoAssignment.enabled")) {
+      return null;
+    }
+
+    try {
+      const { getCourierPlatform } = require("../../delivery/courier");
+      const courierPlatform = getCourierPlatform();
+      const availableCouriers = courierPlatform.listCouriers({
+        status: "ACTIVE",
+        availability: "AVAILABLE",
+      });
+      const courier = availableCouriers.find((entry) => !entry.activeDeliveryId) || availableCouriers[0];
+      if (!courier) return null;
+
+      const assigned = courierPlatform.assignDelivery(courier.courierId, delivery.deliveryId, {
+        actor: "system",
+      });
+
+      if (this.audit) {
+        await this.audit.record({
+          platform: "delivery",
+          resource: delivery.deliveryId,
+          action: "courier.auto_assigned",
+          actor: "system",
+          orderId: delivery.orderId,
+          correlationId,
+          newValue: { courierId: courier.courierId },
+          reason: "auto_assignment",
+        });
+      }
+
+      return assigned;
+    } catch (_error) {
+      return null;
+    }
   }
 }
 

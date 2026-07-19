@@ -15,6 +15,7 @@ class PlatformAuditService {
 
   async record({
     platform,
+    resource = null,
     actor = "system",
     action,
     oldValue = null,
@@ -28,6 +29,7 @@ class PlatformAuditService {
     const entry = {
       auditId: this._generateId(),
       platform: String(platform),
+      resource: resource ? String(resource) : orderId || transactionId || String(platform),
       actor: String(actor),
       action: String(action),
       oldValue,
