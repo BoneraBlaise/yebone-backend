@@ -95,7 +95,7 @@ flowchart TB
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
 | Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` + `DeliveryConfigurationPlatform` | Persistent config + couriers | `delivery-configuration-v1` |
-| Growth | `marketplace/growth/` | `GrowthPlatform` + `GrowthConfigurationPlatform` | Referral, coupons, commission orchestration | `growth-platform-v1` |
+| Growth | `marketplace/growth/` | `GrowthPlatform` + `GrowthConfigurationPlatform` | Referral, coupons, commission orchestration | `growth-platform-completion-v1` |
 
 ---
 
@@ -343,7 +343,7 @@ Growth is implemented at `marketplace/growth/` — orchestrates referral, affili
 
 See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
 
-**Growth Platform MVP frozen at `growth-platform-v1`.**
+**Growth Platform frozen at `growth-platform-completion-v1`.**
 
 ---
 

@@ -56,6 +56,10 @@ class CommissionRule {
       return false;
     }
 
+    if (!CommissionRule._isWithinSchedule(rule)) {
+      return false;
+    }
+
     switch (rule.strategy) {
       case "GLOBAL":
         return !CommissionRule._isTaxRule(rule);
@@ -63,6 +67,8 @@ class CommissionRule {
         return rule.scope.vendorId === context.vendorId;
       case "CATEGORY":
         return rule.scope.categoryId === context.categoryId;
+      case "BRAND":
+        return rule.scope.brandId === context.brandId;
       case "CAMPAIGN":
         return rule.scope.campaignId === context.campaignId;
       case "SUBSCRIPTION":
@@ -85,6 +91,16 @@ class CommissionRule {
 
   static _isTaxRule(rule) {
     return rule.metadata?.type === "TAX" || rule.scope?.type === "TAX";
+  }
+
+  static _isWithinSchedule(rule) {
+    const now = Date.now();
+    const startDate = rule.metadata?.startDate || rule.startDate;
+    const endDate = rule.metadata?.endDate || rule.endDate;
+    if (startDate && now < new Date(startDate).getTime()) return false;
+    if (endDate && now > new Date(endDate).getTime()) return false;
+    if (rule.metadata?.archived || rule.archived) return false;
+    return true;
   }
 
   static _matchesReferral(rule, context) {

@@ -38,7 +38,7 @@ describe("GrowthConfigurationPlatform", () => {
   it("loads default settings", async () => {
     await platform.initialize();
     const config = platform.getConfiguration();
-    assert.equal(config.phase, "9.0");
+    assert.equal(config.phase, "9.1");
     assert.deepEqual(config.settings.affiliate, defaultSettings.affiliate);
     assert.equal(config.commissionRules.length, 2);
   });

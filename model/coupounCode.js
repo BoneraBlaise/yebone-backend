@@ -30,6 +30,9 @@ const coupounCodeSchema = new mongoose.Schema({
     discountType: { type: String, enum: ["FIXED", "PERCENTAGE"], default: "FIXED" },
     maxDiscount: { type: Number, default: null },
     category: { type: String, default: null },
+    lastRedemptionKey: { type: String, default: null },
+    lastRedeemedAt: { type: Date, default: null },
+    lastRedeemedBy: { type: String, default: null },
     createdAt:{
         type: Date,
         default: Date.now(),

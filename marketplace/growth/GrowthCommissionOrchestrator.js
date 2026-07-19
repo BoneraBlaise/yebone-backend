@@ -11,7 +11,27 @@ class GrowthCommissionOrchestrator {
   }
 
   _buildEngine() {
-    const rules = this.configStore.getCommissionRules();
+    const rules = this.configStore
+      .getCommissionRules()
+      .filter((rule) => rule.enabled && !rule.archived)
+      .map((rule) => ({
+        id: rule.id,
+        strategy: rule.strategy,
+        rate: rule.rate,
+        rateType: rule.rateType,
+        priority: rule.priority,
+        enabled: rule.enabled,
+        scope: rule.scope || {},
+        metadata: {
+          name: rule.name,
+          startDate: rule.startDate,
+          endDate: rule.endDate,
+          archived: rule.archived,
+        },
+        startDate: rule.startDate,
+        endDate: rule.endDate,
+        createdAt: rule.createdAt,
+      }));
     return createCommissionEngine({ rules });
   }
 
@@ -46,6 +66,7 @@ class GrowthCommissionOrchestrator {
         couponId: options.couponId || null,
         productId: item._id ? String(item._id) : null,
         categoryId: item.category || null,
+        brandId: item.brand || item.brandId || item.tags || null,
       };
 
       let breakdown;
@@ -73,6 +94,10 @@ class GrowthCommissionOrchestrator {
         referralUsed: referralCode,
         couponUsed: options.couponCode || null,
       });
+      if (breakdown.appliedRules?.base && this.analytics) {
+        this.analytics.recordRuleExecution();
+        if (resolved.baseRule?.strategy === "BRAND") this.analytics.recordBrandRuleUsage();
+      }
       totalCommission += commissionAmount;
     }
 

@@ -82,21 +82,29 @@ class GrowthConfigStore {
     return { settings: this.getSettings(), changes };
   }
 
-  async updateCommissionRules(rules = [], { admin = "system", reason = null } = {}) {
+  async updateCommissionRules(rules = [], { admin = "system", reason = null, changes = null } = {}) {
     const oldValue = this.getCommissionRules();
     this.commissionRules = structuredClone(rules);
-    const changes = [
-      {
-        action: "commissionRules.update",
-        setting: "commissionRules",
-        oldValue,
-        newValue: this.getCommissionRules(),
-        admin,
-        reason,
-      },
-    ];
-    await this._persist(changes);
-    return { commissionRules: this.getCommissionRules(), changes };
+    const auditChanges =
+      changes ||
+      [
+        {
+          action: "commissionRules.update",
+          setting: "commissionRules",
+          oldValue,
+          newValue: this.getCommissionRules(),
+          admin,
+          reason,
+        },
+      ];
+    await this._persist(
+      auditChanges.map((entry) => ({
+        ...entry,
+        admin: entry.admin || admin,
+        reason: entry.reason ?? reason,
+      }))
+    );
+    return { commissionRules: this.getCommissionRules(), changes: auditChanges };
   }
 
   async _persist(changes) {

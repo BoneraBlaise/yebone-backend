@@ -8,8 +8,8 @@ const GrowthOperationGuard = require("./GrowthOperationGuard");
 class GrowthConfigurationPlatform {
   constructor(options = {}) {
     this.config = {
-      version: options.version || "9.0.0",
-      phase: options.phase || "9.0",
+      version: options.version || "9.1.0",
+      phase: options.phase || "9.1",
       name: options.name || "Yebone Growth Configuration",
     };
     this.store = options.store || new GrowthConfigStore(options.storeOptions || {});

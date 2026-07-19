@@ -106,6 +106,33 @@ class OrderService {
     return this.stateMachine.runInTransaction(async (session) => {
       const referralOptions = { attributionTokens, couponCode };
       let resolvedReferralCode = inputReferralCode;
+      let couponMeta = { totalDiscount: 0, couponId: null, couponCode: null };
+
+      if (couponCode) {
+        try {
+          const { getGrowthPlatform } = require("../growth");
+          const growth = getGrowthPlatform();
+          couponMeta = await growth.redeemCouponForOrder({
+            code: couponCode,
+            cart: cart || (wonBid ? [wonBid] : []),
+            userId: user._id || user.id,
+            session,
+          });
+          if (!couponMeta.valid) {
+            throw this._error(couponMeta.reason || "Invalid coupon", 400);
+          }
+          referralOptions.couponId = couponMeta.couponId;
+          referralOptions.couponCode = couponMeta.couponCode;
+        } catch (error) {
+          if (error.statusCode) throw error;
+          throw this._error(error.message || "Coupon redemption failed", 400);
+        }
+      }
+
+      const cartSubtotal = (cart || []).reduce((sum, item) => {
+        const price = Number(item.discountPrice || item.price || item.originalPrice || 0);
+        return sum + price * Number(item.qty || 1);
+      }, 0);
 
       if (attributionTokens.length) {
         try {
@@ -137,8 +164,10 @@ class OrderService {
             ],
             shippingAddress,
             user,
-            totalPrice: wonBid.price + shipping,
+            totalPrice: Math.max(0, wonBid.price + shipping - (couponMeta.totalDiscount || 0)),
             subTotalPrice: wonBid.price,
+            discountPrice: couponMeta.totalDiscount || 0,
+            couponCode: couponMeta.couponCode,
             shipping,
             paymentInfo: {
               ...paymentInfo,
@@ -173,6 +202,8 @@ class OrderService {
         const shopTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
         const itemReferralCode = items.find((item) => item.referralCode)?.referralCode;
         const orderReferralCode = resolvedReferralCode || itemReferralCode;
+        const orderDiscount =
+          cartSubtotal > 0 ? (shopTotal / cartSubtotal) * (couponMeta.totalDiscount || 0) : 0;
 
         const order = await this._createOrderDocument(
           {
@@ -182,9 +213,11 @@ class OrderService {
             })),
             shippingAddress,
             user,
-            totalPrice: shopTotal + shipping,
+            totalPrice: Math.max(0, shopTotal + shipping - orderDiscount),
             shipping,
             subTotalPrice: shopTotal,
+            discountPrice: orderDiscount,
+            couponCode: couponMeta.couponCode,
             paymentInfo: {
               ...paymentInfo,
               status: "Pending",

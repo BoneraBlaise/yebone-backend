@@ -8,7 +8,7 @@ class PromotionValidationService {
   }
 
   async validate(input = {}) {
-    const type = String(input.type || "coupon").toLowerCase();
+    const type = String(input.type || "coupon").toLowerCase().replace(/-/g, "_");
 
     switch (type) {
       case "coupon":
@@ -19,9 +19,32 @@ class PromotionValidationService {
         return this._validateEvent(input);
       case "product_discount":
         return this._validateProductDiscount(input);
+      case "brand_promotion":
+        return this._validateBrandPromotion(input);
+      case "category_promotion":
+        return this._validateCategoryPromotion(input);
+      case "vendor_promotion":
+        return this._validateVendorPromotion(input);
       default:
         return { valid: false, reason: "UNKNOWN_PROMOTION_TYPE" };
     }
+  }
+
+  async validateUnified(input = {}) {
+    const requested = Array.isArray(input.types)
+      ? input.types
+      : ["coupon", "flash_sale", "product_discount", "event", "brand_promotion", "category_promotion", "vendor_promotion"];
+
+    const results = [];
+    for (const type of requested) {
+      const result = await this.validate({ ...input, type });
+      results.push({ type, ...result });
+      if (result.valid) {
+        return { valid: true, promotion: result.promotion || result.coupon, matchedType: type, evaluations: results };
+      }
+    }
+
+    return { valid: false, reason: "NO_VALID_PROMOTION", evaluations: results };
   }
 
   async _validateFlashSale(input = {}) {
@@ -84,6 +107,48 @@ class PromotionValidationService {
         originalPrice: product.originalPrice,
         discountAmount,
       },
+    };
+  }
+
+  async _validateBrandPromotion(input = {}) {
+    const brandId = input.brandId || input.brand;
+    if (!brandId) return { valid: false, reason: "BRAND_REQUIRED" };
+    const product = input.productId ? await this.legacy.findProductById(input.productId) : null;
+    if (product) {
+      const productBrand = product.tags || product.brand;
+      if (productBrand && String(productBrand) !== String(brandId)) {
+        return { valid: false, reason: "BRAND_NOT_ELIGIBLE" };
+      }
+    }
+    return {
+      valid: true,
+      promotion: { type: "brand_promotion", brandId: String(brandId), productId: input.productId || null },
+    };
+  }
+
+  async _validateCategoryPromotion(input = {}) {
+    const categoryId = input.categoryId || input.category;
+    if (!categoryId) return { valid: false, reason: "CATEGORY_REQUIRED" };
+    const product = input.productId ? await this.legacy.findProductById(input.productId) : null;
+    if (product && String(product.category) !== String(categoryId)) {
+      return { valid: false, reason: "CATEGORY_NOT_ELIGIBLE" };
+    }
+    return {
+      valid: true,
+      promotion: { type: "category_promotion", categoryId: String(categoryId), productId: input.productId || null },
+    };
+  }
+
+  async _validateVendorPromotion(input = {}) {
+    const vendorId = input.vendorId || input.shopId;
+    if (!vendorId) return { valid: false, reason: "VENDOR_REQUIRED" };
+    const product = input.productId ? await this.legacy.findProductById(input.productId) : null;
+    if (product && String(product.shopId) !== String(vendorId)) {
+      return { valid: false, reason: "VENDOR_NOT_ELIGIBLE" };
+    }
+    return {
+      valid: true,
+      promotion: { type: "vendor_promotion", vendorId: String(vendorId), productId: input.productId || null },
     };
   }
 }

@@ -236,6 +236,26 @@ Unified growth orchestration layer at `marketplace/growth/`:
 
 **Growth Platform MVP frozen at `growth-platform-v1`.**
 
+---
+
+## Phase 9.1 — GROWTH PLATFORM COMPLETION
+
+**Tag:** `growth-platform-completion-v1`  
+**Branch:** `feature/growth-platform-completion`  
+**Baseline:** `growth-platform-v1`
+
+Completes Growth Platform foundation:
+
+- Full Super Admin commission rule CRUD (create, edit, delete, duplicate, archive, restore, bulk actions)
+- Configurable rule priority with BRAND strategy in Payments Commission Engine
+- Rule simulator using real commission engine (no duplicated logic)
+- Order-time coupon re-validation, server-side discount calculation, and `usageCount` increment
+- Multi-vendor coupon validation
+- Read-only Super Admin coupon monitor
+- Unified promotion pipeline including brand/category/vendor promotions
+
+**Growth Platform frozen at `growth-platform-completion-v1`.**
+
 See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md)
 
 ---
@@ -252,7 +272,7 @@ See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md)
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
 | **YEBO AI (gateway → memory — full v1 stack)** | Orchestration layer | **7.7 frozen** (`yebo-ai-memory-v1`) |
 | **Delivery Platform** | Delivery lifecycle + tracking + couriers + configuration | **8.3 frozen** (`delivery-configuration-v1`) |
-| **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.0 frozen** (`growth-platform-v1`) |
+| **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.1 frozen** (`growth-platform-completion-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -270,7 +290,7 @@ See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md)
 
 ## Next Step
 
-**Growth Platform MVP complete** — frozen at `growth-platform-v1`. Await next approved roadmap phase. Do not implement campaign scheduling, loyalty, cashback, wallet payouts, or advanced analytics until approved.
+**Growth Platform complete** — frozen at `growth-platform-completion-v1`. Await next approved roadmap phase.
 
 See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 
@@ -295,7 +315,7 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 | [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md) | Phase 8.1 delivery tracking |
 | [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md) | Phase 8.2 courier management |
 | [DELIVERY_CONFIGURATION.md](./DELIVERY_CONFIGURATION.md) | Phase 8.3 delivery configuration |
-| [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md) | Phase 9.0 growth platform MVP |
+| [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md) | Phase 9.0–9.1 growth platform |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -303,5 +323,5 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 ## Verification
 
 ```bash
-npm run verify:growth-platform
+npm run verify:growth-platform-completion
 ```

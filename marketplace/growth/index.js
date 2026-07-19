@@ -220,8 +220,239 @@ function registerGrowthPlatform(app, options = {}) {
     "/validate-promotion",
     catchAsyncErrors(async (req, res) => {
       if (!runGuard(() => guard.assertPromotionEnabled(), res)) return;
-      const result = await platform.validatePromotion(req.body);
+      const result = req.body.unified
+        ? await platform.validatePromotion({ ...req.body, unified: true })
+        : await platform.validatePromotion(req.body);
       res.status(result.valid ? 200 : 400).json({ success: result.valid, data: result });
+    })
+  );
+
+  const assertAdmin = (req, res) => {
+    const auth = GrowthAdminAccess.assertSuperAdmin(req);
+    if (!auth.valid) {
+      res.status(auth.statusCode).json({ success: false, reason: auth.reason });
+      return null;
+    }
+    return auth;
+  };
+
+  router.get(
+    "/commission-rules",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      if (!runGuard(() => guard.assertCommissionRulesEnabled(), res)) return;
+      const data = platform.getCommissionRuleAdmin().list({
+        search: req.query.search,
+        strategy: req.query.strategy,
+        status: req.query.status,
+        includeArchived: req.query.includeArchived === "true",
+        sortBy: req.query.sortBy,
+        sortDir: req.query.sortDir,
+        page: req.query.page,
+        limit: req.query.limit,
+      });
+      res.status(200).json({ success: true, data });
+    })
+  );
+
+  router.get(
+    "/commission-rules/:id",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = platform.getCommissionRuleAdmin().getById(req.params.id);
+      if (!rule) return res.status(404).json({ success: false, reason: "NOT_FOUND" });
+      res.status(200).json({ success: true, data: rule });
+    })
+  );
+
+  router.post(
+    "/commission-rules",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      if (!runGuard(() => guard.assertCommissionRulesEnabled(), res)) return;
+      const rule = await platform.getCommissionRuleAdmin().create(req.body, {
+        admin: auth.userId,
+        reason: req.body.reason,
+      });
+      res.status(201).json({ success: true, data: rule });
+    })
+  );
+
+  router.put(
+    "/commission-rules/:id",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = await platform.getCommissionRuleAdmin().update(req.params.id, req.body, {
+        admin: auth.userId,
+        reason: req.body.reason,
+      });
+      res.status(200).json({ success: true, data: rule });
+    })
+  );
+
+  router.delete(
+    "/commission-rules/:id",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = await platform.getCommissionRuleAdmin().delete(req.params.id, {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rule });
+    })
+  );
+
+  router.post(
+    "/commission-rules/:id/duplicate",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = await platform.getCommissionRuleAdmin().duplicate(req.params.id, {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(201).json({ success: true, data: rule });
+    })
+  );
+
+  router.post(
+    "/commission-rules/:id/archive",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = await platform.getCommissionRuleAdmin().archive(req.params.id, {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rule });
+    })
+  );
+
+  router.post(
+    "/commission-rules/:id/restore",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rule = await platform.getCommissionRuleAdmin().restore(req.params.id, {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rule });
+    })
+  );
+
+  router.post(
+    "/commission-rules/bulk/enable",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rules = await platform.getCommissionRuleAdmin().bulkEnable(req.body.ids || [], {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rules });
+    })
+  );
+
+  router.post(
+    "/commission-rules/bulk/disable",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rules = await platform.getCommissionRuleAdmin().bulkDisable(req.body.ids || [], {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rules });
+    })
+  );
+
+  router.post(
+    "/commission-rules/bulk/delete",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rules = await platform.getCommissionRuleAdmin().bulkDelete(req.body.ids || [], {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rules });
+    })
+  );
+
+  router.put(
+    "/commission-rules/priorities",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const rules = await platform.getCommissionRuleAdmin().updatePriorities(req.body.priorities || [], {
+        admin: auth.userId,
+        reason: req.body?.reason,
+      });
+      res.status(200).json({ success: true, data: rules });
+    })
+  );
+
+  router.post(
+    "/commission-rules/simulate",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      if (!runGuard(() => guard.assertCommissionRulesEnabled(), res)) return;
+      const result = platform.simulateCommissionRule(req.body);
+      res.status(result.valid ? 200 : 400).json({ success: result.valid, data: result });
+    })
+  );
+
+  router.get(
+    "/commission-analytics",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      res.status(200).json({ success: true, data: platform.getCommissionAnalytics() });
+    })
+  );
+
+  router.get(
+    "/coupons/statistics",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      if (!runGuard(() => guard.assertCouponEnabled(), res)) return;
+      const data = await platform.getCouponStatistics();
+      res.status(200).json({ success: true, data });
+    })
+  );
+
+  router.get(
+    "/coupons/usage",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      if (!runGuard(() => guard.assertCouponEnabled(), res)) return;
+      const data = await platform.getCouponUsage({ limit: Number(req.query.limit) || 100 });
+      res.status(200).json({ success: true, data });
     })
   );
 

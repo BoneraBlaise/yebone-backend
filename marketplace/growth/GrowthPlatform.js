@@ -5,6 +5,10 @@ const CouponValidationService = require("./CouponValidationService");
 const PromotionValidationService = require("./PromotionValidationService");
 const GrowthCommissionOrchestrator = require("./GrowthCommissionOrchestrator");
 const RewardLedgerService = require("./RewardLedgerService");
+const CommissionRuleAdminService = require("./CommissionRuleAdminService");
+const CommissionRuleSimulatorService = require("./CommissionRuleSimulatorService");
+const CouponRedemptionService = require("./CouponRedemptionService");
+const CouponStatisticsService = require("./CouponStatisticsService");
 const Commission = require("../../model/commission");
 
 class GrowthPlatform {
@@ -14,9 +18,23 @@ class GrowthPlatform {
     this.analytics = this.configPlatform.analytics;
     this.attribution = options.attribution || new ReferralAttributionService(options.attributionOptions);
     this.couponValidator = new CouponValidationService({ legacy: this.legacy });
+    this.couponRedemption = new CouponRedemptionService({
+      couponValidator: this.couponValidator,
+      analytics: this.analytics,
+    });
+    this.couponStats = new CouponStatisticsService();
     this.promotionValidator = new PromotionValidationService({
       legacy: this.legacy,
       couponValidator: this.couponValidator,
+    });
+    this.commissionRules = new CommissionRuleAdminService({
+      store: this.configPlatform.getStore(),
+      audit: this.configPlatform.audit,
+      analytics: this.analytics,
+    });
+    this.ruleSimulator = new CommissionRuleSimulatorService({
+      ruleAdmin: this.commissionRules,
+      analytics: this.analytics,
     });
     this.commission = new GrowthCommissionOrchestrator({
       configStore: this.configPlatform.getStore(),
@@ -38,7 +56,7 @@ class GrowthPlatform {
   health() {
     return {
       healthy: true,
-      phase: "9.0",
+      phase: "9.1",
       version: this.configPlatform.config.version,
       features: this.configPlatform.getFeatureFlags().getPublicFeatures(),
     };
@@ -50,6 +68,14 @@ class GrowthPlatform {
 
   getGuard() {
     return this.configPlatform.getGuard();
+  }
+
+  getCommissionRuleAdmin() {
+    return this.commissionRules;
+  }
+
+  getCommissionAnalytics() {
+    return this.analytics.getSummary();
   }
 
   async joinReferralProgram(userId) {
@@ -100,16 +126,44 @@ class GrowthPlatform {
     this.configPlatform.getGuard().assertCouponEnabled();
     const result = await this.couponValidator.validate(input);
     if (result.valid) this.analytics.recordCouponUsage();
-    else this.analytics.recordRejectedRequest();
+    else {
+      this.analytics.recordRejectedRequest();
+      this.analytics.recordCouponFailure();
+    }
     return result;
   }
 
   async validatePromotion(input) {
     this.configPlatform.getGuard().assertPromotionEnabled();
-    const result = await this.promotionValidator.validate(input);
+    const result = input.unified
+      ? await this.promotionValidator.validateUnified(input)
+      : await this.promotionValidator.validate(input);
     this.analytics.recordPromotionValidation();
-    if (!result.valid) this.analytics.recordRejectedRequest();
+    if (!result.valid) {
+      this.analytics.recordRejectedRequest();
+      this.analytics.recordPromotionFailure();
+    }
     return result;
+  }
+
+  async redeemCouponForOrder(input) {
+    this.configPlatform.getGuard().assertCouponEnabled();
+    return this.couponRedemption.validateAndRedeem(input);
+  }
+
+  async getCouponStatistics() {
+    this.configPlatform.getGuard().assertCouponEnabled();
+    return this.couponStats.getStatistics();
+  }
+
+  async getCouponUsage(options) {
+    this.configPlatform.getGuard().assertCouponEnabled();
+    return this.couponStats.getUsage(options?.limit);
+  }
+
+  simulateCommissionRule(input) {
+    this.configPlatform.getGuard().assertCommissionRulesEnabled();
+    return this.ruleSimulator.simulate(input);
   }
 
   async processOrderCommission(order, referralCode, session, options) {
