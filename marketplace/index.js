@@ -52,11 +52,36 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerDeliveryConfigurationPlatform } = require("./delivery/configuration");
   registerDeliveryConfigurationPlatform(app, options.deliveryConfiguration || {});
 
+  const PersistentDeliveryRepository = require("./integration/delivery/PersistentDeliveryRepository");
   const { registerDeliveryPlatform } = require("./delivery");
-  registerDeliveryPlatform(app, core, options.delivery || {});
+  registerDeliveryPlatform(app, core, {
+    ...(options.delivery || {}),
+    repository: options.delivery?.repository || new PersistentDeliveryRepository({
+      persist: !options.delivery?.useMemoryOnly,
+    }),
+  });
 
   const { registerCourierPlatform } = require("./delivery/courier");
   registerCourierPlatform(app, core, options.courier || {});
+
+  const { registerPlatformIntegration } = require("./integration");
+  const integration = registerPlatformIntegration(app, {
+    useMemoryOnly: Boolean(options.integration?.useMemoryOnly),
+    ...(options.integration || {}),
+  });
+  integration.bindOrderService(core.services.order);
+  integration.initialize().catch((error) => {
+    console.error("Platform integration init failed:", error.message);
+  });
+
+  if (!options.integration?.skipSearchIndexes) {
+    try {
+      const searchPlatform = require("./search").getSearchPlatform();
+      searchPlatform?.searchService?.ensureRecommendedIndexes?.().catch(() => {});
+    } catch (_error) {
+      // Search indexes optional during isolated tests.
+    }
+  }
 
   return core;
 }
@@ -76,4 +101,5 @@ module.exports = {
   getDeliveryConfigurationPlatform: () =>
     require("./delivery/configuration").getDeliveryConfigurationPlatform(),
   getGrowthPlatform: () => require("./growth").getGrowthPlatform(),
+  getPlatformIntegration: () => require("./integration/PlatformIntegration").getPlatformIntegration(),
 };

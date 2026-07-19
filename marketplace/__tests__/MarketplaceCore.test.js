@@ -11,7 +11,9 @@ describe("Marketplace Core", () => {
     const core = new MarketplaceCore();
     assert.equal(core.config.name, "Yebone");
     assert.equal(core.features.isEnabled("orders"), true);
-    assert.equal(core.features.isEnabled("search"), false);
+    assert.equal(core.features.isEnabled("search"), true);
+    assert.equal(core.features.isEnabled("delivery"), true);
+    assert.equal(core.features.isEnabled("ai"), true);
   });
 
   it("enforces buyer/seller separation", () => {
@@ -30,7 +32,11 @@ describe("Marketplace Core", () => {
 
   it("exposes marketplace health endpoint", async () => {
     const app = express();
-    registerMarketplaceCore(app);
+    registerMarketplaceCore(app, {
+      integration: { useMemoryOnly: true, skipSearchIndexes: true },
+      delivery: { useMemoryOnly: true },
+      growth: { useMemoryOnly: true },
+    });
 
     const server = app.listen(0);
     const { port } = server.address();

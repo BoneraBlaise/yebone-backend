@@ -8,12 +8,14 @@ const express = require("express");
 const router = express.Router();
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
+const { isAuthenticated } = require("../middleware/auth");
 const { adapters } = require("../payments/legacy");
 
 const V2PaymentProcessAdapter = adapters.V2PaymentProcessAdapter;
 
 router.post(
   "/process",
+  isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const result = await V2PaymentProcessAdapter.processPayment(req.body);

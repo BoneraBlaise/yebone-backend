@@ -22,7 +22,11 @@ describe("Order Platform", () => {
 
   it("exposes orders health endpoint", async () => {
     const app = express();
-    registerMarketplaceCore(app);
+    registerMarketplaceCore(app, {
+      integration: { useMemoryOnly: true, skipSearchIndexes: true },
+      delivery: { useMemoryOnly: true },
+      growth: { useMemoryOnly: true },
+    });
 
     const server = app.listen(0);
     const { port } = server.address();

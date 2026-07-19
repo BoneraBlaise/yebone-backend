@@ -16,6 +16,9 @@ const productSchema = new mongoose.Schema({
   tags: {
     type: String,
   },
+  brand: {
+    type: String,
+  },
   originalPrice: {
     type: Number,
   },

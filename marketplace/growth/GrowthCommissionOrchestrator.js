@@ -8,9 +8,15 @@ class GrowthCommissionOrchestrator {
     this.configStore = configStore;
     this.legacy = legacy;
     this.analytics = analytics;
+    this._engineCache = null;
+    this._engineCacheVersion = null;
   }
 
   _buildEngine() {
+    const rulesVersion = JSON.stringify(this.configStore.getCommissionRules()?.map((r) => r.id));
+    if (this._engineCache && this._engineCacheVersion === rulesVersion) {
+      return this._engineCache;
+    }
     const rules = this.configStore
       .getCommissionRules()
       .filter((rule) => rule.enabled && !rule.archived)
@@ -32,7 +38,10 @@ class GrowthCommissionOrchestrator {
         endDate: rule.endDate,
         createdAt: rule.createdAt,
       }));
-    return createCommissionEngine({ rules });
+    const built = createCommissionEngine({ rules });
+    this._engineCache = built;
+    this._engineCacheVersion = rulesVersion;
+    return built;
   }
 
   async joinProgram(userId) {
@@ -106,8 +115,13 @@ class GrowthCommissionOrchestrator {
     commission.sales.push(...commissionUpdates);
     commission.balance.pending += totalCommission;
 
+    const shopTotals = new Map();
     for (const update of commissionUpdates) {
-      await commission.updateShopStats(update.shop, update.commission, "pending");
+      const current = shopTotals.get(String(update.shop)) || 0;
+      shopTotals.set(String(update.shop), current + update.commission);
+    }
+    for (const [shopId, amount] of shopTotals.entries()) {
+      await commission.updateShopStats(shopId, amount, "pending");
     }
 
     await commission.save(session ? { session } : undefined);

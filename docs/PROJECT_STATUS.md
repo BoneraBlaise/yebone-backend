@@ -256,7 +256,26 @@ Completes Growth Platform foundation:
 
 **Growth Platform frozen at `growth-platform-completion-v1`.**
 
-See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md)
+---
+
+## Phase 9.2 — PLATFORM INTEGRATION
+
+**Tag:** `platform-integration-v1`  
+**Branch:** `feature/platform-integration`  
+**Baseline:** `growth-platform-completion-v1`
+
+Enterprise integration layer at `marketplace/integration/`:
+
+- Server-side order repricing (Product Platform authoritative)
+- Orders ↔ Payments strict facade coordination
+- Orders ↔ Delivery lifecycle + Mongo persistence
+- Growth ↔ Payments unified settlement
+- Atomic refund lifecycle
+- Unified Audit, RBAC, Feature Flags, Observability
+
+**Platform Integration frozen at `platform-integration-v1`.**
+
+See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md)
 
 ---
 
@@ -272,7 +291,7 @@ See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md)
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
 | **YEBO AI (gateway → memory — full v1 stack)** | Orchestration layer | **7.7 frozen** (`yebo-ai-memory-v1`) |
 | **Delivery Platform** | Delivery lifecycle + tracking + couriers + configuration | **8.3 frozen** (`delivery-configuration-v1`) |
-| **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.1 frozen** (`growth-platform-completion-v1`) |
+| **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.2 integrated** (`platform-integration-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 

@@ -187,6 +187,7 @@ function registerGrowthPlatform(app, options = {}) {
 
   router.post(
     "/referral/attribution",
+    isAuthenticated,
     catchAsyncErrors(async (req, res) => {
       if (!runGuard(() => guard.assertReferralEnabled(), res)) return;
       const token = platform.createAttributionToken({

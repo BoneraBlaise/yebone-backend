@@ -4,7 +4,11 @@ const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 class ReferralAttributionService {
   constructor({ secret, ttlMs = DEFAULT_TTL_MS } = {}) {
-    this.secret = secret || process.env.JWT_SECRET_KEY || "growth-attribution-dev-secret";
+    this.secret =
+      secret ||
+      process.env.REFERRAL_ATTRIBUTION_SECRET ||
+      process.env.JWT_SECRET_KEY ||
+      "growth-attribution-dev-secret";
     this.ttlMs = ttlMs;
   }
 
@@ -28,7 +32,13 @@ class ReferralAttributionService {
       return { valid: false, reason: "INVALID_TOKEN_FORMAT" };
     }
     const [body, signature] = token.split(".");
-    if (this._sign(body) !== signature) {
+    const expected = this._sign(body);
+    const sigBuffer = Buffer.from(String(signature));
+    const expectedBuffer = Buffer.from(expected);
+    if (
+      sigBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(sigBuffer, expectedBuffer)
+    ) {
       return { valid: false, reason: "INVALID_SIGNATURE" };
     }
     try {

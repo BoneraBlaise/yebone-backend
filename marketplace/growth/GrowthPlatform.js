@@ -104,9 +104,16 @@ class GrowthPlatform {
     return this.attribution.verifyAttributionToken(token);
   }
 
-  resolveReferralCode({ referralCode, attributionTokens = [] } = {}) {
+  resolveReferralCode({ referralCode, attributionTokens = [], requireToken = false } = {}) {
     const fromToken = this.attribution.resolveReferralFromTokens(attributionTokens);
-    return fromToken || referralCode || null;
+    if (fromToken) return fromToken;
+    if (requireToken) return null;
+    return referralCode || null;
+  }
+
+  async cancelOrderCommission(orderId, referralCode, reason = "cancelled") {
+    this.configPlatform.getGuard().assertCommissionEnabled();
+    return this.commission.cancelOrderCommission(orderId, referralCode, reason);
   }
 
   async trackReferralClick(referralCode) {

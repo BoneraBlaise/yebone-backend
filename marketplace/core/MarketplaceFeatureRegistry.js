@@ -17,12 +17,12 @@ class MarketplaceFeatureRegistry {
       messaging: { enabled: true, phase: "core" },
       admin: { enabled: true, phase: "core" },
       paymentHooks: { enabled: true, phase: "core" },
-      search: { enabled: false, phase: "future" },
+      search: { enabled: true, phase: "core" },
       notifications: { enabled: false, phase: "future" },
       inventoryRedesign: { enabled: false, phase: "future" },
       categoriesRedesign: { enabled: false, phase: "future" },
-      delivery: { enabled: false, phase: "future" },
-      ai: { enabled: false, phase: "future" },
+      delivery: { enabled: true, phase: "core" },
+      ai: { enabled: true, phase: "core" },
     });
   }
 

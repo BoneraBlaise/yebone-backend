@@ -1,16 +1,28 @@
 const mongoose = require("mongoose");
 const Order = require("../../model/order");
-const Shop = require("../../model/shop");
 const OrderInventoryService = require("../orders/OrderInventoryService");
 const OrderStateMachine = require("../orders/OrderStateMachine");
 
-/**
- * Order service — single business layer for order operations.
- */
 class OrderService {
-  constructor({ inventory, stateMachine } = {}) {
+  constructor({ inventory, stateMachine, integration } = {}) {
     this.inventory = inventory || new OrderInventoryService();
     this.stateMachine = stateMachine || new OrderStateMachine();
+    this.integration = integration || null;
+  }
+
+  setIntegration(integration) {
+    this.integration = integration;
+    return this;
+  }
+
+  _integration() {
+    if (this.integration) return this.integration;
+    try {
+      const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+      return getPlatformIntegration();
+    } catch (_error) {
+      return null;
+    }
   }
 
   _error(message, statusCode = 400) {
@@ -27,33 +39,12 @@ class OrderService {
     return result;
   }
 
-  _normalizeCartItem(item) {
-    const itemPrice = item.discountPrice || item.originalPrice || item.price;
-    if (!item.shopId || !itemPrice || !item.qty) {
-      return null;
-    }
-
-    return {
-      ...item,
-      price: Number(itemPrice),
-      qty: Number(item.qty),
-    };
-  }
-
-  _buildShopItemsMap(cart = []) {
+  _buildShopItemsMap(items = []) {
     const shopItemsMap = new Map();
-
-    for (const item of cart) {
-      const normalizedItem = this._normalizeCartItem(item);
-      if (!normalizedItem) continue;
-
-      if (!shopItemsMap.has(item.shopId)) {
-        shopItemsMap.set(item.shopId, []);
-      }
-
-      shopItemsMap.get(item.shopId).push(normalizedItem);
+    for (const item of items) {
+      if (!shopItemsMap.has(item.shopId)) shopItemsMap.set(item.shopId, []);
+      shopItemsMap.get(item.shopId).push(item);
     }
-
     return shopItemsMap;
   }
 
@@ -62,23 +53,34 @@ class OrderService {
     return order;
   }
 
-  async _processReferral(order, referralCode, session, options = {}) {
-    if (!referralCode) return;
+  _resolveReferralCode(input, integration) {
+    const { referralCode: inputReferralCode, attributionTokens = [] } = input;
+    if (!integration) return null;
+
     try {
       const { getGrowthPlatform } = require("../growth");
       const growth = getGrowthPlatform();
       const resolved = growth.resolveReferralCode({
-        referralCode,
-        attributionTokens: options.attributionTokens || [],
+        referralCode: inputReferralCode,
+        attributionTokens,
+        requireToken: true,
       });
-      if (!resolved) return;
-      await growth.processOrderCommission(order, resolved, session, options);
-    } catch (error) {
-      console.error("Growth referral commission failed:", error.message);
+      return resolved || null;
+    } catch (_error) {
+      return null;
     }
   }
 
+  async _processReferral(order, referralCode, session, options = {}) {
+    if (!referralCode) return;
+    const { getGrowthPlatform } = require("../growth");
+    await getGrowthPlatform().processOrderCommission(order, referralCode, session, options);
+  }
+
   async createOrders(input = {}) {
+    const integration = this._integration();
+    const correlationId = integration?.createCorrelationId("order") || null;
+
     const {
       cart,
       wonBid,
@@ -94,85 +96,77 @@ class OrderService {
     if (!shippingAddress || !user) {
       throw this._error("Missing required fields: shippingAddress or user");
     }
-
     if (!paymentInfo) {
       throw this._error("Payment information is required");
     }
-
     if (!wonBid && (!Array.isArray(cart) || cart.length === 0)) {
       throw this._error("Cart must be a non-empty array");
     }
 
     return this.stateMachine.runInTransaction(async (session) => {
+      const pricing = integration?.pricing;
+      if (!pricing) throw this._error("Platform integration pricing unavailable", 503);
+
+      const resolvedReferralCode = this._resolveReferralCode(
+        { referralCode: inputReferralCode, attributionTokens },
+        integration
+      );
+
+      let repricedCart = [];
+      let cartSubtotal = 0;
+      let repricedWonBid = null;
+
+      if (wonBid) {
+        repricedWonBid = await pricing.repriceWonBid(wonBid, session);
+        cartSubtotal = repricedWonBid.commissionBase;
+      } else {
+        const repriced = await pricing.repriceCart(cart, { session, correlationId });
+        repricedCart = repriced.items;
+        cartSubtotal = repriced.subtotal;
+      }
+
       const referralOptions = { attributionTokens, couponCode };
-      let resolvedReferralCode = inputReferralCode;
       let couponMeta = { totalDiscount: 0, couponId: null, couponCode: null };
 
       if (couponCode) {
-        try {
-          const { getGrowthPlatform } = require("../growth");
-          const growth = getGrowthPlatform();
-          couponMeta = await growth.redeemCouponForOrder({
-            code: couponCode,
-            cart: cart || (wonBid ? [wonBid] : []),
-            userId: user._id || user.id,
-            session,
-          });
-          if (!couponMeta.valid) {
-            throw this._error(couponMeta.reason || "Invalid coupon", 400);
-          }
-          referralOptions.couponId = couponMeta.couponId;
-          referralOptions.couponCode = couponMeta.couponCode;
-        } catch (error) {
-          if (error.statusCode) throw error;
-          throw this._error(error.message || "Coupon redemption failed", 400);
+        const { getGrowthPlatform } = require("../growth");
+        const growth = getGrowthPlatform();
+        couponMeta = await growth.redeemCouponForOrder({
+          code: couponCode,
+          cart: repricedCart.length ? repricedCart : repricedWonBid ? [repricedWonBid] : [],
+          userId: user._id || user.id,
+          session,
+        });
+        if (!couponMeta.valid) {
+          throw this._error(couponMeta.reason || "Invalid coupon", 400);
         }
+        referralOptions.couponId = couponMeta.couponId;
+        referralOptions.couponCode = couponMeta.couponCode;
       }
 
-      const cartSubtotal = (cart || []).reduce((sum, item) => {
-        const price = Number(item.discountPrice || item.price || item.originalPrice || 0);
-        return sum + price * Number(item.qty || 1);
-      }, 0);
-
-      if (attributionTokens.length) {
-        try {
-          const { getGrowthPlatform } = require("../growth");
-          resolvedReferralCode =
-            getGrowthPlatform().resolveReferralCode({
-              referralCode: inputReferralCode,
-              attributionTokens,
-            }) || inputReferralCode;
-        } catch (_error) {
-          // Growth platform unavailable — fall back to explicit referral code.
-        }
-      }
-
-      if (wonBid) {
-        const productId = wonBid._id || wonBid.productId;
-        await this.inventory.reserveStock(productId, 1, session);
+      if (repricedWonBid) {
+        await this.inventory.reserveStock(repricedWonBid._id, 1, session);
 
         const order = await this._createOrderDocument(
           {
             cart: [
               {
-                ...wonBid,
-                shopId: wonBid.sellerId,
-                shop: wonBid.sellerId,
-                price: wonBid.price,
+                ...repricedWonBid,
+                shopId: repricedWonBid.shopId,
+                shop: repricedWonBid.shopId,
+                price: repricedWonBid.serverPrice,
                 qty: 1,
+                total: repricedWonBid.serverPrice,
               },
             ],
             shippingAddress,
             user,
-            totalPrice: Math.max(0, wonBid.price + shipping - (couponMeta.totalDiscount || 0)),
-            subTotalPrice: wonBid.price,
+            totalPrice: Math.max(0, repricedWonBid.serverPrice + shipping - (couponMeta.totalDiscount || 0)),
+            subTotalPrice: repricedWonBid.serverPrice,
             discountPrice: couponMeta.totalDiscount || 0,
             couponCode: couponMeta.couponCode,
             shipping,
-            paymentInfo: {
-              ...paymentInfo,
-              status: "Pending",
-            },
+            paymentInfo: { ...paymentInfo, status: "Pending" },
             orderType: "won_bid",
             referralCode: resolvedReferralCode,
           },
@@ -180,28 +174,20 @@ class OrderService {
         );
 
         await this._processReferral(order, resolvedReferralCode, session, referralOptions);
-        return { orders: [order] };
+        return { orders: [order], correlationId };
       }
 
-      const shopItemsMap = this._buildShopItemsMap(cart);
+      const shopItemsMap = this._buildShopItemsMap(repricedCart);
       const allItems = [];
-
-      for (const items of shopItemsMap.values()) {
-        allItems.push(...items);
-      }
-
-      if (allItems.length === 0) {
-        throw this._error("Failed to create any orders", 500);
-      }
+      for (const items of shopItemsMap.values()) allItems.push(...items);
+      if (allItems.length === 0) throw this._error("Failed to create any orders", 500);
 
       await this.inventory.reserveCartItems(allItems, session);
 
       const orders = [];
-
       for (const [, items] of shopItemsMap) {
-        const shopTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-        const itemReferralCode = items.find((item) => item.referralCode)?.referralCode;
-        const orderReferralCode = resolvedReferralCode || itemReferralCode;
+        const shopTotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+        const orderReferralCode = resolvedReferralCode || items.find((item) => item.referralCode)?.referralCode;
         const orderDiscount =
           cartSubtotal > 0 ? (shopTotal / cartSubtotal) * (couponMeta.totalDiscount || 0) : 0;
 
@@ -209,7 +195,8 @@ class OrderService {
           {
             cart: items.map((item) => ({
               ...item,
-              total: item.price * item.qty,
+              price: item.serverPrice,
+              total: item.lineTotal,
             })),
             shippingAddress,
             user,
@@ -218,10 +205,7 @@ class OrderService {
             subTotalPrice: shopTotal,
             discountPrice: orderDiscount,
             couponCode: couponMeta.couponCode,
-            paymentInfo: {
-              ...paymentInfo,
-              status: "Pending",
-            },
+            paymentInfo: { ...paymentInfo, status: "Pending" },
             orderType: "regular",
             referralCode: orderReferralCode,
           },
@@ -232,13 +216,12 @@ class OrderService {
         orders.push(order);
       }
 
-      return { orders };
+      return { orders, correlationId };
     });
   }
 
   async compensateFailedCreate(orders = []) {
     if (!Array.isArray(orders) || orders.length === 0) return;
-
     await this.stateMachine.runInTransaction(async (session) => {
       for (const order of orders) {
         await this.inventory.restoreCartItems(order.cart || [], session);
@@ -247,28 +230,31 @@ class OrderService {
     });
   }
 
-  async getOrdersByUserId(userId) {
-    return Order.find({ "user._id": userId }).sort({ createdAt: -1 });
+  async getOrdersByUserId(userId, { page = 1, limit = 50 } = {}) {
+    const skip = (Math.max(1, page) - 1) * limit;
+    return Order.find({ "user._id": userId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
   }
 
-  async getOrdersByShopId(shopId) {
-    return Order.find({ "cart.shopId": shopId }).sort({ createdAt: -1 });
+  async getOrdersByShopId(shopId, { page = 1, limit = 50 } = {}) {
+    const skip = (Math.max(1, page) - 1) * limit;
+    return Order.find({ "cart.shopId": shopId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
   }
 
-  async getAllOrdersAdmin() {
-    return Order.find().sort({ deliveredAt: -1, createdAt: -1 });
+  async getAllOrdersAdmin({ page = 1, limit = 100 } = {}) {
+    const skip = (Math.max(1, page) - 1) * limit;
+    const [orders, total] = await Promise.all([
+      Order.find().sort({ deliveredAt: -1, createdAt: -1 }).skip(skip).limit(limit),
+      Order.countDocuments(),
+    ]);
+    return { orders, total, page, limit };
   }
 
   async findById(orderId) {
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw this._error("Invalid order ID format");
     }
-
     const order = await Order.findById(orderId);
-    if (!order) {
-      throw this._error("Order not found with this id");
-    }
-
+    if (!order) throw this._error("Order not found with this id");
     return order;
   }
 
@@ -283,7 +269,13 @@ class OrderService {
     return ownerId && String(ownerId) === String(userId);
   }
 
-  async updateOrderStatus(orderId, status, sellerId) {
+  async updateOrderStatus(orderId, status, sellerId, options = {}) {
+    return this.updateOrderStatusIntegrated(orderId, status, sellerId, options);
+  }
+
+  async updateOrderStatusIntegrated(orderId, status, sellerId, options = {}) {
+    const integration = this._integration();
+    const correlationId = options.correlationId || integration?.createCorrelationId("status") || null;
     const order = await this.findById(orderId);
 
     if (sellerId && !this._orderBelongsToSeller(order, sellerId)) {
@@ -297,37 +289,25 @@ class OrderService {
       order.deliveredAt = Date.now();
       order.paymentInfo.status = "Succeeded";
 
-      const serviceCharge = order.totalPrice * 0.1;
-
-      if (order.referralCode) {
-        try {
-          const { getGrowthPlatform } = require("../growth");
-          await getGrowthPlatform().settleOrderCommission(order._id, order.referralCode);
-        } catch (error) {
-          console.error("Growth commission settlement failed:", error.message);
-        }
-      }
-
-      if (sellerId) {
-        const seller = await Shop.findById(sellerId);
-        if (seller) {
-          seller.availableBalance = order.totalPrice - serviceCharge;
-          await seller.save();
-        }
+      if (integration?.settlementBridge) {
+        await integration.settlementBridge.settleOrder(order, { correlationId });
       }
     }
 
     await order.save({ validateBeforeSave: false });
+
+    if (!options.skipDeliverySync && integration?.deliveryBridge) {
+      await integration.deliveryBridge.syncOrderStatusToDelivery(order, status, { correlationId });
+    }
+
     return order;
   }
 
   async requestRefund(orderId, status = "Processing refund", userId) {
     const order = await this.findById(orderId);
-
     if (userId && !this._orderBelongsToUser(order, userId)) {
       throw this._error("You are not allowed to request a refund for this order", 403);
     }
-
     this._assertTransition(order.status, status);
     order.status = status;
     await order.save({ validateBeforeSave: false });
@@ -336,17 +316,24 @@ class OrderService {
 
   async acceptRefund(orderId, status, sellerId) {
     const order = await this.findById(orderId);
-
     if (sellerId && !this._orderBelongsToSeller(order, sellerId)) {
       throw this._error("You are not allowed to update this order", 403);
     }
-
     this._assertTransition(order.status, status);
     order.status = status;
     await order.save();
 
     if (status === "Refund Success") {
-      await this.inventory.restoreCartItems(order.cart || []);
+      const integration = this._integration();
+      if (integration?.refundBridge) {
+        await integration.refundBridge.executeRefund(order, {
+          sellerId,
+          actor: sellerId ? String(sellerId) : "system",
+          correlationId: integration.createCorrelationId("refund"),
+        });
+      } else {
+        await this.inventory.restoreCartItems(order.cart || []);
+      }
     }
 
     return order;

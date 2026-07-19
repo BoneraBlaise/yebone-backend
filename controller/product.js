@@ -13,10 +13,17 @@ function handleServiceError(error, next) {
 
 router.post(
   "/create-product",
+  isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
+      if (req.body.shopId && String(req.body.shopId) !== String(req.seller._id)) {
+        return next(new ErrorHandler("You can only create products for your shop", 403));
+      }
       const platform = getProductPlatform();
-      const product = await platform.createProduct(req.body);
+      const product = await platform.createProduct({
+        ...req.body,
+        shopId: req.body.shopId || req.seller._id,
+      });
 
       res.status(201).json({
         success: true,

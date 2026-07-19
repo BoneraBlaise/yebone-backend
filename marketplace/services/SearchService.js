@@ -108,7 +108,8 @@ class SearchService {
     await Product.collection.createIndex({ ratings: -1 });
     await Product.collection.createIndex({ sold_out: -1 });
     await Product.collection.createIndex({ featured: -1, createdAt: -1 });
-    await Product.collection.createIndex({ stock: 1 });
+    await Product.collection.createIndex({ brand: 1 });
+    await Product.collection.createIndex({ tags: 1 });
     await Shop.collection.createIndex({ name: 1 });
     return { indexed: true };
   }

@@ -63,14 +63,25 @@ class OrderPlatform {
       idempotencyKey,
       requestPayload,
       async () => {
-        const { orders } = await this.orderService.createOrders(sanitizedInput);
+        const { orders, correlationId } = await this.orderService.createOrders(sanitizedInput);
 
         let paymentSessions = [];
         try {
-          paymentSessions = await this.preparePaymentSessions(orders, sanitizedInput.user);
+          paymentSessions = await this.preparePaymentSessions(orders, sanitizedInput.user, correlationId);
         } catch (paymentError) {
           await this.orderService.compensateFailedCreate(orders);
           throw paymentError;
+        }
+
+        try {
+          const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+          const integration = getPlatformIntegration();
+          await integration.deliveryBridge.onOrdersCreated(orders, {
+            shippingAddress: sanitizedInput.shippingAddress,
+            correlationId,
+          });
+        } catch (_deliveryError) {
+          // Delivery optional when feature disabled.
         }
 
         this.hooks.afterCreate(orders);
@@ -83,8 +94,14 @@ class OrderPlatform {
     return result;
   }
 
-  async preparePaymentSessions(orders, user) {
-    return this.marketplaceCore.hooks.payment.prepareForOrders(orders, user);
+  async preparePaymentSessions(orders, user, correlationId = null) {
+    try {
+      const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+      const integration = getPlatformIntegration();
+      return integration.paymentBridge.prepareOrderPayments(orders, user, { correlationId });
+    } catch (_error) {
+      return this.marketplaceCore.hooks.payment.prepareForOrders(orders, user);
+    }
   }
 
   async updateStatus(orderId, status, sellerId) {

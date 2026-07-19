@@ -239,7 +239,11 @@ describe("Growth platform HTTP", () => {
   it("exposes public features and validates coupons", async () => {
     const app = express();
     app.use(express.json());
-    registerMarketplaceCore(app, { growth: { useMemoryOnly: true } });
+    registerMarketplaceCore(app, {
+      growth: { useMemoryOnly: true },
+      integration: { useMemoryOnly: true, skipSearchIndexes: true },
+      delivery: { useMemoryOnly: true },
+    });
 
     const server = app.listen(0);
     const { port } = server.address();
@@ -271,7 +275,7 @@ describe("Growth platform HTTP", () => {
           res.on("data", (chunk) => {
             data += chunk;
           });
-          res.on("end", () => resolve(JSON.parse(data)));
+          res.on("end", () => resolve({ statusCode: res.statusCode, body: data }));
         }
       );
       req.on("error", reject);
@@ -279,8 +283,7 @@ describe("Growth platform HTTP", () => {
       req.end();
     });
 
-    assert.equal(attribution.success, true);
-    assert.ok(attribution.data.attributionToken);
+    assert.equal(attribution.statusCode, 401);
 
     server.close();
   });

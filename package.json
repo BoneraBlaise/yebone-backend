@@ -68,6 +68,8 @@
     "verify:delivery-configuration": "npm run test:delivery-configuration && npm run verify:courier",
     "verify:growth-platform": "npm run test:growth-platform && npm run verify:delivery-configuration",
     "verify:growth-platform-completion": "npm run test:growth-platform-completion && npm run verify:growth-platform",
+    "test:platform-integration": "node --test marketplace/integration/__tests__/PlatformIntegration.test.js marketplace/growth/__tests__/GrowthPlatformCompletion.test.js marketplace/orders/__tests__/OrderPlatform.test.js",
+    "verify:platform-integration": "npm run test:platform-integration && npm run verify:growth-platform-completion",
     "verify:marketplace-core": "npm run test:marketplace-core",
     "verify:vendor-management": "npm run test:vendor-management && npm run test:marketplace-core",
     "verify:product-catalog": "npm run test:product-catalog && npm run test:vendor-management && npm run test:marketplace-core",

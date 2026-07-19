@@ -1,9 +1,5 @@
-const { delegateToFacade } = require("../../payments/legacy/adapters/LegacyFacadeDelegate");
+const { getMarketplacePaymentFacade } = require("../../payments/legacy/PaymentFacadeRegistry");
 
-/**
- * Payment integration hook — marketplace depends on payment; payment does not depend on marketplace.
- * Uses public legacy facade delegate only (payment-foundation-v10 frozen).
- */
 class PaymentIntegrationHook {
   constructor({ enabled = true } = {}) {
     this.enabled = enabled;
@@ -14,33 +10,42 @@ class PaymentIntegrationHook {
       return [];
     }
 
-    const userId = user._id || user.id || user.userId || "marketplace-user";
+    const userId = user._id || user.id || user.userId;
+    if (!userId) {
+      const error = new Error("Authenticated user required for payment coordination");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const facade = getMarketplacePaymentFacade();
     const sessions = [];
 
     for (const order of orders) {
       const orderId = order._id?.toString?.() || order.id;
-      const delegation = await delegateToFacade("orderPayment", {
+      const amount = Number(order.totalPrice);
+      const result = await facade.orderPayment({
         action: "create",
         orderId,
         userId: String(userId),
-        amount: Number(order.totalPrice),
+        amount,
         currency: order.currency || "RWF",
         method: order.paymentInfo?.type || "CARD",
-        metadata: {
-          source: "marketplace_core",
-          orderType: order.orderType || "regular",
-        },
+        idempotencyKey: `order-payment:${orderId}`,
+        metadata: { source: "marketplace_core", orderType: order.orderType || "regular" },
       });
+
+      if (!result?.coordinated) {
+        const error = new Error(result?.error || `Payment coordination failed for order ${orderId}`);
+        error.statusCode = 502;
+        throw error;
+      }
 
       sessions.push(
         Object.freeze({
           orderId,
-          coordinated: delegation.coordinated === true,
-          paymentReference:
-            delegation.result?.result?.workflowResult?.paymentId ||
-            delegation.result?.result?.ledgerEntry?.referenceId ||
-            orderId,
-          reason: delegation.reason || delegation.error || null,
+          coordinated: true,
+          paymentReference: result.workflowResult?.paymentId || result.ledgerEntry?.referenceId || orderId,
+          clientSecret: result.workflowResult?.clientSecret || null,
         })
       );
     }
