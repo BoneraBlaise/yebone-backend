@@ -231,7 +231,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | **Orders Platform** | Order lifecycle, idempotency, inventory guards | Frozen |
 | **Search Platform** | Product/shop discovery, suggestions, pagination | Frozen |
 | **YEBO AI (gateway → memory — full v1 stack)** | Orchestration layer | **7.7 frozen** (`yebo-ai-memory-v1`) |
-| **Delivery Platform** | Delivery lifecycle + tracking + couriers | **8.2 frozen** (`courier-management-v1`) |
+| **Delivery Platform** | Delivery lifecycle + tracking + couriers + configuration | **8.3 frozen** (`delivery-configuration-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -249,7 +249,9 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 
 ## Next Step
 
-**Phase 8.3 — Delivery Pricing** (not started) — See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
+**Delivery MVP complete** — frozen at `delivery-configuration-v1`. Await next approved roadmap phase (Inventory & Categories / Notifications). Do not begin Delivery Pricing, GPS, Affiliate, or Driver App.
+
+See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 
 ---
 
@@ -269,6 +271,7 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 | [DELIVERY_MODULE.md](./DELIVERY_MODULE.md) | Phase 8.0 delivery foundation |
 | [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md) | Phase 8.1 delivery tracking |
 | [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md) | Phase 8.2 courier management |
+| [DELIVERY_CONFIGURATION.md](./DELIVERY_CONFIGURATION.md) | Phase 8.3 delivery configuration |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -276,5 +279,5 @@ YEBO AI production architecture is **designed and frozen** at `yebo-ai-design-v1
 ## Verification
 
 ```bash
-npm run verify:courier
+npm run verify:delivery-configuration
 ```

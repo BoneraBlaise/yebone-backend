@@ -94,7 +94,7 @@ flowchart TB
 | Orders | `marketplace/orders/` | `OrderPlatform` | `OrderService` | `orders-production-v1` |
 | Search | `marketplace/search/` | `SearchPlatform` | `SearchService` | `search-production-v1` |
 | YEBO AI | `marketplace/ai/` | `AIPlatform` | Tool orchestration | `yebo-ai-memory-v1` |
-| Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` | In-memory + timeline + couriers | `courier-management-v1` |
+| Delivery | `marketplace/delivery/` | `DeliveryPlatform` + `CourierPlatform` + `DeliveryConfigurationPlatform` | Persistent config + couriers | `delivery-configuration-v1` |
 
 ---
 
@@ -167,8 +167,9 @@ Registration order in `marketplace/index.js`:
 4. `registerSearchPlatform(app, core)`
 5. `registerOrderPlatform(app, core)`
 6. `registerAIPlatform(app, core)`
-7. `registerDeliveryPlatform(app, core)`
-8. `registerCourierPlatform(app, core)`
+7. `registerDeliveryConfigurationPlatform(app)`
+8. `registerDeliveryPlatform(app, core)`
+9. `registerCourierPlatform(app, core)`
 
 Each platform exposes:
 
@@ -315,21 +316,24 @@ AI must **not** bypass services or duplicate business logic.
 
 ---
 
-## Delivery Platform (Phase 8.0–8.2)
+## Delivery Platform (Phase 8.0–8.3)
 
 Delivery is implemented at `marketplace/delivery/` — independent of Orders business logic.
 
 - **8.0 Foundation:** lifecycle, tracking numbers, structured addresses
 - **8.1 Tracking:** append-only timeline and status visibility
 - **8.2 Courier Management:** courier registry, availability, capacity, assignment bridge
+- **8.3 Configuration:** Super Admin feature flags, persistent settings, route guards, audit log
 
-See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md), [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md), and [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md).
+See [DELIVERY_MODULE.md](./DELIVERY_MODULE.md), [DELIVERY_TRACKING.md](./DELIVERY_TRACKING.md), [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md), and [DELIVERY_CONFIGURATION.md](./DELIVERY_CONFIGURATION.md).
+
+**Delivery MVP frozen at `delivery-configuration-v1`.**
 
 ---
 
 ## Future Delivery Pricing Integration
 
-Delivery pricing (Phase 8.3+) will extend delivery without modifying frozen foundation/tracking internals:
+Delivery pricing (post-MVP) will extend delivery without modifying frozen foundation/tracking/courier/configuration cores:
 
 - Persistent storage migration
 - Order lifecycle compatibility hooks

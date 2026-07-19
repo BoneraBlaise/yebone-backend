@@ -3,6 +3,11 @@ const catchAsyncErrors = require("../../middleware/catchAsyncErrors");
 const { isAuthenticated } = require("../../middleware/auth");
 const DeliveryPlatform = require("./DeliveryPlatform");
 const DeliverySecurity = require("./DeliverySecurity");
+const {
+  attachDeliveryConfigurationRoutes,
+  getDeliveryConfigurationPlatform,
+  runGuard,
+} = require("./configuration");
 
 let deliveryPlatformInstance = null;
 
@@ -25,10 +30,23 @@ function getDeliveryPlatform() {
 }
 
 function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
+  let configPlatform;
+  try {
+    configPlatform = getDeliveryConfigurationPlatform();
+  } catch (_error) {
+    const { registerDeliveryConfigurationPlatform } = require("./configuration");
+    configPlatform = registerDeliveryConfigurationPlatform(app, {
+      useMemoryOnly: true,
+      ...(options.deliveryConfiguration || {}),
+    });
+  }
+
   const platform = createDeliveryPlatform(marketplaceCore, options);
   app.locals.deliveryPlatform = platform;
 
   const router = express.Router();
+  const guard = configPlatform.getGuard();
+  attachDeliveryConfigurationRoutes(router, configPlatform);
 
   router.get(
     "/health",
@@ -57,6 +75,8 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
       if (!auth.valid) {
         return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
       }
+
+      if (!runGuard(() => guard.assertYeboneDeliveryEnabled(), res)) return;
 
       const delivery = platform.createDelivery(req.body);
       res.status(201).json({ success: true, data: delivery });
@@ -201,6 +221,9 @@ function registerDeliveryPlatform(app, marketplaceCore, options = {}) {
       if (!auth.valid) {
         return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
       }
+
+      if (!runGuard(() => guard.assertYeboneDeliveryEnabled(), res)) return;
+      if (!runGuard(() => guard.assertManualAssignmentEnabled(), res)) return;
 
       const delivery = platform.assignCourier(req.params.deliveryId, req.body.courierId, {
         actor: req.user?._id ? String(req.user._id) : "system",

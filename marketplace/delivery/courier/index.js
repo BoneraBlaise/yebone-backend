@@ -4,6 +4,7 @@ const { isAuthenticated } = require("../../../middleware/auth");
 const CourierPlatform = require("./CourierPlatform");
 const CourierSecurity = require("./CourierSecurity");
 const { getDeliveryPlatform } = require("../index");
+const { getDeliveryConfigurationPlatform, runGuard } = require("../configuration");
 
 let courierPlatformInstance = null;
 
@@ -24,11 +25,22 @@ function getCourierPlatform() {
 }
 
 function registerCourierPlatform(app, marketplaceCore, options = {}) {
+  try {
+    getDeliveryConfigurationPlatform();
+  } catch (_error) {
+    const { registerDeliveryConfigurationPlatform } = require("../configuration");
+    registerDeliveryConfigurationPlatform(app, {
+      useMemoryOnly: true,
+      ...(options.deliveryConfiguration || {}),
+    });
+  }
+
   const deliveryPlatform = options.deliveryPlatform || getDeliveryPlatform();
   const platform = createCourierPlatform(deliveryPlatform, options);
   app.locals.courierPlatform = platform;
 
   const router = express.Router();
+  const guard = getDeliveryConfigurationPlatform().getGuard();
 
   router.get(
     "/health",
@@ -159,6 +171,9 @@ function registerCourierPlatform(app, marketplaceCore, options = {}) {
       if (!auth.valid) {
         return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
       }
+
+      if (!runGuard(() => guard.assertYeboneDeliveryEnabled(), res)) return;
+      if (!runGuard(() => guard.assertManualAssignmentEnabled(), res)) return;
 
       const result = platform.assignDelivery(req.params.courierId, req.body.deliveryId, {
         actor: auth.userId,
