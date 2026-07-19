@@ -13,7 +13,7 @@
 **Delivery tracking tag:** `delivery-tracking-v1`  
 **Delivery foundation tag:** `delivery-foundation-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/courier-management`
+**Current branch:** `feature/growth-commerce`
 
 ---
 
@@ -317,6 +317,8 @@ npm run verify:enterprise-certification-remediation
 | **YEBO AI (gateway → memory — full v1 stack)** | Orchestration layer | **7.7 frozen** (`yebo-ai-memory-v1`) |
 | **Delivery Platform** | Delivery lifecycle + tracking + couriers + configuration | **8.3 frozen** (`delivery-configuration-v1`) |
 | **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.2 integrated** (`platform-integration-v1`) |
+| **Platform Integration** | Unified audit, flags, RBAC, order bridges | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
+| **Growth Commerce** | Campaigns, homepage merchandising, marketing dashboards, automation | **10 complete** (`growth-commerce-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -332,9 +334,28 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 10 — Growth Commerce COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| `marketplace/growth-commerce/` module | ✔ Implemented |
+| Campaign lifecycle + automation | ✔ Draft → scheduled → active → expired |
+| Promotion validation | ✔ Delegates to Growth Platform |
+| Homepage merchandising | ✔ Configurable sections |
+| Affiliate / Ambassador | ✔ Extends Growth referral |
+| Marketing dashboards | ✔ Vendor + Super Admin |
+| Search enrichment | ✔ `/search/enriched` bridge |
+| AI recommendations | ✔ `/ai/recommendations` API |
+| Responsive web panels | ✔ Admin + vendor routes |
+| Tests | ✔ `npm run test:growth-commerce` |
+
+**Tag:** `growth-commerce-v1` · **Doc:** [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md)
+
+---
+
 ## Next Step
 
-**Growth Platform complete** — frozen at `growth-platform-completion-v1`. Await next approved roadmap phase.
+**Growth Commerce complete** — frozen at `growth-commerce-v1`. Await next approved roadmap phase.
 
 See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 
@@ -360,6 +381,7 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 | [COURIER_MANAGEMENT.md](./COURIER_MANAGEMENT.md) | Phase 8.2 courier management |
 | [DELIVERY_CONFIGURATION.md](./DELIVERY_CONFIGURATION.md) | Phase 8.3 delivery configuration |
 | [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md) | Phase 9.0–9.1 growth platform |
+| [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md) | Phase 10 growth commerce |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -367,5 +389,5 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 ## Verification
 
 ```bash
-npm run verify:growth-platform-completion
+npm run verify:growth-commerce
 ```

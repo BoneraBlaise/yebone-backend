@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const PlatformFeatureFlags = require("../../../model/platformFeatureFlags");
+const { GrowthCommerceSettingsDefaults } = require("../../growth-commerce/GrowthCommerceSettingsDefaults");
 
 const DEFAULT_FLAGS = Object.freeze({
   growth: {
@@ -31,6 +32,10 @@ const DEFAULT_FLAGS = Object.freeze({
     ai: { enabled: true },
   },
   ai: { enabled: true },
+  growthCommerce: {
+    enabled: true,
+    ...structuredClone(GrowthCommerceSettingsDefaults),
+  },
 });
 
 class PlatformFeatureFlagStore {
@@ -67,6 +72,10 @@ class PlatformFeatureFlagStore {
       search: { ...DEFAULT_FLAGS.search, ...(doc.search || {}) },
       marketplace: { ...DEFAULT_FLAGS.marketplace, ...(doc.marketplace || {}) },
       ai: { ...DEFAULT_FLAGS.ai, ...(doc.ai || {}) },
+      growthCommerce: this._mergeDomainDefaults(
+        DEFAULT_FLAGS.growthCommerce,
+        doc.growthCommerce || {}
+      ),
     };
   }
 
@@ -84,6 +93,9 @@ class PlatformFeatureFlagStore {
         ? { ...current.marketplace, ...partial.marketplace }
         : current.marketplace,
       ai: partial.ai ? { ...current.ai, ...partial.ai } : current.ai,
+      growthCommerce: partial.growthCommerce
+        ? this._mergeDomainDefaults(current.growthCommerce, partial.growthCommerce)
+        : current.growthCommerce,
       updatedBy: admin,
     };
 

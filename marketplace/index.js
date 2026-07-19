@@ -64,12 +64,17 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerCourierPlatform } = require("./delivery/courier");
   registerCourierPlatform(app, core, options.courier || {});
 
+  const { registerGrowthCommercePlatform } = require("./growth-commerce");
+  const growthCommercePlatform = registerGrowthCommercePlatform(app, options.growthCommerce || {});
+
   const { registerPlatformIntegration } = require("./integration");
   const integration = registerPlatformIntegration(app, {
     useMemoryOnly: Boolean(options.integration?.useMemoryOnly),
     ...(options.integration || {}),
   });
   integration.bindOrderService(core.services.order);
+  growthCommercePlatform.bindFeatureFlags(integration.featureFlags);
+  growthCommercePlatform.bindObservability(integration.observability);
   integration.initialize().catch((error) => {
     console.error("Platform integration init failed:", error.message);
   });
@@ -101,5 +106,6 @@ module.exports = {
   getDeliveryConfigurationPlatform: () =>
     require("./delivery/configuration").getDeliveryConfigurationPlatform(),
   getGrowthPlatform: () => require("./growth").getGrowthPlatform(),
+  getGrowthCommercePlatform: () => require("./growth-commerce").getGrowthCommercePlatform(),
   getPlatformIntegration: () => require("./integration/PlatformIntegration").getPlatformIntegration(),
 };

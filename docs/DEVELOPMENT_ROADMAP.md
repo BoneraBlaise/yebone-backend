@@ -60,33 +60,22 @@ Branch: `feature/growth-platform`
 | 9.0 | Growth Platform MVP | `growth-platform-v1` | ✅ Complete |
 | 9.1 | Growth Platform Completion | `growth-platform-completion-v1` | ✅ Complete |
 | 9.2 | Platform Integration | `platform-integration-v1` | ✅ Complete |
+| 9.2.1 | Enterprise Certification Remediation | `enterprise-certification-remediation-v1` | ✅ Complete |
+| 10 | Growth Commerce | `growth-commerce-v1` | ✅ Complete |
 
-**Platform Integration frozen at `platform-integration-v1`.**
+**Growth Commerce frozen at `growth-commerce-v1`.**
 
 ---
 
 ## Future
 
-### Phase 8 — Delivery
+### Phase 11+ — Deferred
 
-| Milestone | Name | Status |
-|-----------|------|--------|
-| 8.0 | Delivery Module Foundation | ✅ Complete (`delivery-foundation-v1`) |
-| 8.1 | Delivery Tracking | ✅ Complete (`delivery-tracking-v1`) |
-| 8.2 | Courier Management | ✅ Complete (`courier-management-v1`) |
-| 8.3 | Delivery Configuration | ✅ Complete (`delivery-configuration-v1`) |
-
-**Delivery MVP frozen at `delivery-configuration-v1`.**
-
-### Phase 9 — Inventory & Categories
-
-- Category taxonomy modernization
-- Inventory tracking redesign
-
-### Phase 10 — Notifications & Mobile
-
-- Notification pipeline
-- Mobile client on shared API contracts
+- Loyalty programs
+- Cashback
+- Wallet
+- Advanced analytics
+- Native mobile apps
 
 ---
 

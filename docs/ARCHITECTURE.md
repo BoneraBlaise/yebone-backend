@@ -22,6 +22,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | **Delivery Platform** | `marketplace/delivery/` | **8.3 frozen** (`delivery-configuration-v1`) |
 | **Growth Platform** | `marketplace/growth/` | **9.2 integrated** (`platform-integration-v1`) |
 | **Platform Integration** | `marketplace/integration/` | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
+| **Growth Commerce** | `marketplace/growth-commerce/` | **10 complete** (`growth-commerce-v1`) |
 
 ---
 
@@ -41,6 +42,19 @@ See [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md).
 **Platform Integration frozen at `platform-integration-v1`.**
 
 **Enterprise Certification Remediation (9.2.1) frozen at `enterprise-certification-remediation-v1`.**
+
+## Growth Commerce (Phase 10)
+
+Campaign management, homepage merchandising, affiliate/ambassador extensions, marketing dashboards, automation, search enrichment, and AI recommendations at `marketplace/growth-commerce/`:
+
+- Extends Growth Platform — no duplicate promotion validation
+- Wraps Search Platform for campaign badges — Search module unchanged
+- Exposes AI recommendations API — YEBO AI module unchanged
+- Super Admin + vendor responsive web panels
+
+See [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md).
+
+**Growth Commerce frozen at `growth-commerce-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 
