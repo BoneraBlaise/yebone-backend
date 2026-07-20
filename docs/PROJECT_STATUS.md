@@ -432,11 +432,13 @@ npm run verify:enterprise-certification-remediation
 
 **Tag:** `yebo-ai-commerce-agent-v1` · **Doc:** [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md)
 
+**Status: FROZEN** — No further code changes inside Phase 13 scope.
+
 ---
 
 ## Next Step
 
-**Commerce Agent complete** — frozen at `yebo-ai-commerce-agent-v1`. Await next approved roadmap phase.
+**Commerce Agent frozen at `yebo-ai-commerce-agent-v1`.** Await next approved roadmap phase.
 
 ---
 
