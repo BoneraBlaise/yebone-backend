@@ -65,3 +65,9 @@ services:
         sync: false
       - key: STRIPE_API_KEY
         sync: false
+      - key: AI_CONFIRMATION_SECRET
+        sync: false
+      - key: AI_PENDING_ACTION_TTL_MS
+        value: "900000"
+      - key: REFERRAL_ATTRIBUTION_SECRET
+        sync: false
