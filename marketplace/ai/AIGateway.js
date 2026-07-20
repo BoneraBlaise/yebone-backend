@@ -1,7 +1,8 @@
 /**
- * AI gateway — HTTP boundary orchestration (Phase 7.1).
+ * AI gateway — HTTP boundary orchestration (Phase 7.1 + Phase 13 Commerce Agent).
  */
 const PlatformAuditAdapter = require("../integration/audit/PlatformAuditAdapter");
+const AIAuthContext = require("./auth/AIAuthContext");
 
 class AIGateway {
   constructor(platform) {
@@ -34,6 +35,42 @@ class AIGateway {
     const parsed = this.platform.validation.assertChatBody(req.body);
     await this.platform.security.assertSafeMessage(parsed.message);
 
+    const authContext = AIAuthContext.fromRequest(req);
+
+    if (parsed.cancelActionId) {
+      this.platform.confirmationHandler.cancel({
+        cancelActionId: parsed.cancelActionId,
+        sessionId: parsed.sessionId,
+        authContext,
+      });
+      const response = this.platform.planner.formatCancellationResponse({
+        requestId,
+        sessionId: parsed.sessionId,
+      });
+      return { stream: false, data: response, latencyMs: stopTimer() };
+    }
+
+    if (parsed.confirmActionId && parsed.sessionId && parsed.actionChecksum) {
+      const { record, toolResult } = await this.platform.confirmationHandler.validateAndExecute({
+        confirmActionId: parsed.confirmActionId,
+        sessionId: parsed.sessionId,
+        actionChecksum: parsed.actionChecksum,
+        authContext,
+        correlationId: requestId,
+      });
+      const response = await this.platform.planner.formatConfirmationExecutionResponse({
+        requestId,
+        sessionId: parsed.sessionId,
+        record,
+        toolResult,
+        message: parsed.message,
+        authContext,
+      });
+      const latencyMs = stopTimer();
+      this._audit("ai.chat.confirmation.complete", response);
+      return { stream: false, data: response, latencyMs };
+    }
+
     const plan = await this.platform.planner.createPlan({
       requestId,
       sessionId: parsed.sessionId,
@@ -41,17 +78,21 @@ class AIGateway {
       type: "chat",
       region: req.body.region,
       language: req.body.language,
-      userId: req.aiContext?.userId || null,
+      userId: authContext.userId,
+      vendorId: authContext.vendorId,
+      role: authContext.role,
     });
 
     const context = {
       message: parsed.message,
       sessionId: parsed.sessionId,
       scope: parsed.scope,
-      userId: req.aiContext?.userId || null,
+      userId: authContext.userId,
+      vendorId: authContext.vendorId,
+      role: authContext.role,
     };
 
-    if (parsed.stream && this.platform.config.streamEnabled) {
+    if (parsed.stream && this.platform.config.streamEnabled && !plan.requiresConfirmation) {
       return {
         stream: true,
         requestId,
@@ -81,6 +122,8 @@ class AIGateway {
     const parsed = this.platform.validation.assertSearchBody(req.body);
     await this.platform.security.assertSafeMessage(parsed.query);
 
+    const authContext = AIAuthContext.fromRequest(req);
+
     const plan = await this.platform.planner.createPlan({
       requestId,
       sessionId: parsed.sessionId,
@@ -89,13 +132,18 @@ class AIGateway {
       page: parsed.page,
       limit: parsed.limit,
       sort: parsed.sort,
+      userId: authContext.userId,
+      vendorId: authContext.vendorId,
+      role: authContext.role,
     });
 
     const response = await this.platform.planner.execute(plan, {
       message: parsed.query,
       query: parsed.query,
       sessionId: parsed.sessionId,
-      userId: req.aiContext?.userId || null,
+      userId: authContext.userId,
+      vendorId: authContext.vendorId,
+      role: authContext.role,
     });
 
     const latencyMs = stopTimer();
@@ -123,7 +171,7 @@ class AIGateway {
         res.write("data: [DONE]\n\n");
         res.end();
       } catch (err) {
-        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: err.message, reason: err.reason || null })}\n\n`);
         res.end();
       }
     })();

@@ -58,6 +58,7 @@ router.use((err, req, res, next) => {
     return res.status(err.statusCode).json({
       success: false,
       message: err.message,
+      reason: err.reason || err.code || null,
       requestId: req.aiRequestId || null,
     });
   }

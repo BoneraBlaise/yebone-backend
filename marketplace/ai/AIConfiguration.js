@@ -24,6 +24,13 @@ class AIConfiguration {
     this.conversationMaxSessions = Number(
       options.conversationMaxSessions || process.env.AI_CONVERSATION_MAX_SESSIONS || 1000
     );
+    this.pendingActionTtlMs = Number(
+      options.pendingActionTtlMs || process.env.AI_PENDING_ACTION_TTL_MS || 15 * 60 * 1000
+    );
+    this.confirmationSecret =
+      options.confirmationSecret ||
+      process.env.AI_CONFIRMATION_SECRET ||
+      "yebo-ai-dev-confirmation-secret";
     this.enableAuditEvents = options.enableAuditEvents !== false;
     this.enableInjectionGuards = options.enableInjectionGuards !== false;
   }

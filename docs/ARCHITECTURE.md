@@ -18,7 +18,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | Product Catalog | `marketplace/catalog/` | Frozen |
 | Orders Platform | `marketplace/orders/` | Frozen |
 | Search Platform | `marketplace/search/` | Frozen |
-| YEBO AI | `marketplace/ai/` | Frozen (`yebo-ai-memory-v1`) |
+| YEBO AI | `marketplace/ai/` | Frozen (`yebo-ai-commerce-agent-v1`) |
 | **Delivery Platform** | `marketplace/delivery/` | **8.3 frozen** (`delivery-configuration-v1`) |
 | **Growth Platform** | `marketplace/growth/` | **9.2 integrated** (`platform-integration-v1`) |
 | **Platform Integration** | `marketplace/integration/` | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
@@ -83,6 +83,19 @@ Property and vehicle listings, search filters, Growth Commerce promotions, Yebon
 See [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md).
 
 **Property & Mobility frozen at `property-mobility-v1`. Production remediation frozen at `property-mobility-remediation-v1`.**
+
+## Commerce Agent (Phase 13)
+
+Secure write-capable AI layer at `marketplace/ai/` — extends YEBO AI without modifying frozen business modules:
+
+- 4 read tools (property search, listing details, growth recommend, seller inventory)
+- 2 confirmed write actions (create draft, publish listing)
+- In-memory pending action protocol with HMAC checksum, 15 min TTL, replay protection
+- Audit via existing `PlatformAuditAdapter`
+
+See [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md).
+
+**Commerce Agent frozen at `yebo-ai-commerce-agent-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

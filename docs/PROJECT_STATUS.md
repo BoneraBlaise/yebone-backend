@@ -1,6 +1,6 @@
 # Yebone — Project Status
 
-**Last updated:** 2026-07-18  
+**Last updated:** 2026-07-20  
 **Design tag:** `yebo-ai-design-v1`  
 **Gateway tag:** `yebo-ai-gateway-v1`  
 **Tools tag:** `yebo-ai-tools-v1`  
@@ -9,11 +9,12 @@
 **Recommend tag:** `yebo-ai-recommend-v1`  
 **Checkout tag:** `yebo-ai-checkout-v1`  
 **Memory tag:** `yebo-ai-memory-v1`  
+**Commerce Agent tag:** `yebo-ai-commerce-agent-v1`  
 **Delivery tag:** `courier-management-v1`  
 **Delivery tracking tag:** `delivery-tracking-v1`  
 **Delivery foundation tag:** `delivery-foundation-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
-**Current branch:** `feature/growth-commerce`
+**Current branch:** `feature/yebo-ai-commerce-agent`
 
 ---
 
@@ -412,9 +413,29 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 13 — Commerce Agent COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| Read tools (4) | ✔ property search, listing details, growth recommend, seller inventory |
+| Write tools (2) | ✔ create draft, publish — confirmation required |
+| `AIAuthContext` | ✔ userId, vendorId, role from existing auth |
+| Permission matrix v2 | ✔ public, authenticated, vendor |
+| Pending action service | ✔ In-memory, HMAC checksum, 15 min TTL |
+| Confirmation handler | ✔ 10-step validation gate |
+| Audit lifecycle | ✔ `PlatformAuditAdapter` — 6 AI action events |
+| Planner write-stop | ✔ Never mutates on first turn |
+| Gateway contract | ✔ `confirmation_required`, confirm/cancel triplet |
+| Tests | ✔ `CommerceAgent.test.js` (16/16) |
+| Verify | ✔ `verify:yebo-ai-commerce-agent` exit 0 |
+
+**Tag:** `yebo-ai-commerce-agent-v1` · **Doc:** [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md)
+
+---
+
 ## Next Step
 
-**Property & Mobility remediation complete** — frozen at `property-mobility-remediation-v1`. Await next approved roadmap phase.
+**Commerce Agent complete** — frozen at `yebo-ai-commerce-agent-v1`. Await next approved roadmap phase.
 
 ---
 
@@ -439,6 +460,7 @@ npm run verify:enterprise-certification-remediation
 | [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md) | Phase 10 growth commerce |
 | [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md) | Phase 11 seller operations |
 | [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md) | Phase 12 property & mobility |
+| [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md) | Phase 13 commerce agent |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---

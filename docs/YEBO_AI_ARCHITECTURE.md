@@ -1,13 +1,13 @@
 # YEBO AI — Canonical Architecture
 
-**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1` · `yebo-ai-recommend-v1` · `yebo-ai-checkout-v1` · `yebo-ai-memory-v1`  
+**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1` · `yebo-ai-recommend-v1` · `yebo-ai-checkout-v1` · `yebo-ai-memory-v1` · `yebo-ai-commerce-agent-v1`  
 **Baseline:** `platform-pre-ai-v1`  
-**Branch:** `feature/yebo-ai-memory`  
-**Status:** Phase 7.7 conversation memory implemented — YEBO AI v1 complete and frozen
+**Branch:** `feature/yebo-ai-commerce-agent`  
+**Status:** Phase 13 Commerce Agent implemented — YEBO AI commerce writes frozen at `yebo-ai-commerce-agent-v1`
 
 > YEBO AI is an **orchestration layer**. It is not a business platform. All business logic remains in frozen modules.
 
-Related: [AI_TOOLS.md](./AI_TOOLS.md) · [PROMPT_ARCHITECTURE.md](./PROMPT_ARCHITECTURE.md) · [AI_PROVIDER_ARCHITECTURE.md](./AI_PROVIDER_ARCHITECTURE.md) · [AI_SECURITY.md](./AI_SECURITY.md) · [AI_ROADMAP.md](./AI_ROADMAP.md) · [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md)
+Related: [AI_TOOLS.md](./AI_TOOLS.md) · [PROMPT_ARCHITECTURE.md](./PROMPT_ARCHITECTURE.md) · [AI_PROVIDER_ARCHITECTURE.md](./AI_PROVIDER_ARCHITECTURE.md) · [AI_SECURITY.md](./AI_SECURITY.md) · [AI_ROADMAP.md](./AI_ROADMAP.md) · [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) · [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md)
 
 ---
 
@@ -241,3 +241,4 @@ Remove: browser-direct OpenRouter/Gemini calls, `YIPShoppingIntelligence` mock p
 | [AI_PROVIDER_ARCHITECTURE.md](./AI_PROVIDER_ARCHITECTURE.md) | Provider abstraction |
 | [AI_SECURITY.md](./AI_SECURITY.md) | Security architecture |
 | [AI_ROADMAP.md](./AI_ROADMAP.md) | Implementation milestones |
+| [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md) | Phase 13 Commerce Agent — confirmation protocol, tools, audit |

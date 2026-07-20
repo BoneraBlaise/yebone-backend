@@ -6,6 +6,9 @@ const AIConversationContext = require("./conversation/AIConversationContext");
 const ConversationFlowAnalyzer = require("./conversation/ConversationFlowAnalyzer");
 const ConversationMemoryEngine = require("./conversation/ConversationMemoryEngine");
 
+const WRITE_INTENTS = new Set(["property_listing_create", "property_listing_publish"]);
+const WRITE_TOOL_ID = "property.listing.manage";
+
 class AIPlanner {
   constructor({
     toolRegistry,
@@ -19,6 +22,7 @@ class AIPlanner {
     conversationContext,
     conversationFlowAnalyzer,
     conversationMemoryEngine,
+    pendingActionService,
   } = {}) {
     this.toolRegistry = toolRegistry;
     this.capabilityRegistry = capabilityRegistry;
@@ -44,6 +48,40 @@ class AIPlanner {
         searchParameterExtractor: this.searchParameterExtractor,
         conversationMemoryEngine: this.conversationMemoryEngine,
       });
+    this.pendingActionService = pendingActionService || null;
+  }
+
+  isWriteIntent(intentName) {
+    return WRITE_INTENTS.has(intentName);
+  }
+
+  _extractListingCategory(text = "") {
+    const lower = String(text).toLowerCase();
+    if (lower.includes("car") || lower.includes("vehicle")) return "cars";
+    if (lower.includes("house")) return "houses";
+    if (lower.includes("land") || lower.includes("plot")) return "land";
+    if (lower.includes("commercial")) return "commercial_property";
+    return "apartments";
+  }
+
+  _buildListingPayload(message = "", sessionContext = {}) {
+    const text = String(message);
+    const priceMatch = text.match(/(\d[\d,]*)\s*(rwf|frw)?/i);
+    const cityMatch = text.match(/in\s+([a-zA-Z\s]+)/i);
+    const listingId =
+      sessionContext.currentListingId ||
+      sessionContext.lastToolResult?.data?.listing?.listingId ||
+      null;
+
+    return {
+      category: this._extractListingCategory(text),
+      title: text.slice(0, 80) || "Draft Listing",
+      description: text,
+      price: priceMatch ? Number(String(priceMatch[1]).replace(/,/g, "")) : 0,
+      city: cityMatch ? cityMatch[1].trim() : "",
+      location: { city: cityMatch ? cityMatch[1].trim() : "" },
+      listingId,
+    };
   }
 
   _looksLikeProductQuery(text = "") {
@@ -191,6 +229,72 @@ class AIPlanner {
       };
     }
 
+    if (/publish (my )?listing|submit listing|publish property/i.test(text)) {
+      return {
+        intent: "property_listing_publish",
+        capabilities: ["property_listing_publish"],
+        confidence: 0.85,
+        write: true,
+      };
+    }
+
+    if (/create (a )?listing|list my (property|apartment|house|car)|new listing/i.test(text)) {
+      return {
+        intent: "property_listing_create",
+        capabilities: ["property_listing_create"],
+        confidence: 0.85,
+        write: true,
+      };
+    }
+
+    if (
+      text.includes("inventory") ||
+      text.includes("stock") ||
+      text.includes("low stock") ||
+      text.includes("out of stock")
+    ) {
+      return {
+        intent: "seller_inventory",
+        capabilities: ["seller_inventory_snapshot", "inventory_health"],
+        confidence: 0.8,
+      };
+    }
+
+    if (
+      text.includes("campaign") ||
+      text.includes("flash sale") ||
+      text.includes("best deal") ||
+      text.includes("promotion deal")
+    ) {
+      return {
+        intent: "growth_recommend",
+        capabilities: ["growth_recommendations", "campaign_recommendations"],
+        confidence: 0.75,
+      };
+    }
+
+    if (
+      text.includes("apartment") ||
+      text.includes("house") ||
+      text.includes(" land") ||
+      text.includes("property listing") ||
+      (text.includes("car") && (text.includes("find") || text.includes("search")))
+    ) {
+      return {
+        intent: "property_search",
+        capabilities: ["property_search", "vehicle_search", "location_filter", "price_filter"],
+        confidence: 0.78,
+      };
+    }
+
+    if (text.includes("listing details") || text.includes("property details")) {
+      return {
+        intent: "property_listing_details",
+        capabilities: ["property_listing_details", "listing_lookup"],
+        confidence: 0.7,
+      };
+    }
+
     if (text.includes("search") || text.includes("find") || this._looksLikeProductQuery(text)) {
       return {
         intent: "search",
@@ -311,6 +415,39 @@ class AIPlanner {
             sessionContext.currentProduct?.id ||
             null,
         };
+      case "property_search":
+        return {
+          ...base,
+          action: "search",
+          q: message,
+          message,
+          location: /in\s+([a-zA-Z\s]+)/i.exec(message)?.[1]?.trim(),
+        };
+      case "property_listing_details":
+        return {
+          ...base,
+          listingId:
+            context.listingId ||
+            memory.resolvedProduct?.listingId ||
+            sessionContext.currentListingId ||
+            null,
+        };
+      case "growth_recommend":
+        return { ...base, action: "recommend", limit: context.limit || 5 };
+      case "seller_inventory":
+        return {
+          ...base,
+          action: "list",
+          lowStockOnly: /low stock|out of stock/i.test(message),
+        };
+      case "property_listing_create": {
+        const payload = this._buildListingPayload(message, sessionContext);
+        return { ...base, action: "create_draft", ...payload };
+      }
+      case "property_listing_publish": {
+        const payload = this._buildListingPayload(message, sessionContext);
+        return { ...base, action: "publish", listingId: payload.listingId };
+      }
       default:
         return { ...base, action: "faq", topic: context.scope || "general" };
     }
@@ -378,7 +515,10 @@ class AIPlanner {
     const routing = this.capabilityRegistry.resolveIntent(intent);
     const permission = this.toolRegistry.checkPermission(routing.toolId, {
       userId: request.userId || null,
+      vendorId: request.vendorId || null,
+      role: request.role || null,
     });
+    const requiresConfirmation = this.isWriteIntent(intent.intent);
 
     let searchRequest = null;
     if (intent.intent === "search" && flow.toolStrategy === "execute") {
@@ -409,6 +549,7 @@ class AIPlanner {
       toolId: routing.toolId,
       routing,
       permission,
+      requiresConfirmation,
       searchRequest,
       conversationFlow: flow,
       memoryResolution,
@@ -468,7 +609,6 @@ class AIPlanner {
   async execute(plan, context = {}) {
     await this.hooks.emit("beforeTurn", { plan, context });
 
-    let toolResult = null;
     const sessionContext = this.conversationContext.get(plan.sessionId);
     const toolInput = this.buildToolInput(plan, {
       ...context,
@@ -488,6 +628,37 @@ class AIPlanner {
         null,
       mode: plan.conversationFlow?.memoryMode || null,
     });
+
+    if (plan.requiresConfirmation) {
+      if (plan.permission.allowed === false) {
+        return this.formatErrorResponse(plan, plan.permission.reason || "permission_denied", 403);
+      }
+      if (!this.pendingActionService) {
+        return this.formatErrorResponse(plan, "confirmation_unavailable", 500);
+      }
+
+      const action = toolInput.action;
+      const summary =
+        action === "publish"
+          ? `Publish property listing${toolInput.listingId ? ` ${toolInput.listingId}` : ""} for review`
+          : `Create draft property listing: ${toolInput.title || "Untitled"} (${toolInput.category || "apartments"})`;
+
+      const pendingAction = this.pendingActionService.create({
+        sessionId: plan.sessionId,
+        requestedBy: context.userId || context.vendorId,
+        vendorId: context.vendorId || null,
+        toolId: WRITE_TOOL_ID,
+        action,
+        intent: plan.intent.intent,
+        payload: toolInput,
+        summary,
+        correlationId: plan.correlationId,
+      });
+
+      return this.formatConfirmationRequiredResponse(plan, pendingAction, summary);
+    }
+
+    let toolResult = null;
 
     if (plan.permission.allowed === false) {
       toolResult = this._failureToolResult(plan, plan.permission.reason || "permission_denied", 403);
@@ -517,6 +688,8 @@ class AIPlanner {
       try {
         toolResult = await this.toolRegistry.execute(plan.toolId, toolInput, {
           userId: context.userId || null,
+          vendorId: context.vendorId || null,
+          role: context.role || null,
           correlationId: plan.correlationId,
           sessionContext,
           message: context.message || context.query,
@@ -687,7 +860,90 @@ class AIPlanner {
           checkout.guidance.length > 0 ||
           checkout.comparisons.length > 0,
         conversationMemory: Boolean(memory?.hit || memory?.miss),
+        commerceAgent: true,
       },
+    };
+  }
+
+  formatConfirmationRequiredResponse(plan, pendingAction, summary) {
+    return {
+      requestId: plan.requestId,
+      sessionId: plan.sessionId,
+      correlationId: plan.correlationId,
+      type: "confirmation_required",
+      intent: plan.intent.intent,
+      toolId: WRITE_TOOL_ID,
+      message: `Please confirm: ${summary}`,
+      pendingAction: {
+        pendingActionId: pendingAction.pendingActionId,
+        sessionId: pendingAction.sessionId,
+        actionChecksum: pendingAction.actionChecksum,
+        expiresAt: pendingAction.expiresAt,
+        summary: pendingAction.summary,
+        toolId: pendingAction.toolId,
+        action: pendingAction.action,
+      },
+      meta: {
+        phase: "13.0",
+        gateway: true,
+        commerceAgent: true,
+        confirmationRequired: true,
+      },
+    };
+  }
+
+  async formatConfirmationExecutionResponse({
+    requestId,
+    sessionId,
+    record,
+    toolResult,
+    message,
+    authContext,
+  } = {}) {
+    const providerResult = await this.providerManager.chat(message || "Action confirmed.", {
+      toolResults: toolResult ? [toolResult] : [],
+      prompt: "Confirm the completed action briefly.",
+      memory: null,
+    });
+
+    return {
+      requestId,
+      sessionId,
+      correlationId: requestId,
+      type: "confirmation_executed",
+      intent: record.intent,
+      toolId: record.toolId,
+      message: providerResult.content,
+      tool: toolResult,
+      pendingActionId: record.pendingActionId,
+      meta: {
+        phase: "13.0",
+        gateway: true,
+        commerceAgent: true,
+        confirmed: true,
+        vendorId: authContext?.vendorId || null,
+      },
+    };
+  }
+
+  formatCancellationResponse({ requestId, sessionId } = {}) {
+    return {
+      requestId,
+      sessionId,
+      type: "confirmation_cancelled",
+      message: "Action cancelled.",
+      meta: { phase: "13.0", commerceAgent: true, cancelled: true },
+    };
+  }
+
+  formatErrorResponse(plan, reason, statusCode = 403) {
+    return {
+      requestId: plan.requestId,
+      sessionId: plan.sessionId,
+      correlationId: plan.correlationId,
+      type: "error",
+      error: { reason, statusCode, message: reason },
+      meta: { phase: "13.0", commerceAgent: true },
     };
   }
 

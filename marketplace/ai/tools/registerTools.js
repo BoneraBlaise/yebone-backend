@@ -2,6 +2,9 @@ const SearchPlatform = require("../../search/SearchPlatform");
 const ProductPlatform = require("../../catalog/ProductPlatform");
 const VendorPlatform = require("../../vendor/VendorPlatform");
 const OrderPlatform = require("../../orders/OrderPlatform");
+const PropertyMobilityPlatform = require("../../property-mobility/PropertyMobilityPlatform");
+const SellerOperationsPlatform = require("../../seller-operations/SellerOperationsPlatform");
+const GrowthCommercePlatform = require("../../growth-commerce/GrowthCommercePlatform");
 const SearchTool = require("./SearchTool");
 const CatalogTool = require("./CatalogTool");
 const VendorTool = require("./VendorTool");
@@ -10,12 +13,17 @@ const PaymentTool = require("./PaymentTool");
 const RecommendationTool = require("./RecommendationTool");
 const CheckoutTool = require("./CheckoutTool");
 const KnowledgeTool = require("./KnowledgeTool");
+const PropertySearchTool = require("./PropertySearchTool");
+const PropertyListingGetTool = require("./PropertyListingGetTool");
+const GrowthRecommendTool = require("./GrowthRecommendTool");
+const SellerInventoryTool = require("./SellerInventoryTool");
+const PropertyListingManageTool = require("./PropertyListingManageTool");
 
-function resolvePlatform(getter, Factory, marketplaceCore) {
+function resolvePlatform(getter, Factory, marketplaceCore, factoryOptions = {}) {
   try {
     return getter();
   } catch (_err) {
-    return new Factory({ marketplaceCore });
+    return new Factory({ marketplaceCore, ...factoryOptions });
   }
 }
 
@@ -53,6 +61,33 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
       marketplaceCore
     );
 
+  const propertyMobilityPlatform =
+    platforms.propertyMobility ||
+    resolvePlatform(
+      () => require("../../index").getPropertyMobilityPlatform(),
+      PropertyMobilityPlatform,
+      marketplaceCore,
+      { useMemoryOnly: true }
+    );
+
+  const sellerOperationsPlatform =
+    platforms.sellerOperations ||
+    resolvePlatform(
+      () => require("../../index").getSellerOperationsPlatform(),
+      SellerOperationsPlatform,
+      marketplaceCore,
+      { useMemoryOnly: true }
+    );
+
+  const growthCommercePlatform =
+    platforms.growthCommerce ||
+    resolvePlatform(
+      () => require("../../index").getGrowthCommercePlatform(),
+      GrowthCommercePlatform,
+      marketplaceCore,
+      { useMemoryOnly: true }
+    );
+
   const searchTool = new SearchTool({ searchPlatform }).initialize();
   const catalogTool = new CatalogTool({ productPlatform, searchPlatform }).initialize();
   const vendorTool = new VendorTool({ vendorPlatform, searchPlatform }).initialize();
@@ -67,6 +102,22 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     catalogTool,
   }).initialize();
 
+  const propertySearchTool = new PropertySearchTool({
+    searchBridge: propertyMobilityPlatform.searchBridge,
+  }).initialize();
+  const propertyListingGetTool = new PropertyListingGetTool({
+    listingService: propertyMobilityPlatform.listingService,
+  }).initialize();
+  const growthRecommendTool = new GrowthRecommendTool({
+    growthCommerceAI: growthCommercePlatform.aiService,
+  }).initialize();
+  const sellerInventoryTool = new SellerInventoryTool({
+    inventoryService: sellerOperationsPlatform.inventoryService,
+  }).initialize();
+  const propertyListingManageTool = new PropertyListingManageTool({
+    listingService: propertyMobilityPlatform.listingService,
+  }).initialize();
+
   return [
     searchTool,
     catalogTool,
@@ -76,6 +127,11 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     recommendationTool,
     checkoutTool,
     knowledgeTool,
+    propertySearchTool,
+    propertyListingGetTool,
+    growthRecommendTool,
+    sellerInventoryTool,
+    propertyListingManageTool,
   ];
 }
 
@@ -89,4 +145,9 @@ module.exports = {
   RecommendationTool,
   CheckoutTool,
   KnowledgeTool,
+  PropertySearchTool,
+  PropertyListingGetTool,
+  GrowthRecommendTool,
+  SellerInventoryTool,
+  PropertyListingManageTool,
 };

@@ -14,6 +14,12 @@ class AICapabilityRegistry {
       ["catalog", ["product_lookup", "product_details"]],
       ["knowledge", ["faq", "policy", "platform_docs"]],
       ["commerce_chat", ["faq", "platform_docs"]],
+      ["property_search", ["property_search", "vehicle_search", "location_filter", "price_filter"]],
+      ["property_listing_details", ["property_listing_details", "listing_lookup"]],
+      ["growth_recommend", ["growth_recommendations", "campaign_recommendations"]],
+      ["seller_inventory", ["seller_inventory_snapshot", "inventory_health"]],
+      ["property_listing_create", ["property_listing_create"]],
+      ["property_listing_publish", ["property_listing_publish"]],
     ]);
   }
 

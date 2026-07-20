@@ -11,6 +11,9 @@ const AIGateway = require("./AIGateway");
 const AIHealth = require("./AIHealth");
 const AIGatewayValidation = require("./validation/AIGatewayValidation");
 const AIRequestSecurity = require("./security/AIRequestSecurity");
+const { AIActionAudit } = require("./audit/AIActionAudit");
+const AIPendingActionService = require("./confirmation/AIPendingActionService");
+const ConfirmationHandler = require("./confirmation/ConfirmationHandler");
 
 /**
  * AI Platform composition root — orchestration layer only.
@@ -33,6 +36,17 @@ class AIPlatform {
       ttlMs: this.config.conversationTtlMs,
       maxSessions: this.config.conversationMaxSessions,
     });
+    this.actionAudit = new AIActionAudit({ enabled: this.config.enableAuditEvents });
+    this.pendingActionService = new AIPendingActionService({
+      config: this.config,
+      audit: this.actionAudit,
+    });
+    this.confirmationHandler = new ConfirmationHandler({
+      pendingActionService: this.pendingActionService,
+      toolRegistry: this.toolRegistry,
+      audit: this.actionAudit,
+      config: this.config,
+    });
     this.validation = new AIGatewayValidation(this.config);
     this.security = new AIRequestSecurity(this.config, this.hooks);
     this.planner = new AIPlanner({
@@ -44,6 +58,7 @@ class AIPlatform {
       metrics: this.metrics,
       config: this.config,
       conversationContext: this.conversationContext,
+      pendingActionService: this.pendingActionService,
     });
     this.gateway = new AIGateway(this);
     this.health = new AIHealth(this);
@@ -71,6 +86,7 @@ class AIPlatform {
       capabilities: this.capabilityRegistry.listCapabilities().length,
       providers: this.providerManager.listProviders(),
       metrics: this.metrics.getSnapshot(),
+      commerceAgent: true,
     };
   }
 }

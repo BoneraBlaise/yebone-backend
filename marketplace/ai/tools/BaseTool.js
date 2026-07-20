@@ -70,6 +70,9 @@ class BaseTool {
     if (this.permissions.includes("authenticated") && context.userId) {
       return { allowed: true };
     }
+    if (this.permissions.includes("vendor") && context.vendorId) {
+      return { allowed: true };
+    }
     return { allowed: false, reason: "permission_denied" };
   }
 

@@ -4,8 +4,11 @@ class AIGatewayValidation {
   }
 
   assertChatBody(body = {}) {
-    const message = String(body.message || body.input || "").trim();
-    if (!message) {
+    const hasConfirmationFlow = Boolean(body.confirmActionId || body.cancelActionId);
+    const message = String(
+      body.message || body.input || (hasConfirmationFlow ? "confirm" : "")
+    ).trim();
+    if (!message && !hasConfirmationFlow) {
       const error = new Error("message is required");
       error.statusCode = 400;
       throw error;
@@ -20,6 +23,9 @@ class AIGatewayValidation {
       sessionId: body.sessionId ? String(body.sessionId) : null,
       scope: body.scope ? String(body.scope) : "chat",
       stream: body.stream === true,
+      confirmActionId: body.confirmActionId ? String(body.confirmActionId) : null,
+      cancelActionId: body.cancelActionId ? String(body.cancelActionId) : null,
+      actionChecksum: body.actionChecksum ? String(body.actionChecksum) : null,
     };
   }
 
