@@ -3,6 +3,8 @@
  */
 const { isPlatformFeatureEnabled } = require("../integration/features/PlatformFeatureFlagResolver");
 
+const DEV_CONFIRMATION_SECRET = "yebo-ai-dev-confirmation-secret";
+
 class AIConfiguration {
   constructor(options = {}) {
     this.name = options.name || "Yebone AI Platform";
@@ -30,9 +32,22 @@ class AIConfiguration {
     this.confirmationSecret =
       options.confirmationSecret ||
       process.env.AI_CONFIRMATION_SECRET ||
-      "yebo-ai-dev-confirmation-secret";
+      DEV_CONFIRMATION_SECRET;
     this.enableAuditEvents = options.enableAuditEvents !== false;
     this.enableInjectionGuards = options.enableInjectionGuards !== false;
+  }
+
+  assertProductionReady() {
+    const profile = String(process.env.NODE_ENV || "development").toLowerCase();
+    if (profile !== "production" && profile !== "staging") {
+      return;
+    }
+    const secret = String(process.env.AI_CONFIRMATION_SECRET || "").trim();
+    if (!secret || secret === DEV_CONFIRMATION_SECRET) {
+      throw new Error(
+        "AI_CONFIRMATION_SECRET must be set to a strong unique value in production/staging"
+      );
+    }
   }
 
   isRuntimeEnabled() {

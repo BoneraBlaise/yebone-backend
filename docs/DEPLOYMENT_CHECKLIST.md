@@ -50,3 +50,32 @@ Set all variables from `.env.example` in Render (or copy to `config/.env` for lo
 - [ ] `node --check` passes on all `.js` files
 - [ ] Server starts without missing-env errors (`config/validateEnv.js`)
 - [ ] CORS `allowedOrigins` in `app.js` includes production frontend URL
+
+## Phase 13 — Commerce Agent (YEBO AI)
+
+### Required (production/staging)
+
+| Variable | Notes |
+|----------|-------|
+| `AI_CONFIRMATION_SECRET` | Strong random secret; startup fails if missing or dev default |
+
+### Optional
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `AI_PENDING_ACTION_TTL_MS` | `900000` | Confirmation window (15 min) |
+| `AI_PRIMARY_PROVIDER` | `mock` | Set live provider when ready |
+
+### Deployment constraints (v1)
+
+- Pending actions are **in-memory** — use **one backend instance** or accept loss on restart/scale-out.
+- Do not run multiple replicas without sticky sessions until external pending-action store exists.
+- Set platform feature flags: `propertyMobility.listings.enabled`, `sellerOperations.inventory.enabled`, `growthCommerce.aiIntegration.enabled` as needed.
+
+### Verify before deploy
+
+```bash
+npm run verify:yebo-ai-commerce-agent
+```
+
+See [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md).

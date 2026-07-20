@@ -12,7 +12,7 @@ class AIPendingActionService {
   }
 
   _secret() {
-    return String(this.config?.confirmationSecret || "yebo-ai-dev-confirmation-secret");
+    return String(this.config?.confirmationSecret || "");
   }
 
   _payloadHash(payload = {}) {

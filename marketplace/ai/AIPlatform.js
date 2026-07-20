@@ -68,6 +68,8 @@ class AIPlatform {
   initialize() {
     if (this._initialized) return this.getSnapshot();
 
+    this.config.assertProductionReady();
+
     this.providerManager.initializeAll();
     this.toolRegistry.registerProductionTools({
       marketplaceCore: this.marketplaceCore,

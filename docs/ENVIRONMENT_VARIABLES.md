@@ -46,8 +46,19 @@ Complete inventory of `process.env.*` usage in the Yebone backend.
 | `ACTIVATION_SECRET` | `controller/shop.js` | 78 | Yes | Seller activation token verification |
 | `JWT_SECRET_KEY` | `middleware/auth.js` | 14 | Yes | User auth middleware JWT verification |
 | `JWT_SECRET_KEY` | `middleware/auth.js` | 29 | Yes | Seller auth middleware JWT verification |
+| `AI_CONFIRMATION_SECRET` | `marketplace/ai/AIConfiguration.js` | 30 | Yes* | HMAC secret for Commerce Agent confirmation checksums (*required in production/staging) |
+| `AI_PENDING_ACTION_TTL_MS` | `marketplace/ai/AIConfiguration.js` | 27 | No | Pending action TTL in ms (default 900000 = 15 min) |
+| `AI_PRIMARY_PROVIDER` | `marketplace/ai/AIConfiguration.js` | 10 | No | Active AI provider id (default `mock`) |
+| `AI_MAX_MESSAGE_LENGTH` | `marketplace/ai/AIConfiguration.js` | 12 | No | Max chat/search message length |
+| `AI_CHAT_RATE_LIMIT_MAX` | `marketplace/ai/AIConfiguration.js` | 17 | No | Chat requests per rate-limit window |
+| `AI_SEARCH_RATE_LIMIT_MAX` | `marketplace/ai/AIConfiguration.js` | 18 | No | Search requests per rate-limit window |
+| `AI_CONVERSATION_TTL_MS` | `marketplace/ai/AIConfiguration.js` | 21 | No | Conversation session TTL |
+| `AI_CONVERSATION_MAX_SESSIONS` | `marketplace/ai/AIConfiguration.js` | 24 | No | Max in-memory conversation sessions |
 
 ## Notes
+
+- `AI_CONFIRMATION_SECRET` must be a strong random value in production/staging. Startup fails if unset or equal to the dev default (`yebo-ai-dev-confirmation-secret`).
+- Commerce Agent pending actions are in-memory (Phase 13 v1). Use a single backend instance or accept pending-action loss on restart/scale-out until external store is added.
 
 - Email variables use `SMPT_*` spelling in the codebase (not `SMTP_*`).
 - Stripe publishable key is named `STRIPE_API_KEY` in code (not `STRIPE_PUBLISHABLE_KEY`).
