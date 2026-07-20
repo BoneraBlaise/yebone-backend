@@ -70,6 +70,9 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerSellerOperationsPlatform } = require("./seller-operations");
   const sellerOperationsPlatform = registerSellerOperationsPlatform(app, options.sellerOperations || {});
 
+  const { registerPropertyMobilityPlatform } = require("./property-mobility");
+  const propertyMobilityPlatform = registerPropertyMobilityPlatform(app, options.propertyMobility || {});
+
   const { registerPlatformIntegration } = require("./integration");
   const integration = registerPlatformIntegration(app, {
     useMemoryOnly: Boolean(options.integration?.useMemoryOnly),
@@ -80,6 +83,8 @@ function registerMarketplaceCore(app, options = {}) {
   growthCommercePlatform.bindObservability(integration.observability);
   sellerOperationsPlatform.bindFeatureFlags(integration.featureFlags);
   sellerOperationsPlatform.bindObservability(integration.observability);
+  propertyMobilityPlatform.bindFeatureFlags(integration.featureFlags);
+  propertyMobilityPlatform.bindObservability(integration.observability);
   integration.initialize().catch((error) => {
     console.error("Platform integration init failed:", error.message);
   });
@@ -113,5 +118,6 @@ module.exports = {
   getGrowthPlatform: () => require("./growth").getGrowthPlatform(),
   getGrowthCommercePlatform: () => require("./growth-commerce").getGrowthCommercePlatform(),
   getSellerOperationsPlatform: () => require("./seller-operations").getSellerOperationsPlatform(),
+  getPropertyMobilityPlatform: () => require("./property-mobility").getPropertyMobilityPlatform(),
   getPlatformIntegration: () => require("./integration/PlatformIntegration").getPlatformIntegration(),
 };

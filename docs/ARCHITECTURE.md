@@ -24,6 +24,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | **Platform Integration** | `marketplace/integration/` | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
 | **Growth Commerce** | `marketplace/growth-commerce/` | **10 complete** (`growth-commerce-v1`) |
 | **Seller Operations** | `marketplace/seller-operations/` | **11 complete** (`seller-operations-v1`) |
+| **Property & Mobility** | `marketplace/property-mobility/` | **12 complete** (`property-mobility-v1`) |
 
 ---
 
@@ -68,6 +69,19 @@ Inventory management, purchase orders, supplier management, stock movements, ret
 See [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md).
 
 **Seller Operations frozen at `seller-operations-v1`.**
+
+## Property & Mobility (Phase 12)
+
+Property and vehicle listings, search filters, Growth Commerce promotions, Yebone Verified badges, agency accounts, inbox offers, and admin moderation at `marketplace/property-mobility/`:
+
+- Reuses Search Platform optionally for product cross-search
+- Reuses Growth Commerce homepage merchandising bridge
+- Reuses existing Inbox (Conversation/Messages) for offers and contact
+- Super Admin configurable pricing — nothing hardcoded
+
+See [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md).
+
+**Property & Mobility frozen at `property-mobility-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

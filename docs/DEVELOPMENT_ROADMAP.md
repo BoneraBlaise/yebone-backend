@@ -63,14 +63,15 @@ Branch: `feature/growth-platform`
 | 9.2.1 | Enterprise Certification Remediation | `enterprise-certification-remediation-v1` | ✅ Complete |
 | 10 | Growth Commerce | `growth-commerce-v1` | ✅ Complete |
 | 11 | Seller Operations & Inventory | `seller-operations-v1` | ✅ Complete |
+| 12 | Property & Mobility Marketplace | `property-mobility-v1` | ✅ Complete |
 
-**Seller Operations frozen at `seller-operations-v1`.**
+**Property & Mobility frozen at `property-mobility-v1`.**
 
 ---
 
 ## Future
 
-### Phase 12+ — Deferred
+### Phase 13+ — Deferred
 
 - Loyalty programs
 - Cashback

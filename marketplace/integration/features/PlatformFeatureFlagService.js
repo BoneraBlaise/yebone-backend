@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const PlatformFeatureFlags = require("../../../model/platformFeatureFlags");
 const { GrowthCommerceSettingsDefaults } = require("../../growth-commerce/GrowthCommerceSettingsDefaults");
 const { SellerOperationsSettingsDefaults } = require("../../seller-operations/SellerOperationsSettingsDefaults");
+const { PropertyMobilitySettingsDefaults } = require("../../property-mobility/PropertyMobilitySettingsDefaults");
 
 const DEFAULT_FLAGS = Object.freeze({
   growth: {
@@ -40,6 +41,10 @@ const DEFAULT_FLAGS = Object.freeze({
   sellerOperations: {
     enabled: true,
     ...structuredClone(SellerOperationsSettingsDefaults),
+  },
+  propertyMobility: {
+    enabled: true,
+    ...structuredClone(PropertyMobilitySettingsDefaults),
   },
 });
 
@@ -85,6 +90,10 @@ class PlatformFeatureFlagStore {
         DEFAULT_FLAGS.sellerOperations,
         doc.sellerOperations || {}
       ),
+      propertyMobility: this._mergeDomainDefaults(
+        DEFAULT_FLAGS.propertyMobility,
+        doc.propertyMobility || {}
+      ),
     };
   }
 
@@ -108,6 +117,9 @@ class PlatformFeatureFlagStore {
       sellerOperations: partial.sellerOperations
         ? this._mergeDomainDefaults(current.sellerOperations, partial.sellerOperations)
         : current.sellerOperations,
+      propertyMobility: partial.propertyMobility
+        ? this._mergeDomainDefaults(current.propertyMobility, partial.propertyMobility)
+        : current.propertyMobility,
       updatedBy: admin,
     };
 

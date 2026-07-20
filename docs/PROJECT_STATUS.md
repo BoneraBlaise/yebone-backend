@@ -320,6 +320,7 @@ npm run verify:enterprise-certification-remediation
 | **Platform Integration** | Unified audit, flags, RBAC, order bridges | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
 | **Growth Commerce** | Campaigns, homepage merchandising, marketing dashboards, automation | **10 complete** (`growth-commerce-v1`) |
 | **Seller Operations** | Inventory, POs, suppliers, RMA, bulk ops, SKU/barcode, analytics | **11 complete** (`seller-operations-v1`) |
+| **Property & Mobility** | Property/vehicle listings, verification, promotions, agencies, offers, moderation | **12 complete** (`property-mobility-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -375,9 +376,29 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 12 — Property & Mobility COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| `marketplace/property-mobility/` module | ✔ Implemented |
+| Listings (5 categories) | ✔ Create, edit, publish, pause, delete |
+| Search integration | ✔ Property/vehicle/location/price filters |
+| Growth Commerce promotions | ✔ Featured, homepage, search boost, sponsored |
+| Yebone Verified badge | ✔ Configurable fee & duration |
+| Super Admin pricing config | ✔ No hardcoded prices |
+| Agency accounts | ✔ Real estate + car dealers |
+| Inbox offer flow | ✔ Contact, appointment, offers |
+| Reports & moderation | ✔ Full admin workflow |
+| Responsive web | ✔ Public + admin + owner routes |
+| Tests | ✔ `npm run test:property-mobility` |
+
+**Tag:** `property-mobility-v1` · **Doc:** [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md)
+
+---
+
 ## Next Step
 
-**Seller Operations complete** — frozen at `seller-operations-v1`. Await next approved roadmap phase.
+**Property & Mobility complete** — frozen at `property-mobility-v1`. Await next approved roadmap phase.
 
 ---
 
@@ -401,6 +422,7 @@ npm run verify:enterprise-certification-remediation
 | [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md) | Phase 9.0–9.1 growth platform |
 | [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md) | Phase 10 growth commerce |
 | [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md) | Phase 11 seller operations |
+| [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md) | Phase 12 property & mobility |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -408,5 +430,5 @@ npm run verify:enterprise-certification-remediation
 ## Verification
 
 ```bash
-npm run verify:seller-operations
+npm run verify:property-mobility
 ```
