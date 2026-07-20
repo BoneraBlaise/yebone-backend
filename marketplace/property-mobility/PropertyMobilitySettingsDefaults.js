@@ -45,15 +45,16 @@ const DEFAULT_PRICING = Object.freeze({
   searchBoostPrice: 12000,
   sponsoredPrice: 18000,
   agencySubscriptionPrice: 50000,
+  agencySubscriptionDurationDays: 30,
   promotionDurationDays: 30,
 });
 
 const PropertyMobilitySettingsDefaults = Object.freeze({
   listings: { enabled: true },
   search: { enabled: true },
-  promotions: { enabled: true },
+  promotions: { enabled: true, homepagePromotionLimit: 12 },
   verification: { enabled: true },
-  agencies: { enabled: true },
+  agencies: { enabled: true, unlimitedListings: true, maxListings: 100 },
   communication: { enabled: true },
   offers: { enabled: true },
   reports: { enabled: true },

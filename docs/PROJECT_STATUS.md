@@ -396,9 +396,25 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 12 — Property & Mobility Production Remediation COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| Agency subscription duration | ✔ `agencySubscriptionDurationDays` — admin configurable |
+| Agency listing limits | ✔ Unlimited ON/OFF + `maxListings` with validation |
+| Super Admin pricing UI | ✔ Sponsored price, promotion duration, verification duration exposed |
+| Homepage promotion limit | ✔ `homepagePromotionLimit` — admin configurable |
+| Agency feature guard | ✔ Subscribe rejected when agencies disabled |
+| Configuration sync | ✔ Module config → Platform Feature Flags → runtime |
+| Tests | ✔ `npm run test:property-mobility` (13/13) |
+
+**Tag:** `property-mobility-remediation-v1`
+
+---
+
 ## Next Step
 
-**Property & Mobility complete** — frozen at `property-mobility-v1`. Await next approved roadmap phase.
+**Property & Mobility remediation complete** — frozen at `property-mobility-remediation-v1`. Await next approved roadmap phase.
 
 ---
 

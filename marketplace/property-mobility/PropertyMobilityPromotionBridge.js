@@ -51,9 +51,10 @@ class PropertyMobilityPromotionBridge {
     }
 
     const pricing = this.configStore.getPricing();
-    const durationMs = Number(pricing.promotionDurationDays || 30) * 86_400_000;
+    const durationMs = Number(pricing.promotionDurationDays) * 86_400_000;
     const expiresAt = new Date(Date.now() + durationMs).toISOString();
     const pricePaid = this._priceForType(type);
+    const homepageLimit = this.configStore.getHomepagePromotionLimit();
 
     const patch = { promotionExpiresAt: expiresAt };
     if (type === "featured") patch.featured = true;
@@ -78,9 +79,12 @@ class PropertyMobilityPromotionBridge {
         const propertySection = sections.propertyMobilitySection || {
           enabled: true,
           listingIds: [],
-          limit: 12,
+          limit: homepageLimit,
         };
-        propertySection.listingIds = [...new Set([...(propertySection.listingIds || []), String(listingId)])].slice(-12);
+        propertySection.listingIds = [...new Set([...(propertySection.listingIds || []), String(listingId)])].slice(
+          -homepageLimit
+        );
+        propertySection.limit = homepageLimit;
         propertySection.enabled = true;
         await gc.homepageService.updateSections(
           { propertyMobilitySection: propertySection },
@@ -103,8 +107,9 @@ class PropertyMobilityPromotionBridge {
   }
 
   async getHomepageListings() {
+    const limit = this.configStore.getHomepagePromotionLimit();
     const listings = await this.repository.listListings({ publishedOnly: true });
-    return listings.filter((item) => item.homepagePromoted).slice(0, 12);
+    return listings.filter((item) => item.homepagePromoted).slice(0, limit);
   }
 }
 

@@ -258,6 +258,8 @@ function registerPropertyMobilityPlatform(app, options = {}) {
   router.post("/owner/agencies/:agencyId/subscribe", ownerMiddleware, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
+    const featureFlags = resolveFeatureFlags();
+    if (!runFeatureGuard(featureFlags, "agencies", res, () => true)) return;
     const data = await platform.agencyService.subscribeAgency(auth.ownerId, req.params.agencyId, { actor: auth.ownerId });
     res.status(200).json({ success: true, data });
   }));

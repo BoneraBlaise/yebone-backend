@@ -115,6 +115,7 @@ class PropertyMobilityRepository {
       subscriptionStatus: payload.subscriptionStatus || "inactive",
       subscriptionExpiresAt: payload.subscriptionExpiresAt || null,
       unlimitedListings: Boolean(payload.unlimitedListings),
+      maxListings: payload.maxListings ?? null,
       createdAt: new Date().toISOString(),
     };
     this.agencies.set(agency.agencyId, agency);

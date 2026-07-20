@@ -51,7 +51,41 @@ class PropertyMobilityConfigStore {
   }
 
   getFeatureToggles() {
-    return { ...this.memory.featureToggles };
+    const settings = this.getSettings();
+    return {
+      ...this.memory.featureToggles,
+      verification: settings.verification?.enabled !== false,
+      agencies: settings.agencies?.enabled !== false,
+    };
+  }
+
+  getAgencyLimits() {
+    const agencies = this.getSettings().agencies || {};
+    return {
+      unlimitedListings: agencies.unlimitedListings !== false,
+      maxListings: Number(agencies.maxListings) || 0,
+    };
+  }
+
+  getHomepagePromotionLimit() {
+    const promotions = this.getSettings().promotions || {};
+    return Number(promotions.homepagePromotionLimit) || 12;
+  }
+
+  _applyFeatureToggleToSettings(nextSettings, nextToggles) {
+    if (nextToggles.verification !== undefined) {
+      nextSettings.verification = {
+        ...nextSettings.verification,
+        enabled: nextToggles.verification !== false,
+      };
+    }
+    if (nextToggles.agencies !== undefined) {
+      nextSettings.agencies = {
+        ...nextSettings.agencies,
+        enabled: nextToggles.agencies !== false,
+      };
+    }
+    return nextSettings;
   }
 
   async updateConfiguration(partial = {}, meta = {}) {
@@ -72,24 +106,65 @@ class PropertyMobilityConfigStore {
       }
     }
 
+    this._applyFeatureToggleToSettings(nextSettings, partial.featureToggles || {});
+
     if (this.useMemoryOnly || !this.ConfigModel) {
       this.memory = {
         key: "global",
         settings: nextSettings,
         pricing: nextPricing,
-        featureToggles: nextToggles,
+        featureToggles: {
+          ...nextToggles,
+          verification: nextSettings.verification?.enabled !== false,
+          agencies: nextSettings.agencies?.enabled !== false,
+        },
         updatedBy: meta.admin || "system",
       };
+      await this._syncPlatformFlags();
       return this.memory;
     }
 
     const doc = await this.ConfigModel.findOneAndUpdate(
       { key: "global" },
-      { $set: { settings: nextSettings, pricing: nextPricing, featureToggles: nextToggles, updatedBy: meta.admin || "system" } },
+      {
+        $set: {
+          settings: nextSettings,
+          pricing: nextPricing,
+          featureToggles: {
+            ...nextToggles,
+            verification: nextSettings.verification?.enabled !== false,
+            agencies: nextSettings.agencies?.enabled !== false,
+          },
+          updatedBy: meta.admin || "system",
+        },
+      },
       { upsert: true, new: true }
     );
     this.memory = doc.toObject();
+    await this._syncPlatformFlags();
     return this.memory;
+  }
+
+  async _syncPlatformFlags() {
+    if (this.useMemoryOnly) return;
+    try {
+      const { getPlatformIntegration } = require("../integration/PlatformIntegration");
+      const integration = getPlatformIntegration();
+      const current = await integration.featureFlags.getFlags();
+      const settings = this.getSettings();
+      const patch = {};
+      for (const [key, value] of Object.entries(settings)) {
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          patch[key] = { ...value, enabled: value.enabled !== false };
+        }
+      }
+      await integration.featureFlags.store.updateFlags({
+        propertyMobility: { ...(current.propertyMobility || {}), ...patch },
+      });
+      await integration.featureFlags.refresh();
+    } catch (_error) {
+      // optional during isolated tests
+    }
   }
 }
 

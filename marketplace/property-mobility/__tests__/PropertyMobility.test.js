@@ -99,6 +99,73 @@ describe("Property Mobility Phase 12", () => {
       const subscribed = await platform.agencyService.subscribeAgency("owner_1", agency.agencyId);
       assert.equal(subscribed.subscriptionStatus, "active");
       assert.equal(subscribed.unlimitedListings, true);
+
+      await platform.updateConfiguration({
+        pricing: { agencySubscriptionDurationDays: 45 },
+      });
+      const agency2 = await platform.agencyService.createAgency("owner_1", {
+        type: "car_dealer",
+        name: "Auto Hub",
+      });
+      const subscribed2 = await platform.agencyService.subscribeAgency("owner_1", agency2.agencyId);
+      const durationMs = new Date(subscribed2.subscriptionExpiresAt).getTime() - Date.now();
+      assert.ok(durationMs > 44 * 86_400_000);
+      assert.ok(durationMs <= 46 * 86_400_000);
+    });
+
+    it("enforces agency listing limits when unlimited listings is disabled", async () => {
+      await platform.updateConfiguration({
+        settings: { agencies: { enabled: true, unlimitedListings: false, maxListings: 1 } },
+      });
+      const agency = await platform.agencyService.createAgency("owner_1", {
+        type: "real_estate_agency",
+        name: "Limited Realty",
+      });
+      await platform.agencyService.subscribeAgency("owner_1", agency.agencyId);
+
+      await platform.listingService.createListing("owner_1", {
+        category: "apartments",
+        title: "First Listing",
+        price: 100000,
+      });
+
+      await assert.rejects(
+        () =>
+          platform.listingService.createListing("owner_1", {
+            category: "houses",
+            title: "Second Listing",
+            price: 200000,
+          }),
+        (error) => error.reason === "LISTING_LIMIT_REACHED"
+      );
+    });
+
+    it("rejects agency subscription when agencies feature is disabled", async () => {
+      await platform.updateConfiguration({ featureToggles: { agencies: false } });
+      const agency = await platform.agencyService.createAgency("owner_1", {
+        type: "real_estate_agency",
+        name: "Disabled Agency",
+      });
+      await assert.rejects(
+        () => platform.agencyService.subscribeAgency("owner_1", agency.agencyId),
+        (error) => error.reason === "FEATURE_DISABLED"
+      );
+    });
+
+    it("respects configurable homepage promotion limit", async () => {
+      await platform.updateConfiguration({
+        settings: { promotions: { enabled: true, homepagePromotionLimit: 2 } },
+      });
+      const listing = await platform.listingService.createListing("owner_1", {
+        category: "land",
+        title: "Plot A",
+        price: 1000000,
+      });
+      await platform.moderationService.moderateListing("admin_1", listing.listingId, "approve");
+      await platform.promotionBridge.applyPromotion("owner_1", listing.listingId, "homepage");
+
+      const homepage = await platform.promotionBridge.getHomepageListings();
+      assert.ok(homepage.length <= 2);
     });
 
     it("creates inbox-backed offers with acceptance flow", async () => {
@@ -152,11 +219,32 @@ describe("Property Mobility Phase 12", () => {
     });
 
     it("allows super admin to update pricing configuration", async () => {
-      await platform.updateConfiguration({
-        pricing: { verifiedBadgePrice: 12000, featuredPrice: 20000 },
-      }, { admin: "admin_1" });
+      await platform.updateConfiguration(
+        {
+          pricing: {
+            verifiedBadgePrice: 12000,
+            featuredPrice: 20000,
+            sponsoredPrice: 22000,
+            promotionDurationDays: 14,
+            verificationDurationDays: 90,
+            agencySubscriptionDurationDays: 60,
+          },
+          settings: {
+            promotions: { enabled: true, homepagePromotionLimit: 8 },
+            agencies: { enabled: true, unlimitedListings: false, maxListings: 25 },
+          },
+        },
+        { admin: "admin_1" }
+      );
       assert.equal(platform.getPricing().verifiedBadgePrice, 12000);
       assert.equal(platform.getPricing().featuredPrice, 20000);
+      assert.equal(platform.getPricing().sponsoredPrice, 22000);
+      assert.equal(platform.getPricing().promotionDurationDays, 14);
+      assert.equal(platform.getPricing().verificationDurationDays, 90);
+      assert.equal(platform.getPricing().agencySubscriptionDurationDays, 60);
+      assert.equal(platform.getHomepagePromotionLimit?.() ?? platform.configStore.getHomepagePromotionLimit(), 8);
+      assert.equal(platform.configStore.getAgencyLimits().maxListings, 25);
+      assert.equal(platform.configStore.getAgencyLimits().unlimitedListings, false);
     });
   });
 

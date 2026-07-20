@@ -77,11 +77,12 @@ Property and vehicle listings, search filters, Growth Commerce promotions, Yebon
 - Reuses Search Platform optionally for product cross-search
 - Reuses Growth Commerce homepage merchandising bridge
 - Reuses existing Inbox (Conversation/Messages) for offers and contact
-- Super Admin configurable pricing — nothing hardcoded
+- Super Admin configurable pricing — agency duration, listing limits, and homepage slots admin-configurable
+- Configuration syncs to `PlatformFeatureFlagService` on update (Growth Commerce pattern)
 
 See [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md).
 
-**Property & Mobility frozen at `property-mobility-v1`.**
+**Property & Mobility frozen at `property-mobility-v1`. Production remediation frozen at `property-mobility-remediation-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

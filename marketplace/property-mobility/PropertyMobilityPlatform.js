@@ -40,13 +40,23 @@ class PropertyMobilityPlatform {
         featureFlags: this.featureFlags,
       });
 
-    this.listingService = options.listingService || new ListingService({ repository: this.repository, audit });
+    this.listingService =
+      options.listingService ||
+      new ListingService({
+        repository: this.repository,
+        configStore: this.configStore,
+        agencyService: null,
+        audit,
+      });
     this.verificationService =
       options.verificationService ||
       new VerificationService({ repository: this.repository, configStore: this.configStore, audit });
     this.agencyService =
       options.agencyService ||
       new AgencyService({ repository: this.repository, configStore: this.configStore, audit });
+    if (!options.listingService) {
+      this.listingService.agencyService = this.agencyService;
+    }
     this.offerService =
       options.offerService ||
       new OfferService({ repository: this.repository, inboxBridge: this.inboxBridge, audit });
