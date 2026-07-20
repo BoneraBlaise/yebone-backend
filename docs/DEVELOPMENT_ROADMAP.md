@@ -62,14 +62,15 @@ Branch: `feature/growth-platform`
 | 9.2 | Platform Integration | `platform-integration-v1` | ✅ Complete |
 | 9.2.1 | Enterprise Certification Remediation | `enterprise-certification-remediation-v1` | ✅ Complete |
 | 10 | Growth Commerce | `growth-commerce-v1` | ✅ Complete |
+| 11 | Seller Operations & Inventory | `seller-operations-v1` | ✅ Complete |
 
-**Growth Commerce frozen at `growth-commerce-v1`.**
+**Seller Operations frozen at `seller-operations-v1`.**
 
 ---
 
 ## Future
 
-### Phase 11+ — Deferred
+### Phase 12+ — Deferred
 
 - Loyalty programs
 - Cashback

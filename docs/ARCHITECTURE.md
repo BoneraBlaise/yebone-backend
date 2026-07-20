@@ -23,6 +23,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | **Growth Platform** | `marketplace/growth/` | **9.2 integrated** (`platform-integration-v1`) |
 | **Platform Integration** | `marketplace/integration/` | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
 | **Growth Commerce** | `marketplace/growth-commerce/` | **10 complete** (`growth-commerce-v1`) |
+| **Seller Operations** | `marketplace/seller-operations/` | **11 complete** (`seller-operations-v1`) |
 
 ---
 
@@ -55,6 +56,18 @@ Campaign management, homepage merchandising, affiliate/ambassador extensions, ma
 See [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md).
 
 **Growth Commerce frozen at `growth-commerce-v1`.**
+
+## Seller Operations (Phase 11)
+
+Inventory management, purchase orders, supplier management, stock movements, returns (RMA), bulk import/export, SKU/barcode, and seller analytics at `marketplace/seller-operations/`:
+
+- Extends Product Catalog stock via bridge — catalog module unchanged
+- Delegates refunds to Orders Platform — no duplicate refund logic
+- Super Admin + vendor responsive web panels
+
+See [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md).
+
+**Seller Operations frozen at `seller-operations-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

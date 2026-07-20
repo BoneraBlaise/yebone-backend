@@ -319,6 +319,7 @@ npm run verify:enterprise-certification-remediation
 | **Growth Platform** | Referral, affiliate, coupons, promotions, commission orchestration, reward ledger | **9.2 integrated** (`platform-integration-v1`) |
 | **Platform Integration** | Unified audit, flags, RBAC, order bridges | **9.2.1 remediated** (`enterprise-certification-remediation-v1`) |
 | **Growth Commerce** | Campaigns, homepage merchandising, marketing dashboards, automation | **10 complete** (`growth-commerce-v1`) |
+| **Seller Operations** | Inventory, POs, suppliers, RMA, bulk ops, SKU/barcode, analytics | **11 complete** (`seller-operations-v1`) |
 | **Legacy v2 API** | Express controllers at `/api/v2/*` | Production |
 | **Frontend** | React SPA + YIP UI (mock intelligence) | Frozen architecture |
 
@@ -353,13 +354,30 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 11 — Seller Operations COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| `marketplace/seller-operations/` module | ✔ Implemented |
+| Extended inventory (current, reserved, available, incoming, damaged) | ✔ Catalog bridge sync |
+| Low stock thresholds + in-app alerts | ✔ |
+| Purchase orders + receiving | ✔ Stock auto-updated |
+| Supplier management | ✔ Purchase history |
+| Stock movements | ✔ Fully audited |
+| Returns (RMA) | ✔ Orders refund delegation |
+| Bulk CSV import/export | ✔ Validated before apply |
+| SKU & barcode | ✔ Auto-gen + duplicate prevention |
+| Seller analytics | ✔ Vendor + Super Admin dashboards |
+| Responsive web panels | ✔ Admin + vendor routes |
+| Tests | ✔ `npm run test:seller-operations` |
+
+**Tag:** `seller-operations-v1` · **Doc:** [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md)
+
+---
+
 ## Next Step
 
-**Growth Commerce complete** — frozen at `growth-commerce-v1`. Await next approved roadmap phase.
-
-See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
-
-See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
+**Seller Operations complete** — frozen at `seller-operations-v1`. Await next approved roadmap phase.
 
 ---
 
@@ -382,6 +400,7 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 | [DELIVERY_CONFIGURATION.md](./DELIVERY_CONFIGURATION.md) | Phase 8.3 delivery configuration |
 | [GROWTH_PLATFORM.md](./GROWTH_PLATFORM.md) | Phase 9.0–9.1 growth platform |
 | [GROWTH_COMMERCE.md](./GROWTH_COMMERCE.md) | Phase 10 growth commerce |
+| [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md) | Phase 11 seller operations |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -389,5 +408,5 @@ See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
 ## Verification
 
 ```bash
-npm run verify:growth-commerce
+npm run verify:seller-operations
 ```
