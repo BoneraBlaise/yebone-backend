@@ -1,14 +1,16 @@
 const jwt = require("jsonwebtoken");
 const Shop = require("../../model/shop");
 const UploadService = require("./UploadService");
+const ShopStorefrontService = require("./ShopStorefrontService");
 
 /**
  * Shop service — vendor store persistence and business rules.
  * Extracted from legacy controller/shop.js (Phase 3).
  */
 class ShopService {
-  constructor({ uploadService = new UploadService() } = {}) {
+  constructor({ uploadService = new UploadService(), storefrontService = new ShopStorefrontService() } = {}) {
     this.uploadService = uploadService;
+    this.storefrontService = storefrontService;
   }
 
   _error(message, statusCode = 400) {
@@ -158,21 +160,150 @@ class ShopService {
     return shop;
   }
 
+  async getPublicStorefront(shopId) {
+    const shop = await this.findById(shopId);
+    if (!shop) {
+      throw this._error("Shop not found", 404);
+    }
+    return this.storefrontService.getStorefrontPayload(shop);
+  }
+
   async updateProfile(shopId, fields = {}) {
     const shop = await this.findById(shopId);
     if (!shop) {
       throw this._error("User not found");
     }
 
-    const { name, description, address, phoneNumber, zipCode } = fields;
+    const {
+      name,
+      description,
+      bio,
+      address,
+      phoneNumber,
+      zipCode,
+      paymentInfo,
+      website,
+      businessStatus,
+      businessHours,
+      socialLinks,
+      policies,
+      themeAccent,
+    } = fields;
+
     if (name !== undefined) shop.name = name;
     if (description !== undefined) shop.description = description;
+    if (bio !== undefined) shop.bio = bio;
     if (address !== undefined) shop.address = address;
     if (phoneNumber !== undefined) shop.phoneNumber = phoneNumber;
     if (zipCode !== undefined) shop.zipCode = zipCode;
+    if (paymentInfo !== undefined) shop.paymentInfo = paymentInfo;
+    if (website !== undefined) shop.website = website;
+    if (businessStatus !== undefined) shop.businessStatus = businessStatus;
+    if (businessHours !== undefined) shop.businessHours = businessHours;
+    if (socialLinks !== undefined) shop.socialLinks = { ...shop.socialLinks?.toObject?.() || shop.socialLinks || {}, ...socialLinks };
+    if (policies !== undefined) shop.policies = { ...shop.policies?.toObject?.() || shop.policies || {}, ...policies };
+    if (themeAccent !== undefined) shop.themeAccent = themeAccent;
 
     await shop.save();
     return shop;
+  }
+
+  async updateCover(shopId, coverData) {
+    const seller = await this.findById(shopId);
+    if (!seller) {
+      throw this._error("Seller not found");
+    }
+
+    if (seller.cover?.public_id) {
+      await this.uploadService.destroyPublicId(seller.cover.public_id);
+    }
+
+    seller.cover = await this.uploadService.uploadSingle(coverData, "shop-covers", {
+      width: 1600,
+      crop: "limit",
+    });
+
+    await seller.save();
+    return seller;
+  }
+
+  async updateGallery(shopId, galleryItems = []) {
+    const seller = await this.findById(shopId);
+    if (!seller) {
+      throw this._error("Seller not found");
+    }
+
+    const uploaded = [];
+    for (const item of galleryItems) {
+      if (item.url && !item.image) {
+        uploaded.push(item);
+        continue;
+      }
+      if (item.image) {
+        const result = await this.uploadService.uploadSingle(item.image, "shop-gallery");
+        uploaded.push({
+          public_id: result.public_id,
+          url: result.url,
+          caption: item.caption || "",
+          type: item.type || "other",
+        });
+      }
+    }
+
+    seller.gallery = uploaded;
+    await seller.save();
+    return seller;
+  }
+
+  async updateBusinessStatus(shopId, businessStatus) {
+    const allowed = ["open", "closed", "busy", "vacation"];
+    if (!allowed.includes(businessStatus)) {
+      throw this._error("Invalid business status");
+    }
+    return this.updateProfile(shopId, { businessStatus });
+  }
+
+  async toggleFollow(shopId, userId) {
+    const shop = await this.findById(shopId);
+    if (!shop) throw this._error("Shop not found", 404);
+
+    const uid = String(userId);
+    const exists = (shop.followers || []).some((id) => String(id) === uid);
+    if (exists) {
+      shop.followers = shop.followers.filter((id) => String(id) !== uid);
+    } else {
+      shop.followers = [...(shop.followers || []), userId];
+    }
+    await shop.save();
+    return { following: !exists, followerCount: shop.followers.length };
+  }
+
+  async toggleFavorite(shopId, userId) {
+    const shop = await this.findById(shopId);
+    if (!shop) throw this._error("Shop not found", 404);
+
+    const uid = String(userId);
+    const exists = (shop.favoritedBy || []).some((id) => String(id) === uid);
+    if (exists) {
+      shop.favoritedBy = shop.favoritedBy.filter((id) => String(id) !== uid);
+    } else {
+      shop.favoritedBy = [...(shop.favoritedBy || []), userId];
+    }
+    await shop.save();
+    return { favorited: !exists, favoriteCount: shop.favoritedBy.length };
+  }
+
+  async getFollowState(shopId, userId) {
+    const shop = await this.findById(shopId);
+    if (!shop) throw this._error("Shop not found", 404);
+    if (!userId) {
+      return { following: false, favorited: false };
+    }
+    const uid = String(userId);
+    return {
+      following: (shop.followers || []).some((id) => String(id) === uid),
+      favorited: (shop.favoritedBy || []).some((id) => String(id) === uid),
+    };
   }
 
   async updateAvatar(shopId, avatarData) {

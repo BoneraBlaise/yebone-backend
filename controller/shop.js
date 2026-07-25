@@ -1,11 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const sendMail = require("../utils/sendMail");
+const isSmtpConfigured = require("../utils/isSmtpConfigured");
+const issueShopSessionResponse = require("../utils/issueShopSessionResponse");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
 const { getVendorPlatform } = require("../marketplace");
+const { optionalAuth } = require("../marketplace/ai/middleware/optionalAuth");
 
 function handleServiceError(error, next) {
   return next(new ErrorHandler(error.message, error.statusCode || 500));
@@ -26,13 +29,21 @@ router.post(
         message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
       });
 
+      const devAutoActivate =
+        !isSmtpConfigured() && process.env.NODE_ENV !== "production";
+
+      if (devAutoActivate) {
+        const activatedSeller = await vendor.activateFromToken(activationToken);
+        return issueShopSessionResponse(res, activatedSeller, 201, {
+          autoActivated: true,
+          message: "Shop created successfully",
+        });
+      }
+
       res.status(201).json({
         success: true,
-        message: mailResult?.skipped
-          ? `Shop registration started. Activate your shop at: ${activationUrl}`
-          : `please check your email:- ${seller.email} to activate your shop!`,
+        message: "Please check your email to activate your shop.",
         emailSent: Boolean(mailResult?.sent),
-        activationUrl: mailResult?.skipped ? activationUrl : undefined,
       });
     } catch (error) {
       return handleServiceError(error, next);
@@ -78,9 +89,6 @@ router.get(
       const seller = await vendor.shopService.findByEmail(req.user.email);
       if (!seller) {
         return next(new ErrorHandler("No shop linked to this account", 404));
-      }
-      if (!seller.isVerified) {
-        return next(new ErrorHandler("Shop is not activated yet", 403));
       }
       sendShopToken(seller, 200, res);
     } catch (error) {
@@ -131,17 +139,106 @@ router.get(
   })
 );
 
-// get shop info
+// get shop info (public storefront payload with stats)
 router.get(
   "/get-shop-info/:id",
+  optionalAuth,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const vendor = getVendorPlatform();
-      const shop = await vendor.profile.getPublicInfo(req.params.id);
-      res.status(201).json({
+      const payload = await vendor.profile.getPublicStorefront(req.params.id);
+      const followState = await vendor.profile.getFollowState(
+        req.params.id,
+        req.user?._id || null
+      );
+      res.status(200).json({
         success: true,
-        shop,
+        shop: payload.shop,
+        stats: payload.stats,
+        achievements: payload.achievements,
+        followState,
       });
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
+// update shop cover image
+router.put(
+  "/update-shop-cover",
+  isSeller,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const seller = await vendor.profile.updateCover(req.seller._id, req.body.cover);
+      vendor.hooks.afterProfileUpdated({ shopId: req.seller._id, field: "cover" });
+      res.status(200).json({ success: true, seller });
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
+// update shop gallery
+router.put(
+  "/update-shop-gallery",
+  isSeller,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const seller = await vendor.profile.updateGallery(req.seller._id, req.body.gallery || []);
+      vendor.hooks.afterProfileUpdated({ shopId: req.seller._id, field: "gallery" });
+      res.status(200).json({ success: true, seller });
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
+// update business status (open / closed / busy / vacation)
+router.put(
+  "/update-shop-status",
+  isSeller,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const seller = await vendor.profile.updateBusinessStatus(
+        req.seller._id,
+        req.body.businessStatus
+      );
+      vendor.hooks.afterProfileUpdated({ shopId: req.seller._id, field: "businessStatus" });
+      res.status(200).json({ success: true, seller, businessStatus: seller.businessStatus });
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
+// follow / unfollow shop
+router.post(
+  "/:id/follow",
+  isAuthenticated,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const result = await vendor.profile.toggleFollow(req.params.id, req.user._id);
+      res.status(200).json({ success: true, ...result });
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
+// favorite / unfavorite shop
+router.post(
+  "/:id/favorite",
+  isAuthenticated,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const result = await vendor.profile.toggleFavorite(req.params.id, req.user._id);
+      res.status(200).json({ success: true, ...result });
     } catch (error) {
       return handleServiceError(error, next);
     }

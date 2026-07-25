@@ -5,7 +5,7 @@ const SearchTextNormalizer = require("../search/SearchTextNormalizer");
 const PRODUCT_PROJECTION =
   "name description category tags originalPrice discountPrice stock sold_out ratings featured bestdeal productType condition location shopId shop images createdAt brand likes";
 
-const SHOP_PROJECTION = "name description address phoneNumber avatar isVerified createdAt zipCode";
+const SHOP_PROJECTION = "name description bio address phoneNumber avatar cover isVerified createdAt zipCode businessStatus themeAccent website";
 
 /**
  * Search service — executes product and shop discovery queries.

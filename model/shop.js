@@ -20,6 +20,57 @@ const shopSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  bio: {
+    type: String,
+    default: "",
+  },
+  website: {
+    type: String,
+    default: "",
+  },
+  businessStatus: {
+    type: String,
+    enum: ["open", "closed", "busy", "vacation"],
+    default: "open",
+  },
+  businessHours: {
+    type: Object,
+    default: {},
+  },
+  socialLinks: {
+    facebook: { type: String, default: "" },
+    instagram: { type: String, default: "" },
+    twitter: { type: String, default: "" },
+    tiktok: { type: String, default: "" },
+    whatsapp: { type: String, default: "" },
+  },
+  cover: {
+    public_id: { type: String },
+    url: { type: String },
+  },
+  gallery: [
+    {
+      public_id: { type: String },
+      url: { type: String },
+      caption: { type: String, default: "" },
+      type: {
+        type: String,
+        enum: ["storefront", "warehouse", "office", "certificate", "team", "other"],
+        default: "other",
+      },
+    },
+  ],
+  policies: {
+    returns: { type: String, default: "" },
+    shipping: { type: String, default: "" },
+    supportHours: { type: String, default: "" },
+  },
+  themeAccent: {
+    type: String,
+    default: "#29625d",
+  },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  favoritedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   address: {
     type: String,
     required: true,
