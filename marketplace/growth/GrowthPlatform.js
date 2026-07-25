@@ -4,6 +4,7 @@ const ReferralAttributionService = require("./ReferralAttributionService");
 const CouponValidationService = require("./CouponValidationService");
 const PromotionValidationService = require("./PromotionValidationService");
 const GrowthCommissionOrchestrator = require("./GrowthCommissionOrchestrator");
+const GrowthReferralAdminService = require("./GrowthReferralAdminService");
 const RewardLedgerService = require("./RewardLedgerService");
 const CommissionRuleAdminService = require("./CommissionRuleAdminService");
 const CommissionRuleSimulatorService = require("./CommissionRuleSimulatorService");
@@ -42,6 +43,7 @@ class GrowthPlatform {
       analytics: this.analytics,
     });
     this.rewardLedger = new RewardLedgerService({ legacy: this.legacy });
+    this.referralAdmin = new GrowthReferralAdminService();
     this.initialized = false;
   }
 
@@ -72,6 +74,10 @@ class GrowthPlatform {
 
   getCommissionRuleAdmin() {
     return this.commissionRules;
+  }
+
+  getReferralAdmin() {
+    return this.referralAdmin;
   }
 
   getCommissionAnalytics() {

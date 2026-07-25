@@ -10,7 +10,11 @@ class DeliveryConfigValidation {
       if (typeof input[key] === "boolean") {
         sanitized[key] = { enabled: input[key] };
       } else if (typeof input[key] === "object" && input[key] !== null) {
-        sanitized[key] = { enabled: Boolean(input[key].enabled) };
+        if (key === "pricing" || key === "zones" || key === "partners") {
+          sanitized[key] = { ...input[key] };
+        } else {
+          sanitized[key] = { enabled: Boolean(input[key].enabled) };
+        }
       }
     });
     return sanitized;

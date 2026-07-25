@@ -1,5 +1,7 @@
 const express = require("express");
 const catchAsyncErrors = require("../../middleware/catchAsyncErrors");
+const { isAuthenticated } = require("../../middleware/auth");
+const PlatformAuthService = require("../integration/auth/PlatformAuthService");
 const AIPlatform = require("./AIPlatform");
 
 let aiPlatformInstance = null;
@@ -31,6 +33,47 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
       res.status(200).json({ success: true, data: platform.health.check() });
     })
   );
+
+  router.get(
+    "/admin/products",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const access = PlatformAuthService.assertSuperAdmin(req);
+      if (!access.valid) {
+        return res.status(access.statusCode).json({ success: false, reason: access.reason });
+      }
+      const { getPlatformConfigurationBridge } = require("../integration/PlatformConfigurationBridge");
+      const bridge = getPlatformConfigurationBridge();
+      await bridge.initialize();
+      res.status(200).json({
+        success: true,
+        data: {
+          products: bridge.getPublicAiProducts(),
+          health: platform.health.check(),
+          metrics: platform.metrics?.getSummary?.() || null,
+        },
+      });
+    })
+  );
+
+  router.put(
+    "/admin/products",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const access = PlatformAuthService.assertSuperAdmin(req);
+      if (!access.valid) {
+        return res.status(access.statusCode).json({ success: false, reason: access.reason });
+      }
+      const { getPlatformConfigurationBridge } = require("../integration/PlatformConfigurationBridge");
+      const bridge = getPlatformConfigurationBridge();
+      const result = await bridge.updateSection("aiProducts", req.body?.aiProducts || req.body, {
+        admin: access.userId || req.user?._id?.toString?.(),
+        reason: req.body?.reason || null,
+      });
+      res.status(200).json({ success: true, data: result.snapshot.businessValues.aiProducts });
+    })
+  );
+
   app.use("/api/v2/marketplace/ai", router);
 
   return platform;

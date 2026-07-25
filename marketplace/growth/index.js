@@ -429,7 +429,48 @@ function registerGrowthPlatform(app, options = {}) {
     catchAsyncErrors(async (req, res) => {
       const auth = assertAdmin(req, res);
       if (!auth) return;
-      res.status(200).json({ success: true, data: platform.getCommissionAnalytics() });
+      const runtime = platform.getCommissionAnalytics();
+      const historical = await platform.getReferralAdmin().getCommissionAnalytics();
+      res.status(200).json({ success: true, data: { runtime, historical } });
+    })
+  );
+
+  router.get(
+    "/commission-history",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const data = await platform.getReferralAdmin().getCommissionHistory(Number(req.query.limit) || 100);
+      res.status(200).json({ success: true, data });
+    })
+  );
+
+  router.get(
+    "/referral/admin/dashboard",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const [topReferrers, codes, fraud] = await Promise.all([
+        platform.getReferralAdmin().getTopReferrers(Number(req.query.limit) || 25),
+        platform.getReferralAdmin().getReferralCodes(Number(req.query.limit) || 100),
+        platform.getReferralAdmin().getFraudSignals(Number(req.query.limit) || 50),
+      ]);
+      res.status(200).json({ success: true, data: { topReferrers, codes, fraud } });
+    })
+  );
+
+  router.post(
+    "/referral/admin/codes/:id/:action",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertAdmin(req, res);
+      if (!auth) return;
+      const data = await platform.getReferralAdmin().updateReferralCode(req.params.id, req.params.action, {
+        admin: auth.userId,
+      });
+      res.status(200).json({ success: true, data });
     })
   );
 
