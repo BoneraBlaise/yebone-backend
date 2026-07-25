@@ -191,11 +191,14 @@ router.get(
   catchAsyncErrors(async (req, res, next) => {
     try {
       const platform = getOrderPlatform();
-      const orders = await platform.history.listForAdmin();
+      const result = await platform.history.listForAdmin();
 
-      res.status(201).json({
+      res.status(200).json({
         success: true,
-        orders,
+        orders: result.orders,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       });
     } catch (error) {
       return handleServiceError(error, next);
