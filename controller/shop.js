@@ -64,6 +64,27 @@ router.post(
   })
 );
 
+// Resume seller session for authenticated customers who already own a verified shop (same email).
+router.get(
+  "/resume-session",
+  isAuthenticated,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const vendor = getVendorPlatform();
+      const seller = await vendor.shopService.findByEmail(req.user.email);
+      if (!seller) {
+        return next(new ErrorHandler("No shop linked to this account", 404));
+      }
+      if (!seller.isVerified) {
+        return next(new ErrorHandler("Shop is not activated yet", 403));
+      }
+      sendShopToken(seller, 200, res);
+    } catch (error) {
+      return handleServiceError(error, next);
+    }
+  })
+);
+
 // load shop
 router.get(
   "/getSeller",
