@@ -6,6 +6,16 @@ const {
   EnvironmentLoader,
   EnvironmentValidator,
 } = require("../platform/environment");
+const { PLACEHOLDER_VALUE } = require("../utils/isSmtpConfigured");
+
+const shouldApplyResolvedEnv = (key, value) => {
+  if (value === undefined || value === null) return false;
+  const text = String(value).trim();
+  if (!text) return false;
+  if (text === PLACEHOLDER_VALUE) return false;
+  if (key.startsWith("SMPT_") && text.toLowerCase().includes("placeholder")) return false;
+  return true;
+};
 
 /** @deprecated Use platform EnvironmentSchema — kept for backward compatibility */
 const REQUIRED_ENV_VARS = [
@@ -55,6 +65,7 @@ function validateEnv() {
 
   const resolved = loader.load();
   for (const [key, value] of Object.entries(resolved)) {
+    if (!shouldApplyResolvedEnv(key, value)) continue;
     if (process.env[key] === undefined || String(process.env[key]).trim() === "") {
       process.env[key] = value;
     }

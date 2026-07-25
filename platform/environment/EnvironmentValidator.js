@@ -1,5 +1,7 @@
 const EnvironmentSchema = require("./EnvironmentSchema");
 
+const PLACEHOLDER_VALUE = "your-placeholder-value";
+
 /**
  * Validates environment variables with profile-aware rules.
  */
@@ -22,17 +24,19 @@ class EnvironmentValidator {
           missing.push({ key: entry.key, description: entry.description });
         } else if (entry.defaultValue) {
           loader.set(entry.key, entry.defaultValue);
-        } else if (entry.placeholder && !this._isStrictProfile(profile)) {
-          loader.set(entry.key, entry.placeholder);
-          placeholders.push(entry.key);
         } else if (entry.required && !this._isStrictProfile(profile)) {
-          loader.set(entry.key, entry.placeholder || "placeholder");
+          loader.set(entry.key, entry.placeholder || PLACEHOLDER_VALUE);
           placeholders.push(entry.key);
         }
+        // Optional empty vars stay unset — never inject integration placeholders.
         continue;
       }
 
-      if (entry.placeholder && String(value) === entry.placeholder && this._isStrictProfile(profile)) {
+      if (
+        entry.placeholder &&
+        String(value) === entry.placeholder &&
+        this._isStrictProfile(profile)
+      ) {
         placeholders.push(entry.key);
       }
     }

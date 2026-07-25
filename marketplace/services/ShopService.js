@@ -60,7 +60,9 @@ class ShopService {
       throw this._error("User already exists");
     }
 
-    const uploadedAvatar = await this.uploadService.uploadSingle(avatar, "avatars");
+    const uploadedAvatar = avatar
+      ? await this.uploadService.uploadSingle(avatar, "avatars")
+      : { public_id: "", url: "" };
 
     const seller = {
       name,

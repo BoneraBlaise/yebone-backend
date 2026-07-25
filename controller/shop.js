@@ -20,7 +20,7 @@ router.post(
       const { seller, activationToken } = await vendor.registerPending(req.body);
       const activationUrl = vendor.config.buildActivationUrl(activationToken);
 
-      await sendMail({
+      const mailResult = await sendMail({
         email: seller.email,
         subject: "Activate your Shop",
         message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
@@ -28,7 +28,11 @@ router.post(
 
       res.status(201).json({
         success: true,
-        message: `please check your email:- ${seller.email} to activate your shop!`,
+        message: mailResult?.skipped
+          ? `Shop registration started. Activate your shop at: ${activationUrl}`
+          : `please check your email:- ${seller.email} to activate your shop!`,
+        emailSent: Boolean(mailResult?.sent),
+        activationUrl: mailResult?.skipped ? activationUrl : undefined,
       });
     } catch (error) {
       return handleServiceError(error, next);
