@@ -10,12 +10,14 @@
 **Checkout tag:** `yebo-ai-checkout-v1`  
 **Memory tag:** `yebo-ai-memory-v1`  
 **Commerce Agent tag:** `yebo-ai-commerce-agent-v1`  
+**Trust & Buyer Protection tag:** `trust-buyer-protection-v1`  
 **Delivery tag:** `courier-management-v1`  
 **Delivery tracking tag:** `delivery-tracking-v1`  
 **Delivery foundation tag:** `delivery-foundation-v1`  
 **Foundation tag:** `platform-pre-ai-v1`  
 **Current branch:** `feature/yebo-ai-commerce-agent`  
-**Phase 13 status:** **FROZEN** at `yebo-ai-commerce-agent-v1`
+**Phase 13 status:** **FROZEN** at `yebo-ai-commerce-agent-v1`  
+**Phase 14 status:** **FROZEN** at `trust-buyer-protection-v1`
 
 ---
 
@@ -436,9 +438,32 @@ npm run verify:enterprise-certification-remediation
 
 ---
 
+## Phase 14 — Trust & Buyer Protection COMPLETE
+
+| Aspect | Status |
+|--------|--------|
+| `marketplace/trust-buyer-protection/` module | ✔ Implemented |
+| Buyer protection lifecycle | ✔ Eligibility, activation, expiration, history |
+| Dispute system | ✔ 8-state machine with audit trail |
+| Escrow workflow | ✔ Domain states + Payment Foundation bridge |
+| Unified verification | ✔ Customer, vendor, agency |
+| Trust score engine | ✔ Configurable weights (0–100) |
+| Fraud detection | ✔ Risk levels; admin review only |
+| Protection policies | ✔ Central admin configuration |
+| Trust Admin UI | ✔ `/admin/trust` |
+| AI read-only tools (5) | ✔ No refund/verification/escrow approval |
+| Tests | ✔ `TrustBuyerProtection.test.js` (16/16) |
+| Verify | ✔ `verify:trust-buyer-protection` exit 0 |
+
+**Tag:** `trust-buyer-protection-v1` · **Doc:** [TRUST_AND_BUYER_PROTECTION.md](./TRUST_AND_BUYER_PROTECTION.md)
+
+**Status: FROZEN** — No further code changes inside Phase 14 scope.
+
+---
+
 ## Next Step
 
-**Commerce Agent frozen at `yebo-ai-commerce-agent-v1`.** Await next approved roadmap phase.
+**Trust & Buyer Protection frozen at `trust-buyer-protection-v1`.** Await Phase 15 approval.
 
 ---
 
@@ -464,6 +489,7 @@ npm run verify:enterprise-certification-remediation
 | [SELLER_OPERATIONS.md](./SELLER_OPERATIONS.md) | Phase 11 seller operations |
 | [PROPERTY_MOBILITY.md](./PROPERTY_MOBILITY.md) | Phase 12 property & mobility |
 | [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md) | Phase 13 commerce agent |
+| [TRUST_AND_BUYER_PROTECTION.md](./TRUST_AND_BUYER_PROTECTION.md) | Phase 14 trust & buyer protection |
 | [YEBO_AI_INTEGRATION_GUIDE.md](./YEBO_AI_INTEGRATION_GUIDE.md) | Integration rules |
 
 ---
@@ -471,5 +497,5 @@ npm run verify:enterprise-certification-remediation
 ## Verification
 
 ```bash
-npm run verify:property-mobility
+npm run verify:trust-buyer-protection
 ```

@@ -18,6 +18,12 @@ const PropertyListingGetTool = require("./PropertyListingGetTool");
 const GrowthRecommendTool = require("./GrowthRecommendTool");
 const SellerInventoryTool = require("./SellerInventoryTool");
 const PropertyListingManageTool = require("./PropertyListingManageTool");
+const TrustBuyerProtectionPlatform = require("../../trust-buyer-protection/TrustBuyerProtectionPlatform");
+const TrustProtectionExplainTool = require("../../trust-buyer-protection/ai/TrustProtectionExplainTool");
+const DisputeStatusTool = require("../../trust-buyer-protection/ai/DisputeStatusTool");
+const VerificationExplainTool = require("../../trust-buyer-protection/ai/VerificationExplainTool");
+const TrustScoreExplainTool = require("../../trust-buyer-protection/ai/TrustScoreExplainTool");
+const RefundEligibilityTool = require("../../trust-buyer-protection/ai/RefundEligibilityTool");
 
 function resolvePlatform(getter, Factory, marketplaceCore, factoryOptions = {}) {
   try {
@@ -88,6 +94,15 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
       { useMemoryOnly: true }
     );
 
+  const trustBuyerProtectionPlatform =
+    platforms.trustBuyerProtection ||
+    resolvePlatform(
+      () => require("../../index").getTrustBuyerProtectionPlatform(),
+      TrustBuyerProtectionPlatform,
+      marketplaceCore,
+      { useMemoryOnly: true }
+    );
+
   const searchTool = new SearchTool({ searchPlatform }).initialize();
   const catalogTool = new CatalogTool({ productPlatform, searchPlatform }).initialize();
   const vendorTool = new VendorTool({ vendorPlatform, searchPlatform }).initialize();
@@ -118,6 +133,24 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     listingService: propertyMobilityPlatform.listingService,
   }).initialize();
 
+  const trustProtectionExplainTool = new TrustProtectionExplainTool({
+    buyerProtectionService: trustBuyerProtectionPlatform.buyerProtectionService,
+    policyService: trustBuyerProtectionPlatform.policyService,
+  }).initialize();
+  const disputeStatusTool = new DisputeStatusTool({
+    disputeService: trustBuyerProtectionPlatform.disputeService,
+  }).initialize();
+  const verificationExplainTool = new VerificationExplainTool({
+    verificationService: trustBuyerProtectionPlatform.verificationService,
+  }).initialize();
+  const trustScoreExplainTool = new TrustScoreExplainTool({
+    trustScoreService: trustBuyerProtectionPlatform.trustScoreService,
+  }).initialize();
+  const refundEligibilityTool = new RefundEligibilityTool({
+    buyerProtectionService: trustBuyerProtectionPlatform.buyerProtectionService,
+    policyService: trustBuyerProtectionPlatform.policyService,
+  }).initialize();
+
   return [
     searchTool,
     catalogTool,
@@ -132,6 +165,11 @@ function createProductionTools({ marketplaceCore, platforms = {} } = {}) {
     growthRecommendTool,
     sellerInventoryTool,
     propertyListingManageTool,
+    trustProtectionExplainTool,
+    disputeStatusTool,
+    verificationExplainTool,
+    trustScoreExplainTool,
+    refundEligibilityTool,
   ];
 }
 
@@ -150,4 +188,9 @@ module.exports = {
   GrowthRecommendTool,
   SellerInventoryTool,
   PropertyListingManageTool,
+  TrustProtectionExplainTool,
+  DisputeStatusTool,
+  VerificationExplainTool,
+  TrustScoreExplainTool,
+  RefundEligibilityTool,
 };

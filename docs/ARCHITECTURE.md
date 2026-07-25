@@ -25,6 +25,7 @@ This index tracks architecture milestones across foundation, AI, and delivery la
 | **Growth Commerce** | `marketplace/growth-commerce/` | **10 complete** (`growth-commerce-v1`) |
 | **Seller Operations** | `marketplace/seller-operations/` | **11 complete** (`seller-operations-v1`) |
 | **Property & Mobility** | `marketplace/property-mobility/` | **12 complete** (`property-mobility-v1`) |
+| **Trust & Buyer Protection** | `marketplace/trust-buyer-protection/` | **14 complete** (`trust-buyer-protection-v1`) |
 
 ---
 
@@ -96,6 +97,19 @@ Secure write-capable AI layer at `marketplace/ai/` — extends YEBO AI without m
 See [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md).
 
 **Commerce Agent frozen at `yebo-ai-commerce-agent-v1`.**
+
+## Trust & Buyer Protection (Phase 14)
+
+Buyer protection, disputes, escrow coordination, unified verification, trust scores, fraud alerts, and admin-configurable policies at `marketplace/trust-buyer-protection/`:
+
+- Reuses Orders via `TrustOrdersBridge` — no order logic duplication
+- Reuses Payment Foundation via `TrustPaymentBridge` — no payment gateway creation
+- Extends YEBO AI with 5 read-only trust tools — no refund/verification/escrow approval via AI
+- Super Admin panel at `/admin/trust`
+
+See [TRUST_AND_BUYER_PROTECTION.md](./TRUST_AND_BUYER_PROTECTION.md).
+
+**Trust & Buyer Protection frozen at `trust-buyer-protection-v1`.**
 
 See [PLATFORM_INTEGRATION.md](./PLATFORM_INTEGRATION.md).
 

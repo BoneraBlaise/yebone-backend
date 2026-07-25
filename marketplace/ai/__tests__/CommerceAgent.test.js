@@ -148,15 +148,17 @@ describe("Commerce Agent — Phase 13", () => {
     return audit;
   }
 
-  it("registers five commerce tools alongside existing eight tools", () => {
+  it("registers commerce and trust tools alongside core tools", () => {
     const platform = createCommercePlatform();
     const ids = platform.toolRegistry.list().map((tool) => tool.id);
-    assert.equal(ids.length, 13);
+    assert.equal(ids.length, 18);
     assert.ok(ids.includes("property.search"));
     assert.ok(ids.includes("property.listing.get"));
     assert.ok(ids.includes("growth.recommend"));
     assert.ok(ids.includes("seller.inventory.read"));
     assert.ok(ids.includes("property.listing.manage"));
+    assert.ok(ids.includes("trust.protection.explain"));
+    assert.ok(ids.includes("trust.dispute.status"));
   });
 
   it("PropertySearchTool delegates to PropertyMobilitySearchBridge", async () => {

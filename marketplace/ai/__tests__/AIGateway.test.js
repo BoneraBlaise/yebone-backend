@@ -49,7 +49,7 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     platform.initialize();
 
     assert.equal(platform.config.version, "7.7.0");
-    assert.equal(platform.toolRegistry.list().length, 13);
+    assert.equal(platform.toolRegistry.list().length, 18);
     assert.equal(platform.providerManager.activeProviderId, "mock");
   });
 
@@ -86,9 +86,10 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     assert.equal(response.success, true);
     assert.equal(response.data.healthy, true);
     assert.equal(response.data.mockProviderActive, true);
-    assert.equal(response.data.toolsRegistered, 13);
+    assert.equal(response.data.toolsRegistered, 18);
     assert.equal(response.data.productionTools, true);
-    assert.equal(response.data.phase, "13.0");
+    assert.equal(response.data.phase, "14.0");
+    assert.equal(response.data.trustBuyerProtection, true);
     assert.equal(response.data.naturalLanguageSearch, true);
     assert.equal(response.data.commerceAssistant, true);
     assert.equal(response.data.contextualRecommendations, true);

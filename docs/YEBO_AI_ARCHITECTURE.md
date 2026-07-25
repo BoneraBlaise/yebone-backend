@@ -1,9 +1,9 @@
 # YEBO AI — Canonical Architecture
 
-**Tags:** `yebo-ai-design-v1` · `yebo-ai-gateway-v1` · `yebo-ai-tools-v1` · `yebo-ai-search-v1` · `yebo-ai-assistant-v1` · `yebo-ai-recommend-v1` · `yebo-ai-checkout-v1` · `yebo-ai-memory-v1` · `yebo-ai-commerce-agent-v1`  
+**Tags:** `yebo-ai-design-v1` · … · `yebo-ai-commerce-agent-v1` · `trust-buyer-protection-v1`  
 **Baseline:** `platform-pre-ai-v1`  
-**Branch:** `feature/yebo-ai-commerce-agent`  
-**Status:** Phase 13 Commerce Agent implemented — YEBO AI commerce writes frozen at `yebo-ai-commerce-agent-v1`
+**Branch:** `feature/trust-buyer-protection`  
+**Status:** Phase 14 Trust read-only tools implemented — Phase 13 commerce writes remain frozen at `yebo-ai-commerce-agent-v1`
 
 > YEBO AI is an **orchestration layer**. It is not a business platform. All business logic remains in frozen modules.
 
@@ -242,3 +242,4 @@ Remove: browser-direct OpenRouter/Gemini calls, `YIPShoppingIntelligence` mock p
 | [AI_SECURITY.md](./AI_SECURITY.md) | Security architecture |
 | [AI_ROADMAP.md](./AI_ROADMAP.md) | Implementation milestones |
 | [AI_COMMERCE_AGENT.md](./AI_COMMERCE_AGENT.md) | Phase 13 Commerce Agent — confirmation protocol, tools, audit |
+| [TRUST_AND_BUYER_PROTECTION.md](./TRUST_AND_BUYER_PROTECTION.md) | Phase 14 read-only trust AI tools |

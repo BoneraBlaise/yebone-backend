@@ -20,6 +20,11 @@ class AICapabilityRegistry {
       ["seller_inventory", ["seller_inventory_snapshot", "inventory_health"]],
       ["property_listing_create", ["property_listing_create"]],
       ["property_listing_publish", ["property_listing_publish"]],
+      ["trust_dispute_status", ["dispute_status", "trust_dispute_lookup"]],
+      ["trust_protection_explain", ["trust_protection_explain", "buyer_protection_status"]],
+      ["trust_verification_explain", ["verification_explain", "trust_verification_status"]],
+      ["trust_score_explain", ["trust_score_explain", "trust_score_lookup"]],
+      ["trust_refund_explain", ["refund_eligibility", "trust_refund_explain"]],
     ]);
   }
 

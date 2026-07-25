@@ -205,6 +205,51 @@ class AIPlanner {
       };
     }
 
+    if (/dispute|complaint|case status/i.test(text)) {
+      return {
+        intent: "trust_dispute_status",
+        capabilities: ["dispute_status", "trust_dispute_lookup"],
+        confidence: 0.75,
+        readOnly: true,
+      };
+    }
+
+    if (/protected|buyer protection|why.*protect/i.test(text)) {
+      return {
+        intent: "trust_protection_explain",
+        capabilities: ["trust_protection_explain", "buyer_protection_status"],
+        confidence: 0.75,
+        readOnly: true,
+      };
+    }
+
+    if (/verification|verified|verify my/i.test(text)) {
+      return {
+        intent: "trust_verification_explain",
+        capabilities: ["verification_explain", "trust_verification_status"],
+        confidence: 0.7,
+        readOnly: true,
+      };
+    }
+
+    if (/trust score|trust rating|my score/i.test(text)) {
+      return {
+        intent: "trust_score_explain",
+        capabilities: ["trust_score_explain", "trust_score_lookup"],
+        confidence: 0.7,
+        readOnly: true,
+      };
+    }
+
+    if (/refund eligible|can i get a refund|refund policy/i.test(text)) {
+      return {
+        intent: "trust_refund_explain",
+        capabilities: ["refund_eligibility", "trust_refund_explain"],
+        confidence: 0.72,
+        readOnly: true,
+      };
+    }
+
     if (text.includes("product") || text.includes("catalog")) {
       return {
         intent: "catalog",
@@ -884,7 +929,7 @@ class AIPlanner {
         action: pendingAction.action,
       },
       meta: {
-        phase: "13.0",
+        phase: "14.0",
         gateway: true,
         commerceAgent: true,
         confirmationRequired: true,
@@ -917,7 +962,7 @@ class AIPlanner {
       tool: toolResult,
       pendingActionId: record.pendingActionId,
       meta: {
-        phase: "13.0",
+        phase: "14.0",
         gateway: true,
         commerceAgent: true,
         confirmed: true,
@@ -932,7 +977,7 @@ class AIPlanner {
       sessionId,
       type: "confirmation_cancelled",
       message: "Action cancelled.",
-      meta: { phase: "13.0", commerceAgent: true, cancelled: true },
+      meta: { phase: "14.0", commerceAgent: true, cancelled: true },
     };
   }
 
@@ -943,7 +988,7 @@ class AIPlanner {
       correlationId: plan.correlationId,
       type: "error",
       error: { reason, statusCode, message: reason },
-      meta: { phase: "13.0", commerceAgent: true },
+      meta: { phase: "14.0", commerceAgent: true },
     };
   }
 

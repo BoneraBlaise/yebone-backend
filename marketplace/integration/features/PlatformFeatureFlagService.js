@@ -3,6 +3,7 @@ const PlatformFeatureFlags = require("../../../model/platformFeatureFlags");
 const { GrowthCommerceSettingsDefaults } = require("../../growth-commerce/GrowthCommerceSettingsDefaults");
 const { SellerOperationsSettingsDefaults } = require("../../seller-operations/SellerOperationsSettingsDefaults");
 const { PropertyMobilitySettingsDefaults } = require("../../property-mobility/PropertyMobilitySettingsDefaults");
+const { TrustBuyerProtectionSettingsDefaults } = require("../../trust-buyer-protection/TrustBuyerProtectionSettingsDefaults");
 
 const DEFAULT_FLAGS = Object.freeze({
   growth: {
@@ -45,6 +46,10 @@ const DEFAULT_FLAGS = Object.freeze({
   propertyMobility: {
     enabled: true,
     ...structuredClone(PropertyMobilitySettingsDefaults),
+  },
+  trustBuyerProtection: {
+    enabled: true,
+    ...structuredClone(TrustBuyerProtectionSettingsDefaults),
   },
 });
 
@@ -94,6 +99,10 @@ class PlatformFeatureFlagStore {
         DEFAULT_FLAGS.propertyMobility,
         doc.propertyMobility || {}
       ),
+      trustBuyerProtection: this._mergeDomainDefaults(
+        DEFAULT_FLAGS.trustBuyerProtection,
+        doc.trustBuyerProtection || {}
+      ),
     };
   }
 
@@ -120,6 +129,9 @@ class PlatformFeatureFlagStore {
       propertyMobility: partial.propertyMobility
         ? this._mergeDomainDefaults(current.propertyMobility, partial.propertyMobility)
         : current.propertyMobility,
+      trustBuyerProtection: partial.trustBuyerProtection
+        ? this._mergeDomainDefaults(current.trustBuyerProtection, partial.trustBuyerProtection)
+        : current.trustBuyerProtection,
       updatedBy: admin,
     };
 

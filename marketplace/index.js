@@ -73,6 +73,12 @@ function registerMarketplaceCore(app, options = {}) {
   const { registerPropertyMobilityPlatform } = require("./property-mobility");
   const propertyMobilityPlatform = registerPropertyMobilityPlatform(app, options.propertyMobility || {});
 
+  const { registerTrustBuyerProtectionPlatform } = require("./trust-buyer-protection");
+  const trustBuyerProtectionPlatform = registerTrustBuyerProtectionPlatform(
+    app,
+    options.trustBuyerProtection || {}
+  );
+
   const { registerPlatformIntegration } = require("./integration");
   const integration = registerPlatformIntegration(app, {
     useMemoryOnly: Boolean(options.integration?.useMemoryOnly),
@@ -85,6 +91,8 @@ function registerMarketplaceCore(app, options = {}) {
   sellerOperationsPlatform.bindObservability(integration.observability);
   propertyMobilityPlatform.bindFeatureFlags(integration.featureFlags);
   propertyMobilityPlatform.bindObservability(integration.observability);
+  trustBuyerProtectionPlatform.bindFeatureFlags(integration.featureFlags);
+  trustBuyerProtectionPlatform.bindObservability(integration.observability);
   integration.initialize().catch((error) => {
     console.error("Platform integration init failed:", error.message);
   });
@@ -119,5 +127,7 @@ module.exports = {
   getGrowthCommercePlatform: () => require("./growth-commerce").getGrowthCommercePlatform(),
   getSellerOperationsPlatform: () => require("./seller-operations").getSellerOperationsPlatform(),
   getPropertyMobilityPlatform: () => require("./property-mobility").getPropertyMobilityPlatform(),
+  getTrustBuyerProtectionPlatform: () =>
+    require("./trust-buyer-protection").getTrustBuyerProtectionPlatform(),
   getPlatformIntegration: () => require("./integration/PlatformIntegration").getPlatformIntegration(),
 };
