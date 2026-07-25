@@ -131,6 +131,16 @@ const PlatformConfigurationDefaults = Object.freeze({
     maxUsesPerUser: 3,
     defaultExpiryDays: 30,
   },
+  runtimeFeatures: {
+    virtual_try_on: { status: "beta", label: "Virtual Try-On" },
+    yebo_ai_search: { status: "enabled", label: "YEBO AI Search" },
+    ai_product_description: { status: "enabled", label: "AI Product Description" },
+    ai_translation: { status: "enabled", label: "AI Translation" },
+    background_removal: { status: "enabled", label: "Background Removal" },
+    image_upscaler: { status: "beta", label: "Image Upscaler" },
+    yebone_delivery: { status: "coming_soon", label: "Yebone Delivery" },
+    future_marketplace_modules: { status: "internal", label: "Future Marketplace Modules" },
+  },
   banners: [],
 });
 

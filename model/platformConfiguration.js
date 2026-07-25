@@ -18,6 +18,8 @@ const platformConfigurationSchema = new mongoose.Schema(
     singletonKey: { type: String, default: "default", unique: true, index: true },
     version: { type: Number, default: 1 },
     businessValues: { type: Object, required: true },
+    draftBusinessValues: { type: Object, default: null },
+    moduleDrafts: { type: Object, default: {} },
     auditLog: { type: [auditEntrySchema], default: [] },
   },
   { timestamps: true }

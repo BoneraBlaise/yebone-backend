@@ -10,6 +10,12 @@ const {
   createPlatformConfigurationBridge,
   getPlatformConfigurationBridge,
 } = require("./PlatformConfigurationBridge");
+const {
+  getConfigurationHistoryService,
+} = require("./ConfigurationHistoryService");
+const {
+  ConfigurationWorkflowService,
+} = require("./ConfigurationWorkflowService");
 
 function registerPlatformIntegration(app, options = {}) {
   const integration = createPlatformIntegration(options);
@@ -39,6 +45,14 @@ function registerPlatformIntegration(app, options = {}) {
   }
 
   app.locals.platformConfigurationBridge = bridge;
+
+  try {
+    getConfigurationHistoryService().setModel(require("../../model/configurationHistory"));
+  } catch {
+    /* optional in tests */
+  }
+
+  const workflow = new ConfigurationWorkflowService({ bridge });
 
   const router = express.Router();
 
@@ -101,25 +115,183 @@ function registerPlatformIntegration(app, options = {}) {
     catchAsyncErrors(async (req, res) => {
       const auth = assertSuperAdmin(req, res);
       if (!auth) return;
-      const result = await bridge.updateSection(req.params.section, req.body?.values || req.body, {
+      const result = await bridge.saveDraftSection(req.params.section, req.body?.values || req.body, {
         admin: auth.userId,
         reason: req.body?.reason || null,
       });
+      res.status(200).json({ success: true, data: result, message: "Draft saved" });
+    })
+  );
 
-      if (req.params.section === "categoryCommissions") {
-        await bridge.syncCategoryCommissionRules(result.snapshot.businessValues.categoryCommissions, {
-          admin: auth.userId,
-          reason: req.body?.reason,
-        });
-      }
-      if (req.params.section === "referral" && req.body?.values?.categoryRates) {
-        await bridge.syncReferralCategoryRules(req.body.values.categoryRates, {
-          admin: auth.userId,
-          reason: req.body?.reason,
-        });
-      }
+  router.post(
+    "/platform-configuration/publish",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const result = await bridge.publishDraft({
+        admin: auth.userId,
+        reason: req.body?.reason || null,
+        sections: req.body?.sections || null,
+      });
+      res.status(200).json({ success: true, data: result, message: "Configuration published" });
+    })
+  );
 
+  router.get(
+    "/platform-configuration/workflow",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const data = await workflow.getWorkflowState();
+      res.status(200).json({ success: true, data });
+    })
+  );
+
+  router.put(
+    "/configuration/draft/:module",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const module = req.params.module;
+      if (module === "delivery") {
+        const result = await bridge.saveModuleDraft("delivery", req.body?.settings || req.body, {
+          admin: auth.userId,
+          reason: req.body?.reason || null,
+        });
+        return res.status(200).json({ success: true, data: result, message: "Delivery draft saved" });
+      }
+      res.status(400).json({ success: false, reason: "UNSUPPORTED_MODULE" });
+    })
+  );
+
+  router.post(
+    "/configuration/publish/:module",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const result = await bridge.publishDraft({
+        admin: auth.userId,
+        reason: req.body?.reason || null,
+      });
+      res.status(200).json({ success: true, data: result, message: "Configuration published" });
+    })
+  );
+
+  router.get(
+    "/configuration-history",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const data = await getConfigurationHistoryService().list({
+        module: req.query.module || null,
+        changedBy: req.query.changedBy || req.query.user || null,
+        from: req.query.from || null,
+        to: req.query.to || null,
+        search: req.query.search || "",
+        limit: Number(req.query.limit || 100),
+        page: Number(req.query.page || 1),
+      });
+      res.status(200).json({ success: true, data });
+    })
+  );
+
+  router.post(
+    "/configuration-history/:historyId/rollback",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const result = await bridge.rollbackFromHistory(req.params.historyId, {
+        admin: auth.userId,
+        reason: req.body?.reason || req.body?.note || null,
+      });
+      res.status(200).json({ success: true, data: result, message: "Configuration restored" });
+    })
+  );
+
+  router.post(
+    "/configuration/simulate",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      await bridge.initialize();
+      const sim = workflow.getSimulators();
+      const { type, input = {} } = req.body || {};
+      const draft = bridge.store.getDraftBusinessValues();
+      let result = null;
+      if (type === "commission") {
+        result = sim.simulateCommission({
+          ...input,
+          categoryCommissions: input.categoryCommissions || draft.categoryCommissions,
+        });
+      } else if (type === "referral") {
+        result = sim.simulateReferralPayouts({
+          ...input,
+          referralSettings: input.referralSettings || draft.referral,
+        });
+      } else if (type === "ai") {
+        result = sim.simulateAiRevenue({
+          ...input,
+          aiProducts: input.aiProducts || draft.aiProducts,
+        });
+      } else if (type === "delivery") {
+        result = sim.simulateDelivery({
+          ...input,
+          deliverySettings: input.deliverySettings || bridge.store.getModuleDraft("delivery") || { pricing: draft.deliveryPricing },
+        });
+      } else {
+        return res.status(400).json({ success: false, reason: "INVALID_SIMULATOR" });
+      }
       res.status(200).json({ success: true, data: result });
+    })
+  );
+
+  router.get(
+    "/runtime-feature-flags",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      await bridge.initialize();
+      res.status(200).json({
+        success: true,
+        data: bridge.store.getDraftBusinessValues().runtimeFeatures || {},
+      });
+    })
+  );
+
+  router.put(
+    "/runtime-feature-flags",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const auth = assertSuperAdmin(req, res);
+      if (!auth) return;
+      const result = await bridge.saveDraftSection("runtimeFeatures", req.body?.runtimeFeatures || req.body, {
+        admin: auth.userId,
+        reason: req.body?.reason || null,
+        module: "feature-flags",
+      });
+      if (req.body?.publish) {
+        await bridge.publishDraft({ admin: auth.userId, reason: req.body?.reason });
+      }
+      res.status(200).json({ success: true, data: result });
+    })
+  );
+
+  router.get(
+    "/runtime-feature-flags/public",
+    catchAsyncErrors(async (_req, res) => {
+      await bridge.initialize();
+      res.status(200).json({
+        success: true,
+        data: bridge.store.getBusinessValues().runtimeFeatures || {},
+      });
     })
   );
 

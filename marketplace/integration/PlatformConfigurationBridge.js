@@ -25,11 +25,79 @@ class PlatformConfigurationBridge {
 
   getPublicAiProducts() {
     const products = this.store.getBusinessValues().aiProducts || {};
+    const features = this.store.getBusinessValues().runtimeFeatures || {};
+    return Object.entries(products).map(([id, config]) => {
+      const flag = features[id] || features[id.replace(/_/g, "-")] || {};
+      const status = flag.status || "enabled";
+      return {
+        id,
+        ...config,
+        status,
+        available: config.enabled !== false && status === "enabled",
+        beta: status === "beta",
+        comingSoon: status === "coming_soon",
+      };
+    });
+  }
+
+  getAdminAiProducts() {
+    const products = this.store.getDraftBusinessValues().aiProducts || {};
     return Object.entries(products).map(([id, config]) => ({
       id,
       ...config,
-      available: config.enabled !== false,
     }));
+  }
+
+  isFeatureAvailable(featureId) {
+    const features = this.store.getBusinessValues().runtimeFeatures || {};
+    const flag = features[featureId] || {};
+    const status = flag.status || "enabled";
+    return status === "enabled" || status === "beta";
+  }
+
+  getWorkflowSnapshot() {
+    return this.store.getWorkflowSnapshot();
+  }
+
+  async saveDraftSection(section, patch, meta = {}) {
+    await this.initialize();
+    return this.store.saveDraftSection(section, patch, meta);
+  }
+
+  async saveModuleDraft(module, values, meta = {}) {
+    await this.initialize();
+    return this.store.saveModuleDraft(module, values, meta);
+  }
+
+  async publishDraft(meta = {}, options = {}) {
+    await this.initialize();
+    const result = await this.store.publishDraft({ ...meta, ...options });
+    const live = result.published || this.store.getBusinessValues();
+    if (live.categoryCommissions) {
+      await this.syncCategoryCommissionRules(live.categoryCommissions, meta);
+    }
+    if (live.referral?.categoryRates) {
+      await this.syncReferralCategoryRules(live.referral.categoryRates, meta);
+    }
+    return result;
+  }
+
+  async rollbackFromHistory(historyId, meta = {}) {
+    await this.initialize();
+    const { getConfigurationHistoryService } = require("./ConfigurationHistoryService");
+    const entry = await getConfigurationHistoryService().getByHistoryId(historyId);
+    if (!entry) {
+      throw Object.assign(new Error("History entry not found"), { statusCode: 404 });
+    }
+    const result = await this.store.rollbackFromHistory(entry, meta);
+    const live = result.restored || this.store.getBusinessValues();
+    if (live.categoryCommissions) {
+      await this.syncCategoryCommissionRules(live.categoryCommissions, meta);
+    }
+    if (live.referral?.categoryRates) {
+      await this.syncReferralCategoryRules(live.referral.categoryRates, meta);
+    }
+    return { ...result, historyEntry: entry };
   }
 
   getPublicBanners(type = null) {
@@ -84,6 +152,7 @@ class PlatformConfigurationBridge {
 
     return {
       platform: snapshot,
+      workflow: this.getWorkflowSnapshot(),
       domains,
       aggregatedAt: new Date().toISOString(),
     };

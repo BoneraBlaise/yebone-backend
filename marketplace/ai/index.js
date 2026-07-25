@@ -48,7 +48,8 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
       res.status(200).json({
         success: true,
         data: {
-          products: bridge.getPublicAiProducts(),
+          products: bridge.getAdminAiProducts(),
+          workflow: bridge.getWorkflowSnapshot(),
           health: platform.health.check(),
           metrics: platform.metrics?.getSummary?.() || null,
         },
@@ -69,8 +70,13 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
       const result = await bridge.updateSection("aiProducts", req.body?.aiProducts || req.body, {
         admin: access.userId || req.user?._id?.toString?.(),
         reason: req.body?.reason || null,
+        module: "ai",
       });
-      res.status(200).json({ success: true, data: result.snapshot.businessValues.aiProducts });
+      res.status(200).json({
+        success: true,
+        data: result.snapshot.draftBusinessValues?.aiProducts || result.snapshot.businessValues?.aiProducts,
+        workflow: result.workflow,
+      });
     })
   );
 
