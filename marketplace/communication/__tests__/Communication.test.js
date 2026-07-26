@@ -3,6 +3,11 @@ const assert = require("node:assert/strict");
 
 const CommunicationAccess = require("../CommunicationAccess");
 const { createCommunicationRateLimiter } = require("../CommunicationRateLimit");
+const {
+  InMemoryRateLimitStore,
+  resetRateLimitStoreForTests,
+  isRateLimitEnabled,
+} = require("../CommunicationRateLimitStore");
 const CommunicationOfferService = require("../CommunicationOfferService");
 const CommunicationInboxBridge = require("../CommunicationInboxBridge");
 
@@ -37,15 +42,70 @@ describe("Phase 15 Communication Production Acceptance", () => {
   });
 
   describe("CommunicationRateLimit", () => {
-    it("blocks excessive requests", () => {
+    beforeEach(() => {
+      process.env.COMMUNICATION_RATE_LIMIT_ENABLED = "true";
+      delete process.env.REDIS_URL;
+      resetRateLimitStoreForTests();
+    });
+
+    it("blocks excessive requests", async () => {
       const limiter = createCommunicationRateLimiter({ windowMs: 60_000, max: 2, keyPrefix: "test" });
       const req = { method: "POST", baseUrl: "/api", path: "/messages", ip: "1.1.1.1", user: { _id: "u1" } };
       const results = [];
-      limiter(req, { status: () => ({ json: (body) => results.push(body) }) }, () => results.push("ok"));
-      limiter(req, { status: () => ({ json: (body) => results.push(body) }) }, () => results.push("ok"));
-      limiter(req, { status: () => ({ json: (body) => results.push(body) }) }, () => results.push("ok"));
+
+      const run = () =>
+        new Promise((resolve) => {
+          limiter(
+            req,
+            {
+              status: (code) => ({
+                json: (body) => {
+                  results.push({ code, body });
+                  resolve();
+                },
+              }),
+              setHeader: () => {},
+            },
+            () => {
+              results.push("ok");
+              resolve();
+            }
+          );
+        });
+
+      await run();
+      await run();
+      await run();
+
       assert.equal(results.filter((r) => r === "ok").length, 2);
-      assert.equal(results.some((r) => r?.success === false), true);
+      assert.equal(results.some((r) => r?.body?.success === false), true);
+    });
+
+    it("passes through when rate limiting is disabled", async () => {
+      process.env.COMMUNICATION_RATE_LIMIT_ENABLED = "false";
+      resetRateLimitStoreForTests();
+      assert.equal(isRateLimitEnabled(), false);
+
+      const limiter = createCommunicationRateLimiter({ windowMs: 60_000, max: 1, keyPrefix: "disabled" });
+      const req = { method: "POST", baseUrl: "/api", path: "/messages", ip: "9.9.9.9" };
+      let called = false;
+      await new Promise((resolve) => {
+        limiter(req, { status: () => ({ json: () => resolve() }) }, () => {
+          called = true;
+          resolve();
+        });
+      });
+      assert.equal(called, true);
+    });
+
+    it("uses in-memory sliding window store", async () => {
+      const store = new InMemoryRateLimitStore();
+      const first = await store.consume("actor:1", { windowMs: 60_000, max: 2 });
+      const second = await store.consume("actor:1", { windowMs: 60_000, max: 2 });
+      const third = await store.consume("actor:1", { windowMs: 60_000, max: 2 });
+      assert.equal(first.allowed, true);
+      assert.equal(second.allowed, true);
+      assert.equal(third.allowed, false);
     });
   });
 

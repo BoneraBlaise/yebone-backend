@@ -1,41 +1,56 @@
+const {
+  getRateLimitStore,
+  isRateLimitEnabled,
+  resolveWindowMs,
+  resolveMax,
+} = require("./CommunicationRateLimitStore");
+
+function buildRouteKey(req, keyPrefix) {
+  const actor =
+    req.user?._id ||
+    req.seller?._id ||
+    req.ip ||
+    req.headers["x-forwarded-for"] ||
+    "anonymous";
+  return `${keyPrefix}:${req.method}:${req.baseUrl}${req.path}:${actor}`;
+}
+
 function createCommunicationRateLimiter({
-  windowMs = Number(process.env.COMMUNICATION_RATE_LIMIT_WINDOW_MS || 60_000),
-  max = Number(process.env.COMMUNICATION_RATE_LIMIT_MAX || 60),
+  windowMs = resolveWindowMs(),
+  max = resolveMax(),
   keyPrefix = "communication",
 } = {}) {
-  const hits = new Map();
+  const store = getRateLimitStore();
 
   return function communicationRateLimiter(req, res, next) {
-    const actor =
-      req.user?._id ||
-      req.seller?._id ||
-      req.ip ||
-      req.headers["x-forwarded-for"] ||
-      "anonymous";
-    const routeKey = `${keyPrefix}:${req.method}:${req.baseUrl}${req.path}:${actor}`;
-    const now = Date.now();
-    const entry = hits.get(routeKey);
-
-    if (!entry || now - entry.windowStart >= windowMs) {
-      hits.set(routeKey, { windowStart: now, count: 1 });
+    if (!isRateLimitEnabled()) {
       return next();
     }
 
-    entry.count += 1;
-    if (entry.count > max) {
-      return res.status(429).json({
-        success: false,
-        message: "Too many requests. Please try again shortly.",
-      });
-    }
+    const routeKey = buildRouteKey(req, keyPrefix);
 
-    return next();
+    store
+      .consume(routeKey, { windowMs, max })
+      .then((result) => {
+        if (!result.allowed) {
+          res.setHeader("Retry-After", Math.ceil(windowMs / 1000));
+          return res.status(429).json({
+            success: false,
+            message: "Too many requests. Please try again shortly.",
+          });
+        }
+        return next();
+      })
+      .catch((error) => {
+        console.warn(`[CommunicationRateLimit] Store error: ${error.message}. Allowing request.`);
+        return next();
+      });
   };
 }
 
 const communicationMutationLimiter = createCommunicationRateLimiter({
   keyPrefix: "communication-mutation",
-  max: Number(process.env.COMMUNICATION_MUTATION_RATE_LIMIT_MAX || 30),
+  max: resolveMax(),
 });
 
 module.exports = {
