@@ -8,7 +8,7 @@ class OrderValidation {
     if (!input.user) missing.push("user");
     if (!input.paymentInfo) missing.push("paymentInfo");
 
-    if (!input.wonBid && (!Array.isArray(input.cart) || input.cart.length === 0)) {
+    if (!input.wonBid && !input.negotiatedOffer && (!Array.isArray(input.cart) || input.cart.length === 0)) {
       missing.push("cart");
     }
 
@@ -49,10 +49,11 @@ class OrderValidation {
     return {
       cart: input.cart,
       wonBid: input.wonBid,
+      negotiatedOffer: input.negotiatedOffer,
       shippingAddress: input.shippingAddress,
       user: input.user,
       paymentInfo: input.paymentInfo,
-      shipping: input.      shipping,
+      shipping: input.shipping,
       subTotalPrice: input.subTotalPrice,
       totalPrice: input.totalPrice,
       referralCode: input.referralCode,

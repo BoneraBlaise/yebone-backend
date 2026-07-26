@@ -18,7 +18,7 @@ class MarketplaceFeatureRegistry {
       admin: { enabled: true, phase: "core" },
       paymentHooks: { enabled: true, phase: "core" },
       search: { enabled: true, phase: "core" },
-      notifications: { enabled: false, phase: "future" },
+      notifications: { enabled: true, phase: "core" },
       inventoryRedesign: { enabled: false, phase: "future" },
       categoriesRedesign: { enabled: false, phase: "future" },
       delivery: { enabled: true, phase: "core" },

@@ -46,9 +46,17 @@ const orderSchema = new mongoose.Schema({
     },
     orderType: {
         type: String,
-        enum: ['regular', 'won_bid'],
+        enum: ['regular', 'won_bid', 'negotiated_offer'],
         default: 'regular',
         required: true,
+    },
+    offerId: {
+        type: String,
+        default: null,
+    },
+    priceLockToken: {
+        type: String,
+        default: null,
     },
     paidAt:{
         type: Date,

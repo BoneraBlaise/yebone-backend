@@ -38,6 +38,7 @@ class OrderPlatform {
     return {
       cart: input.cart,
       wonBid: input.wonBid,
+      negotiatedOffer: input.negotiatedOffer,
       shippingAddress: input.shippingAddress,
       user: input.user,
       paymentInfo: input.paymentInfo,

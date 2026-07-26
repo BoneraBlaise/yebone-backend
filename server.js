@@ -44,6 +44,17 @@ const server = app.listen(process.env.PORT, () => {
   );
 });
 
+try {
+  const { getCommunicationPlatformSafe } = require("./marketplace/communication");
+  const communicationPlatform = getCommunicationPlatformSafe();
+  if (communicationPlatform) {
+    communicationPlatform.attachSocket(server);
+    console.log("Communication socket attached");
+  }
+} catch (error) {
+  console.warn("Communication socket not attached:", error.message);
+}
+
 // unhandled promise rejection
 process.on("unhandledRejection", (err) => {
   console.log(`Shutting down the server for ${err.message}`);

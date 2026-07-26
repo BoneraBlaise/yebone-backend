@@ -122,6 +122,7 @@ class OrderService {
     const {
       cart,
       wonBid,
+      negotiatedOffer,
       shippingAddress,
       user,
       paymentInfo,
@@ -137,7 +138,7 @@ class OrderService {
     if (!paymentInfo) {
       throw this._error("Payment information is required");
     }
-    if (!wonBid && (!Array.isArray(cart) || cart.length === 0)) {
+    if (!wonBid && !negotiatedOffer && (!Array.isArray(cart) || cart.length === 0)) {
       throw this._error("Cart must be a non-empty array");
     }
 
@@ -153,8 +154,24 @@ class OrderService {
       let repricedCart = [];
       let cartSubtotal = 0;
       let repricedWonBid = null;
+      let repricedNegotiated = null;
 
-      if (wonBid) {
+      if (negotiatedOffer) {
+        const { getCommunicationPlatformSafe } = require("../communication");
+        const commPlatform = getCommunicationPlatformSafe();
+        if (!commPlatform?.offerService) {
+          throw this._error("Negotiated checkout unavailable", 503);
+        }
+        const buyerId = user._id || user.id;
+        const offer = await commPlatform.offerService.validateAcceptedOffer(
+          negotiatedOffer.offerId,
+          negotiatedOffer.priceLockToken,
+          buyerId
+        );
+        repricedNegotiated = await pricing.repriceFromOffer(offer, session);
+        cartSubtotal = repricedNegotiated.commissionBase;
+        await this._validatePromotions(input, repricedNegotiated, integration, correlationId);
+      } else if (wonBid) {
         repricedWonBid = await pricing.repriceWonBid(wonBid, session);
         cartSubtotal = repricedWonBid.commissionBase;
         await this._validatePromotions(input, repricedWonBid, integration, correlationId);
@@ -173,7 +190,13 @@ class OrderService {
         const growth = getGrowthPlatform();
         couponMeta = await growth.redeemCouponForOrder({
           code: couponCode,
-          cart: repricedCart.length ? repricedCart : repricedWonBid ? [repricedWonBid] : [],
+          cart: repricedCart.length
+            ? repricedCart
+            : repricedNegotiated
+              ? [repricedNegotiated]
+              : repricedWonBid
+                ? [repricedWonBid]
+                : [],
           userId: user._id || user.id,
           session,
         });
@@ -182,6 +205,58 @@ class OrderService {
         }
         referralOptions.couponId = couponMeta.couponId;
         referralOptions.couponCode = couponMeta.couponCode;
+      }
+
+      if (repricedNegotiated) {
+        await this.inventory.reserveStock(repricedNegotiated._id, 1, session);
+
+        const offerTotals = pricing.buildOrderTotals({
+          subtotal: repricedNegotiated.serverPrice,
+          shipping,
+          discount: couponMeta?.totalDiscount || 0,
+        });
+
+        const order = await this._createOrderDocument(
+          {
+            cart: [
+              {
+                ...repricedNegotiated,
+                shopId: repricedNegotiated.shopId,
+                shop: repricedNegotiated.shopId,
+                price: repricedNegotiated.serverPrice,
+                qty: 1,
+                total: repricedNegotiated.serverPrice,
+              },
+            ],
+            shippingAddress,
+            user,
+            totalPrice: offerTotals.total,
+            subTotalPrice: offerTotals.subtotal,
+            discountPrice: offerTotals.discount,
+            taxAmount: offerTotals.taxAmount,
+            couponCode: couponMeta?.couponCode,
+            shipping,
+            paymentInfo: { ...paymentInfo, status: "Pending" },
+            orderType: "negotiated_offer",
+            offerId: repricedNegotiated.offerId,
+            priceLockToken: repricedNegotiated.priceLockToken,
+            referralCode: resolvedReferralCode,
+          },
+          session
+        );
+
+        try {
+          const { getCommunicationPlatformSafe } = require("../communication");
+          const commPlatform = getCommunicationPlatformSafe();
+          if (commPlatform?.offerService) {
+            await commPlatform.offerService.markOfferOrdered(repricedNegotiated.offerId, order._id);
+          }
+        } catch (_error) {
+          // offer linkage optional if communication module unavailable
+        }
+
+        await this._processReferral(order, resolvedReferralCode, session, referralOptions);
+        return { orders: [order], correlationId };
       }
 
       if (repricedWonBid) {

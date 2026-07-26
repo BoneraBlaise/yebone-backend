@@ -140,6 +140,37 @@ class OrderPricingService {
       category: product.category,
     };
   }
+
+  async repriceFromOffer(offer, session = null) {
+    const product = await this.loadProduct(offer.productId, session);
+    const negotiatedPrice = Number(offer.amount);
+    if (!Number.isFinite(negotiatedPrice) || negotiatedPrice <= 0) {
+      throw this._error("Invalid negotiated offer price", 400);
+    }
+    const qty = 1;
+    const lineTotal = negotiatedPrice * qty;
+    return {
+      _id: product._id,
+      productId: String(product._id),
+      name: product.name,
+      category: product.category,
+      brand: this._resolveBrand(product),
+      tags: product.tags,
+      shopId: String(product.shopId),
+      shop: product.shop,
+      images: product.images,
+      qty,
+      originalPrice: Number(product.originalPrice || negotiatedPrice),
+      discountPrice: negotiatedPrice,
+      price: negotiatedPrice,
+      serverPrice: negotiatedPrice,
+      lineTotal,
+      commissionBase: lineTotal,
+      offerId: offer.offerId,
+      priceLockToken: offer.priceLockToken,
+      orderType: "negotiated_offer",
+    };
+  }
 }
 
 module.exports = OrderPricingService;

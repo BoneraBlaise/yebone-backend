@@ -79,6 +79,9 @@ function registerMarketplaceCore(app, options = {}) {
     options.trustBuyerProtection || {}
   );
 
+  const { registerCommunicationPlatform } = require("./communication");
+  const communicationPlatform = registerCommunicationPlatform(app, options.communication || {});
+
   const { registerPlatformIntegration } = require("./integration");
   const integration = registerPlatformIntegration(app, {
     useMemoryOnly: Boolean(options.integration?.useMemoryOnly),
@@ -93,6 +96,8 @@ function registerMarketplaceCore(app, options = {}) {
   propertyMobilityPlatform.bindObservability(integration.observability);
   trustBuyerProtectionPlatform.bindFeatureFlags(integration.featureFlags);
   trustBuyerProtectionPlatform.bindObservability(integration.observability);
+  communicationPlatform.bindPricing(integration.pricing);
+  communicationPlatform.bindOrderPlatform(require("./orders").getOrderPlatform());
   integration.initialize().catch((error) => {
     console.error("Platform integration init failed:", error.message);
   });
@@ -129,5 +134,6 @@ module.exports = {
   getPropertyMobilityPlatform: () => require("./property-mobility").getPropertyMobilityPlatform(),
   getTrustBuyerProtectionPlatform: () =>
     require("./trust-buyer-protection").getTrustBuyerProtectionPlatform(),
+  getCommunicationPlatform: () => require("./communication").getCommunicationPlatform(),
   getPlatformIntegration: () => require("./integration/PlatformIntegration").getPlatformIntegration(),
 };
