@@ -5,6 +5,8 @@ const User = require("../../model/user");
 const Shop = require("../../model/shop");
 const ErrorHandler = require("../../utils/ErrorHandler");
 const { createCommunicationPlatform, getCommunicationPlatform } = require("./CommunicationPlatform");
+const CommunicationAccess = require("./CommunicationAccess");
+const { communicationMutationLimiter } = require("./CommunicationRateLimit");
 
 function extractAuthToken(req) {
   const header = String(req.headers.authorization || "");
@@ -204,13 +206,17 @@ function registerCommunicationPlatform(app, options = {}) {
     "/conversations/product",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
+      const buyerId = CommunicationAccess.assertBuyer(req);
       const { productId, sellerId, productSnapshot, initialMessage } = req.body;
+      await CommunicationAccess.validateProductSeller(productId, sellerId);
       const data = await platform.messagingService.startProductConversation({
         productId,
-        buyerId: resolveUserId(req),
+        buyerId,
         sellerId,
         productSnapshot,
-        initialMessage,
+        initialMessage: initialMessage
+          ? CommunicationAccess.sanitizeMessageText(initialMessage)
+          : undefined,
       });
       res.status(201).json({ success: true, data });
     })
@@ -220,10 +226,13 @@ function registerCommunicationPlatform(app, options = {}) {
     "/conversations/:id/messages",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
+      const messageText = req.body.images?.url
+        ? String(req.body.text || "").trim()
+        : CommunicationAccess.sanitizeMessageText(req.body.text);
       const data = await platform.messagingService.sendMessage({
         conversationId: req.params.id,
         senderId: resolveUserId(req),
-        text: req.body.text,
+        text: messageText,
         messageType: req.body.messageType,
         images: req.body.images,
         productSnapshot: req.body.productSnapshot,
@@ -254,7 +263,8 @@ function registerCommunicationPlatform(app, options = {}) {
     "/offers",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
-      const data = await platform.offerService.createOffer(resolveUserId(req), req.body);
+      const buyerId = CommunicationAccess.assertBuyer(req);
+      const data = await platform.offerService.createOffer(buyerId, req.body);
       res.status(201).json({ success: true, data });
     })
   );
@@ -285,7 +295,7 @@ function registerCommunicationPlatform(app, options = {}) {
     "/offers/:offerId",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
-      const data = await platform.offerService.getOffer(req.params.offerId);
+      const data = await platform.offerService.getOffer(req.params.offerId, resolveUserId(req));
       res.status(200).json({ success: true, data });
     })
   );
@@ -294,7 +304,7 @@ function registerCommunicationPlatform(app, options = {}) {
     "/conversations/:id/offers",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
-      const data = await platform.offerService.listOfferHistory(req.params.id);
+      const data = await platform.offerService.listOfferHistory(req.params.id, resolveUserId(req));
       res.status(200).json({ success: true, data });
     })
   );
@@ -316,7 +326,8 @@ function registerCommunicationPlatform(app, options = {}) {
 
   router.post(
     "/offers/expire-due",
-    catchAsyncErrors(async (_req, res) => {
+    catchAsyncErrors(async (req, res) => {
+      CommunicationAccess.assertCronSecret(req);
       const data = await platform.offerService.expireDueOffers();
       res.status(200).json({ success: true, data });
     })
@@ -326,12 +337,12 @@ function registerCommunicationPlatform(app, options = {}) {
     "/orders/:orderId/confirm-delivery",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {
+      const buyerId = CommunicationAccess.assertBuyer(req);
       const { getOrderPlatform } = require("../orders");
       const orderPlatform = getOrderPlatform();
       const order = await orderPlatform.orderService.findById(req.params.orderId);
-      const userId = resolveUserId(req);
       const ownerId = order.user?._id || order.user?.id;
-      if (String(ownerId) !== String(userId)) {
+      if (String(ownerId) !== String(buyerId)) {
         return res.status(403).json({ success: false, reason: "NOT_OWNER" });
       }
       if (!["Shipping", "Received", "On the way", "Transferred to delivery partner"].includes(order.status)) {
@@ -342,7 +353,7 @@ function registerCommunicationPlatform(app, options = {}) {
     })
   );
 
-  app.use("/api/v2/marketplace/communication", router);
+  app.use("/api/v2/marketplace/communication", communicationMutationLimiter, router);
   return platform;
 }
 

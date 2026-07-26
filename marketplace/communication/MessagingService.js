@@ -3,9 +3,10 @@ const Messages = require("../../model/messages");
 const { NOTIFICATION_TYPES } = require("./CommunicationDefaults");
 
 class MessagingService {
-  constructor({ inboxBridge, notificationService } = {}) {
+  constructor({ inboxBridge, notificationService, socketEmitter } = {}) {
     this.inboxBridge = inboxBridge;
     this.notificationService = notificationService;
+    this.socketEmitter = socketEmitter;
   }
 
   _error(message, statusCode = 400) {
@@ -20,6 +21,10 @@ class MessagingService {
   }
 
   async startProductConversation({ productId, buyerId, sellerId, productSnapshot, initialMessage }) {
+    if (String(buyerId) === String(sellerId)) {
+      throw this._error("Buyer and seller must be different", 400);
+    }
+
     const conversation = await this.inboxBridge.findOrCreateProductConversation({
       productId,
       buyerId,
@@ -85,17 +90,21 @@ class MessagingService {
     return this._formatConversation(conversation, userId);
   }
 
-  async getMessages(conversationId, userId) {
+  async getMessages(conversationId, userId, { limit = 100, before } = {}) {
     const conversation = await Conversation.findById(conversationId).lean();
     if (!conversation) throw this._error("Conversation not found", 404);
     this._assertMember(conversation, userId);
 
-    const messages = await Messages.find({ conversationId: String(conversationId) })
-      .sort({ createdAt: 1 })
+    const query = { conversationId: String(conversationId) };
+    if (before) query.createdAt = { $lt: new Date(before) };
+
+    const messages = await Messages.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Math.min(Math.max(1, Number(limit) || 100), 200))
       .lean();
 
     await this.markConversationRead(conversationId, userId);
-    return messages;
+    return messages.reverse();
   }
 
   async sendMessage({ conversationId, senderId, text, messageType = "text", images, productSnapshot }) {
@@ -103,10 +112,15 @@ class MessagingService {
     if (!conversation) throw this._error("Conversation not found", 404);
     this._assertMember(conversation, senderId);
 
+    const normalizedText = String(text || "").trim();
+    if (!normalizedText && !images?.url) {
+      throw this._error("Message text or image is required");
+    }
+
     const message = await this.inboxBridge.sendMessage({
       conversationId: String(conversationId),
       senderId,
-      text,
+      text: normalizedText,
       messageType,
       images,
       productSnapshot,
@@ -120,10 +134,20 @@ class MessagingService {
       await this.notificationService.notifyUser(String(recipientId), {
         type: NOTIFICATION_TYPES.NEW_MESSAGE,
         title: "New message",
-        body: text.slice(0, 120),
+        body: (normalizedText || "New image").slice(0, 120),
         link: `/inbox?conversation=${conversationId}`,
         payload: { conversationId: String(conversationId), messageId: String(message._id) },
         sourceId: String(message._id),
+      });
+    }
+
+    if (recipientId && this.socketEmitter) {
+      this.socketEmitter.emitToUser(String(recipientId), "getMessage", {
+        senderId,
+        text: normalizedText,
+        conversationId: String(conversationId),
+        message,
+        createdAt: message.createdAt || new Date(),
       });
     }
 

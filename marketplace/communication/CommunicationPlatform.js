@@ -19,6 +19,7 @@ class CommunicationPlatform {
     this.messagingService = new MessagingService({
       inboxBridge: this.inboxBridge,
       notificationService: this.notificationService,
+      socketEmitter: this.socket,
     });
     this.offerService = new CommunicationOfferService({
       inboxBridge: this.inboxBridge,
@@ -26,7 +27,6 @@ class CommunicationPlatform {
     });
     this.negotiatedPriceBridge = null;
     this.orderHooks = new OrderCommunicationHooks({ notificationService: this.notificationService });
-    this.socket.messagingService = this.messagingService;
     this.socket.notificationService = this.notificationService;
   }
 

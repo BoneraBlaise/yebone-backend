@@ -1,7 +1,8 @@
+const jwt = require("jsonwebtoken");
+
 class CommunicationSocket {
-  constructor({ notificationService, messagingService } = {}) {
+  constructor({ notificationService } = {}) {
     this.notificationService = notificationService;
-    this.messagingService = messagingService;
     this.io = null;
     this.userSockets = new Map();
   }
@@ -13,43 +14,46 @@ class CommunicationSocket {
       transports: ["websocket", "polling"],
     });
 
+    this.io.use((socket, next) => {
+      const token = socket.handshake.auth?.token;
+      if (!token) {
+        return next(new Error("Unauthorized"));
+      }
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        socket.data.userId = String(decoded.id);
+        return next();
+      } catch (_error) {
+        return next(new Error("Unauthorized"));
+      }
+    });
+
     this.io.on("connection", (socket) => {
-      socket.on("addUser", (userId) => {
-        if (!userId) return;
-        this.userSockets.set(String(userId), socket.id);
-        if (this.notificationService) {
-          this.notificationService.setOnline(String(userId), socket.id);
-        }
-        this._broadcastOnlineUsers();
-      });
+      const userId = socket.data.userId;
+      if (!userId) {
+        socket.disconnect(true);
+        return;
+      }
 
-      socket.on("sendMessage", async (data) => {
-        try {
-          const { senderId, receiverId, text, conversationId, images } = data || {};
-          if (!conversationId || !senderId || !text) return;
-          const message = await this.messagingService.sendMessage({
-            conversationId,
-            senderId,
-            text,
-            messageType: images?.url ? "image" : "text",
-            images,
-          });
-          const payload = { senderId, text, conversationId, message, createdAt: message.createdAt || new Date() };
-          const receiverSocket = this.userSockets.get(String(receiverId));
-          if (receiverSocket) this.io.to(receiverSocket).emit("getMessage", payload);
-          socket.emit("getMessage", payload);
-        } catch (_error) {}
-      });
+      if (!this.userSockets.has(userId)) {
+        this.userSockets.set(userId, new Set());
+      }
+      this.userSockets.get(userId).add(socket.id);
 
-      socket.on("updateLastMessage", (data) => {
-        this.io.emit("lastMessage", data);
-      });
+      if (this.notificationService) {
+        this.notificationService.setOnline(userId, socket.id);
+      }
+      this._broadcastOnlineUsers();
 
       socket.on("disconnect", () => {
-        for (const [userId, socketId] of this.userSockets.entries()) {
-          if (socketId === socket.id) {
+        const sockets = this.userSockets.get(userId);
+        if (sockets) {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
             this.userSockets.delete(userId);
-            if (this.notificationService) this.notificationService.setOffline(userId);
+            if (this.notificationService) {
+              this.notificationService.setOffline(userId);
+            }
           }
         }
         this._broadcastOnlineUsers();
@@ -61,12 +65,21 @@ class CommunicationSocket {
 
   _broadcastOnlineUsers() {
     if (!this.io) return;
-    this.io.emit("getUsers", [...this.userSockets.entries()].map(([userId, socketId]) => ({ userId, socketId })));
+    const users = [];
+    for (const [userId, socketIds] of this.userSockets.entries()) {
+      for (const socketId of socketIds) {
+        users.push({ userId, socketId });
+      }
+    }
+    this.io.emit("getUsers", users);
   }
 
   emitToUser(userId, event, payload) {
-    const socketId = this.userSockets.get(String(userId));
-    if (socketId && this.io) this.io.to(socketId).emit(event, payload);
+    const socketIds = this.userSockets.get(String(userId));
+    if (!socketIds || !this.io) return;
+    for (const socketId of socketIds) {
+      this.io.to(socketId).emit(event, payload);
+    }
   }
 }
 

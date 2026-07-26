@@ -57,6 +57,9 @@ class CommunicationOfferService {
 
     const product = await this._loadProduct(productId);
     const sellerId = String(product.shopId);
+    if (String(buyerId) === sellerId) {
+      throw this._error("Seller cannot create an offer on their own product", 403);
+    }
     const snapshot = payload.productSnapshot || this._buildProductSnapshot(product);
 
     let conversation;
@@ -224,14 +227,20 @@ class CommunicationOfferService {
     return updated;
   }
 
-  async getOffer(offerId) {
+  async getOffer(offerId, userId) {
     const offer = await CommunicationOffer.findOne({ offerId }).lean();
     if (!offer) throw this._error("Offer not found", 404);
+    if (userId) {
+      const id = String(userId);
+      if (String(offer.buyerId) !== id && String(offer.sellerId) !== id) {
+        throw this._error("Not authorized", 403);
+      }
+    }
     return offer;
   }
 
   async validateAcceptedOffer(offerId, priceLockToken, buyerId) {
-    const offer = await this.getOffer(offerId);
+    const offer = await this.getOffer(offerId, buyerId);
     if (offer.status !== "accepted") throw this._error("Offer is not accepted");
     if (String(offer.buyerId) !== String(buyerId)) throw this._error("Not authorized", 403);
     if (!priceLockToken || offer.priceLockToken !== priceLockToken) {
@@ -248,7 +257,14 @@ class CommunicationOfferService {
     await CommunicationOffer.updateOne({ offerId }, { orderId: String(orderId) });
   }
 
-  async listOfferHistory(conversationId) {
+  async listOfferHistory(conversationId, userId) {
+    const Conversation = require("../../model/conversation");
+    const conversation = await Conversation.findById(conversationId).lean();
+    if (!conversation) throw this._error("Conversation not found", 404);
+    const members = (conversation.members || []).map(String);
+    if (!members.includes(String(userId))) {
+      throw this._error("Not authorized", 403);
+    }
     return CommunicationOffer.find({ conversationId }).sort({ createdAt: -1 }).lean();
   }
 
