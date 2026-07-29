@@ -46,6 +46,9 @@ class AIMetrics {
     this.referenceResolutions = 0;
     this.conversationDepthTotal = 0;
     this.resolvedReferenceTotal = 0;
+    this.totalInputTokens = 0;
+    this.totalOutputTokens = 0;
+    this.totalProviderCostUsd = 0;
   }
 
   startTimer() {
@@ -69,6 +72,19 @@ class AIMetrics {
     this.providerCalls += 1;
     this.providerUsage[providerId] = (this.providerUsage[providerId] || 0) + 1;
     if (correlationId) this.lastCorrelationId = correlationId;
+  }
+
+  recordTokenUsage({ inputTokens = 0, outputTokens = 0, totalTokens = 0 } = {}) {
+    this.totalInputTokens += inputTokens || 0;
+    this.totalOutputTokens += outputTokens || 0;
+    if (totalTokens) {
+      const inferred = totalTokens - (inputTokens || 0) - (outputTokens || 0);
+      if (inferred > 0 && !outputTokens) this.totalOutputTokens += inferred;
+    }
+  }
+
+  recordProviderCost(usd = 0) {
+    this.totalProviderCostUsd += Number(usd) || 0;
   }
 
   recordToolCall() {
@@ -255,6 +271,10 @@ class AIMetrics {
     if (correlationId) this.lastCorrelationId = correlationId;
   }
 
+  getSummary() {
+    return this.getSnapshot();
+  }
+
   getSnapshot() {
     const avgLatencyMs =
       this.requests > 0 ? Math.round(this.totalLatencyMs / this.requests) : 0;
@@ -312,6 +332,9 @@ class AIMetrics {
         this.referenceResolutions > 0
           ? Math.round((this.resolvedReferenceTotal / this.referenceResolutions) * 10) / 10
           : 0,
+      totalInputTokens: this.totalInputTokens,
+      totalOutputTokens: this.totalOutputTokens,
+      totalProviderCostUsd: this.totalProviderCostUsd,
     });
   }
 }

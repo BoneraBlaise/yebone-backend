@@ -85,7 +85,7 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     server.close();
     assert.equal(response.success, true);
     assert.equal(response.data.healthy, true);
-    assert.equal(response.data.mockProviderActive, true);
+    assert.equal(response.data.mockProviderActive, false);
     assert.equal(response.data.toolsRegistered, 18);
     assert.equal(response.data.productionTools, true);
     assert.equal(response.data.phase, "14.0");
@@ -117,7 +117,9 @@ describe("AI Gateway — Phase 7.1/7.2", () => {
     assert.equal(response.status, 200);
     assert.equal(response.body.success, true);
     assert.ok(response.body.data.message.includes("YEBO"));
-    assert.equal(response.body.data.provider.mock, true);
+    assert.equal(response.body.data.yeboAI.mock, true);
+    assert.equal(response.body.data.displayBrand, "YEBO AI");
+    assert.equal(response.body.data.provider, undefined);
     assert.equal(typeof response.body.data.tool.success, "boolean");
     assert.equal(response.body.data.tool.tool, "search.products");
     assert.equal(response.body.data.meta.phase, "7.7");

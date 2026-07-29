@@ -3,6 +3,12 @@
  */
 const PlatformAuditAdapter = require("../integration/audit/PlatformAuditAdapter");
 const AIAuthContext = require("./auth/AIAuthContext");
+const { maskForCustomer } = require("./utils/ProviderMasking");
+const {
+  analyticsFromProvider,
+  recordAnalytics,
+  stripProviderAnalytics,
+} = require("./analytics/AIAnalyticsRecorder");
 
 class AIGateway {
   constructor(platform) {
@@ -47,7 +53,7 @@ class AIGateway {
         requestId,
         sessionId: parsed.sessionId,
       });
-      return { stream: false, data: response, latencyMs: stopTimer() };
+      return { stream: false, data: maskForCustomer(response), latencyMs: stopTimer() };
     }
 
     if (parsed.confirmActionId && parsed.sessionId && parsed.actionChecksum) {
@@ -68,7 +74,7 @@ class AIGateway {
       });
       const latencyMs = stopTimer();
       this._audit("ai.chat.confirmation.complete", response);
-      return { stream: false, data: response, latencyMs };
+      return { stream: false, data: maskForCustomer(response), latencyMs };
     }
 
     const plan = await this.platform.planner.createPlan({
@@ -103,15 +109,25 @@ class AIGateway {
 
     const response = await this.platform.planner.execute(plan, context);
     const latencyMs = stopTimer();
-    this.platform.metrics.recordRequest({
-      type: "chat",
-      requestId,
-      latencyMs,
-      success: true,
-    });
-    this._audit("ai.chat.complete", response);
+    const providerAnalytics = response._providerAnalytics || {};
+    const publicResponse = stripProviderAnalytics(response);
 
-    return { stream: false, data: response, latencyMs };
+    await recordAnalytics(
+      this.platform,
+      analyticsFromProvider(providerAnalytics, {
+        type: "chat",
+        requestId,
+        latencyMs,
+        success: true,
+        serviceType: "shopping_assistant",
+        userId: authContext.userId,
+        vendorId: authContext.vendorId,
+        providerCategory: providerAnalytics.providerCategory || "llm",
+      })
+    );
+    this._audit("ai.chat.complete", publicResponse);
+
+    return { stream: false, data: maskForCustomer(publicResponse), latencyMs };
   }
 
   async handleSearch(req) {
@@ -147,15 +163,25 @@ class AIGateway {
     });
 
     const latencyMs = stopTimer();
-    this.platform.metrics.recordRequest({
-      type: "search",
-      requestId,
-      latencyMs,
-      success: true,
-    });
-    this._audit("ai.search.complete", response);
+    const providerAnalytics = response._providerAnalytics || {};
+    const publicResponse = stripProviderAnalytics(response);
 
-    return { data: response, latencyMs };
+    await recordAnalytics(
+      this.platform,
+      analyticsFromProvider(providerAnalytics, {
+        type: "search",
+        requestId,
+        latencyMs,
+        success: true,
+        serviceType: "search",
+        userId: authContext.userId,
+        vendorId: authContext.vendorId,
+        providerCategory: providerAnalytics.providerCategory || "llm",
+      })
+    );
+    this._audit("ai.search.complete", publicResponse);
+
+    return { data: maskForCustomer(publicResponse), latencyMs };
   }
 
   writeSseStream(res, iterator) {

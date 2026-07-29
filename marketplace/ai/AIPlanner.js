@@ -5,6 +5,8 @@ const SearchParameterExtractor = require("./search/SearchParameterExtractor");
 const AIConversationContext = require("./conversation/AIConversationContext");
 const ConversationFlowAnalyzer = require("./conversation/ConversationFlowAnalyzer");
 const ConversationMemoryEngine = require("./conversation/ConversationMemoryEngine");
+const { AI_SERVICE } = require("./commerce/CreditPolicy");
+const { YEBO_AI_BRAND } = require("./utils/ProviderMasking");
 
 const WRITE_INTENTS = new Set(["property_listing_create", "property_listing_publish"]);
 const WRITE_TOOL_ID = "property.listing.manage";
@@ -15,6 +17,7 @@ class AIPlanner {
     capabilityRegistry,
     promptRegistry,
     providerManager,
+    router,
     hooks,
     metrics,
     config,
@@ -28,6 +31,7 @@ class AIPlanner {
     this.capabilityRegistry = capabilityRegistry;
     this.promptRegistry = promptRegistry;
     this.providerManager = providerManager;
+    this.router = router;
     this.hooks = hooks;
     this.metrics = metrics;
     this.config = config;
@@ -92,6 +96,49 @@ class AIPlanner {
     if (brandHit) return true;
     const categories = Object.values(SearchParameterExtractor.DEFAULT_CATEGORIES).flat();
     return categories.some((alias) => lower.includes(alias));
+  }
+
+  _resolveServiceType(plan = {}, context = {}) {
+    const intent = plan.intent?.intent || context.type || "chat";
+    if (intent === "search" || context.query) return AI_SERVICE.SEARCH;
+    if (intent === "recommend") return AI_SERVICE.RECOMMENDATIONS;
+    return AI_SERVICE.SHOPPING_ASSISTANT;
+  }
+
+  async _invokeProvider({ plan, context, message, toolResult = null }) {
+    const input = message || context.message || context.query || "";
+    const options = {
+      toolResults: toolResult ? [toolResult] : [],
+      prompt: plan.prompts?.instruction,
+      memory: plan.memoryResolution || null,
+      mode: "chat",
+    };
+
+    if (this.router) {
+      const serviceType = this._resolveServiceType(plan, context);
+      const scope = plan.intent?.intent === "search" ? "search" : null;
+      const routing = this.router.route({ serviceType, scope, input, options });
+      const result = await this.router.execute(routing);
+      this.metrics.recordProviderCall({
+        providerId: routing.providerId,
+        correlationId: plan.correlationId,
+      });
+      return {
+        providerId: routing.providerId,
+        model: result.model,
+        mock: result.mock !== false,
+        content: result.content,
+        usage: result.usage,
+        cost: result.cost,
+        providerCategory: result.providerCategory || routing.category,
+      };
+    }
+
+    this.metrics.recordProviderCall({
+      providerId: this.providerManager.activeProviderId,
+      correlationId: plan.correlationId,
+    });
+    return this.providerManager.chat(input, options);
   }
 
   detectIntent({ message, type = "chat", sessionContext = null, flow = null } = {}) {
@@ -602,7 +649,7 @@ class AIPlanner {
       sessionContextSnapshot: this.conversationContext.snapshot(resolvedSessionId),
       reusedToolResult:
         flow.toolStrategy === "reuse" ? activeContext.lastToolResult || null : null,
-      providerId: this.providerManager.activeProviderId,
+      providerId: this.router ? "llm" : this.providerManager.activeProviderId,
       promptVersions: prompts.layers,
       prompts,
     };
@@ -785,15 +832,11 @@ class AIPlanner {
       }
     }
 
-    this.metrics.recordProviderCall({
-      providerId: this.providerManager.activeProviderId,
-      correlationId: plan.correlationId,
-    });
-
-    const providerResult = await this.providerManager.chat(context.message || context.query, {
-      toolResults: toolResult ? [toolResult] : [],
-      prompt: plan.prompts.instruction,
-      memory: plan.memoryResolution || null,
+    const providerResult = await this._invokeProvider({
+      plan,
+      context,
+      message: context.message || context.query,
+      toolResult,
     });
 
     const products = this._extractProducts(toolResult);
@@ -861,11 +904,17 @@ class AIPlanner {
       toolId: plan.toolId,
       routing: plan.routing,
       promptVersions: plan.promptVersions,
-      provider: {
-        id: providerResult.providerId,
+      _providerAnalytics: {
+        usage: providerResult.usage,
+        cost: providerResult.cost,
+        providerCategory: providerResult.providerCategory || "llm",
+      },
+      yeboAI: {
+        brand: YEBO_AI_BRAND,
         model: providerResult.model,
         mock: providerResult.mock !== false,
       },
+      displayBrand: YEBO_AI_BRAND,
       tool: toolResult,
       message: providerResult.content,
       recommendations,
@@ -945,10 +994,16 @@ class AIPlanner {
     message,
     authContext,
   } = {}) {
-    const providerResult = await this.providerManager.chat(message || "Action confirmed.", {
-      toolResults: toolResult ? [toolResult] : [],
-      prompt: "Confirm the completed action briefly.",
-      memory: null,
+    const providerResult = await this._invokeProvider({
+      plan: {
+        correlationId: requestId,
+        intent: { intent: record.intent },
+        prompts: { instruction: "Confirm the completed action briefly." },
+        memoryResolution: null,
+      },
+      context: {},
+      message: message || "Action confirmed.",
+      toolResult,
     });
 
     return {
@@ -959,6 +1014,7 @@ class AIPlanner {
       intent: record.intent,
       toolId: record.toolId,
       message: providerResult.content,
+      displayBrand: YEBO_AI_BRAND,
       tool: toolResult,
       pendingActionId: record.pendingActionId,
       meta: {

@@ -30,7 +30,7 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
   router.get(
     "/health",
     catchAsyncErrors(async (_req, res) => {
-      res.status(200).json({ success: true, data: platform.health.check() });
+      res.status(200).json({ success: true, data: platform.health.check({ admin: false }) });
     })
   );
 
@@ -50,7 +50,7 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
         data: {
           products: bridge.getAdminAiProducts(),
           workflow: bridge.getWorkflowSnapshot(),
-          health: platform.health.check(),
+          health: platform.health.check({ admin: true }),
           metrics: platform.metrics?.getSummary?.() || null,
         },
       });
@@ -77,6 +77,46 @@ function registerAIPlatform(app, marketplaceCore, options = {}) {
         data: result.snapshot.draftBusinessValues?.aiProducts || result.snapshot.businessValues?.aiProducts,
         workflow: result.workflow,
       });
+    })
+  );
+
+  router.get(
+    "/admin/analytics",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const access = PlatformAuthService.assertSuperAdmin(req);
+      if (!access.valid) {
+        return res.status(access.statusCode).json({ success: false, reason: access.reason });
+      }
+      const period = req.query.period === "monthly" ? "monthly" : "daily";
+      const summary = await platform.analyticsPersistence.getSummary({ period });
+      res.status(200).json({
+        success: true,
+        data: {
+          runtime: platform.metrics.getSummary(),
+          persisted: summary,
+        },
+      });
+    })
+  );
+
+  router.post(
+    "/admin/credits/adjust",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res) => {
+      const access = PlatformAuthService.assertSuperAdmin(req);
+      if (!access.valid) {
+        return res.status(access.statusCode).json({ success: false, reason: access.reason });
+      }
+      const { vendorId, amount, reason } = req.body || {};
+      if (!vendorId) {
+        return res.status(400).json({ success: false, message: "vendorId is required" });
+      }
+      const wallet = await platform.entitlements.credits.adminAdjust(vendorId, Number(amount), {
+        reason: reason || "admin_adjustment",
+        adminId: access.userId,
+      });
+      res.status(200).json({ success: true, data: wallet });
     })
   );
 
