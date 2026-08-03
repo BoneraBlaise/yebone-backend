@@ -1,112 +1,224 @@
-const AIConfiguration = require("./AIConfiguration");
-const AIHooks = require("./AIHooks");
-const AIMetrics = require("./AIMetrics");
-const AIPromptRegistry = require("./AIPromptRegistry");
-const AIProviderManager = require("./AIProviderManager");
-const AIToolRegistry = require("./AIToolRegistry");
-const AICapabilityRegistry = require("./AICapabilityRegistry");
-const AIConversationContext = require("./conversation/AIConversationContext");
-const AIPlanner = require("./AIPlanner");
-const AIGateway = require("./AIGateway");
-const AIHealth = require("./AIHealth");
-const AIGatewayValidation = require("./validation/AIGatewayValidation");
-const AIRequestSecurity = require("./security/AIRequestSecurity");
-const { AIActionAudit } = require("./audit/AIActionAudit");
-const AIPendingActionService = require("./confirmation/AIPendingActionService");
-const ConfirmationHandler = require("./confirmation/ConfirmationHandler");
-const AIProviderRegistry = require("./providers/AIProviderRegistry");
-const AIRouter = require("./router/AIRouter");
-const AIEntitlementsService = require("./commerce/AIEntitlementsService");
-const AIAnalyticsPersistence = require("./analytics/AIAnalyticsPersistence");
-const AIGatewayServices = require("./AIGatewayServices");
-const PreviewSessionService = require("./commerce/PreviewSessionService");
-const PreviewValidationService = require("./commerce/PreviewValidationService");
-
-/**
- * AI Platform composition root — orchestration layer only.
- */
-class AIPlatform {
-  constructor({ marketplaceCore, config } = {}) {
-    if (!marketplaceCore) {
-      throw new Error("AIPlatform requires marketplaceCore");
-    }
-
-    this.marketplaceCore = marketplaceCore;
-    this.config = new AIConfiguration(config);
-    this.hooks = new AIHooks();
-    this.metrics = new AIMetrics();
-    this.promptRegistry = new AIPromptRegistry(config?.prompts || {});
-    this.providerManager = new AIProviderManager(this.config);
-    this.toolRegistry = new AIToolRegistry({ metrics: this.metrics });
-    this.capabilityRegistry = new AICapabilityRegistry();
-    this.conversationContext = new AIConversationContext({
-      ttlMs: this.config.conversationTtlMs,
-      maxSessions: this.config.conversationMaxSessions,
-    });
-    this.actionAudit = new AIActionAudit({ enabled: this.config.enableAuditEvents });
-    this.pendingActionService = new AIPendingActionService({
-      config: this.config,
-      audit: this.actionAudit,
-    });
-    this.confirmationHandler = new ConfirmationHandler({
-      pendingActionService: this.pendingActionService,
-      toolRegistry: this.toolRegistry,
-      audit: this.actionAudit,
-      config: this.config,
-    });
-    this.validation = new AIGatewayValidation(this.config);
-    this.security = new AIRequestSecurity(this.config, this.hooks);
-    this.providerRegistry = new AIProviderRegistry(this.config);
-    this.router = new AIRouter(this.providerRegistry);
-    this.planner = new AIPlanner({
-      toolRegistry: this.toolRegistry,
-      capabilityRegistry: this.capabilityRegistry,
-      promptRegistry: this.promptRegistry,
-      providerManager: this.providerManager,
-      router: this.router,
-      hooks: this.hooks,
-      metrics: this.metrics,
-      config: this.config,
-      conversationContext: this.conversationContext,
-      pendingActionService: this.pendingActionService,
-    });
-    this.entitlements = new AIEntitlementsService();
-    this.analyticsPersistence = new AIAnalyticsPersistence();
-    this.previewSessions = new PreviewSessionService();
-    this.previewValidation = new PreviewValidationService();
-    this.gatewayServices = new AIGatewayServices(this);
-    this.gateway = new AIGateway(this);
-    this.health = new AIHealth(this);
-    this._initialized = false;
-  }
-
-  initialize() {
-    if (this._initialized) return this.getSnapshot();
-
-    this.config.assertProductionReady();
-
-    this.providerManager.initializeAll();
-    this.providerRegistry.initializeAll();
-    this.toolRegistry.registerProductionTools({
-      marketplaceCore: this.marketplaceCore,
-    });
-    this.capabilityRegistry.registerFromTools([...this.toolRegistry.tools.values()]);
-    this._initialized = true;
-    return this.getSnapshot();
-  }
-
-  getSnapshot() {
-    return {
-      name: this.config.name,
-      version: this.config.version,
-      initialized: this._initialized,
-      tools: this.toolRegistry.list().length,
-      capabilities: this.capabilityRegistry.listCapabilities().length,
-      providers: this.providerManager.listProviders(),
-      metrics: this.metrics.getSnapshot(),
-      commerceAgent: true,
-    };
-  }
-}
-
-module.exports = AIPlatform;
+const AIConfiguration = require("./AIConfiguration");
+
+const AIHooks = require("./AIHooks");
+
+const AIMetrics = require("./AIMetrics");
+
+const AIPromptRegistry = require("./AIPromptRegistry");
+
+const AIProviderManager = require("./AIProviderManager");
+
+const AIToolRegistry = require("./AIToolRegistry");
+
+const AICapabilityRegistry = require("./AICapabilityRegistry");
+
+const AIConversationContext = require("./conversation/AIConversationContext");
+
+const AIPlanner = require("./AIPlanner");
+
+const AIGateway = require("./AIGateway");
+
+const AIHealth = require("./AIHealth");
+
+const AIGatewayValidation = require("./validation/AIGatewayValidation");
+
+const AIRequestSecurity = require("./security/AIRequestSecurity");
+
+const { AIActionAudit } = require("./audit/AIActionAudit");
+
+const AIPendingActionService = require("./confirmation/AIPendingActionService");
+
+const ConfirmationHandler = require("./confirmation/ConfirmationHandler");
+
+const AIProviderRegistry = require("./providers/AIProviderRegistry");
+
+const AIRouter = require("./router/AIRouter");
+
+const AIEntitlementsService = require("./commerce/AIEntitlementsService");
+
+const AIAnalyticsPersistence = require("./analytics/AIAnalyticsPersistence");
+
+const AIGatewayServices = require("./AIGatewayServices");
+
+const PreviewSessionService = require("./commerce/PreviewSessionService");
+
+const PreviewValidationService = require("./commerce/PreviewValidationService");
+
+
+
+/**
+
+ * AI Platform composition root — orchestration layer only.
+
+ */
+
+class AIPlatform {
+
+  constructor({ marketplaceCore, config } = {}) {
+
+    if (!marketplaceCore) {
+
+      throw new Error("AIPlatform requires marketplaceCore");
+
+    }
+
+
+
+    this.marketplaceCore = marketplaceCore;
+
+    this.config = new AIConfiguration(config);
+
+    this.hooks = new AIHooks();
+
+    this.metrics = new AIMetrics();
+
+    this.promptRegistry = new AIPromptRegistry(config?.prompts || {});
+
+    this.providerManager = new AIProviderManager(this.config);
+
+    this.toolRegistry = new AIToolRegistry({ metrics: this.metrics });
+
+    this.capabilityRegistry = new AICapabilityRegistry();
+
+    this.conversationContext = new AIConversationContext({
+
+      ttlMs: this.config.conversationTtlMs,
+
+      maxSessions: this.config.conversationMaxSessions,
+
+    });
+
+    this.actionAudit = new AIActionAudit({ enabled: this.config.enableAuditEvents });
+
+    this.pendingActionService = new AIPendingActionService({
+
+      config: this.config,
+
+      audit: this.actionAudit,
+
+    });
+
+    this.confirmationHandler = new ConfirmationHandler({
+
+      pendingActionService: this.pendingActionService,
+
+      toolRegistry: this.toolRegistry,
+
+      audit: this.actionAudit,
+
+      config: this.config,
+
+    });
+
+    this.validation = new AIGatewayValidation(this.config);
+
+    this.security = new AIRequestSecurity(this.config, this.hooks);
+
+    this.providerRegistry = new AIProviderRegistry(this.config);
+
+    this.router = new AIRouter(this.providerRegistry);
+
+    this.planner = new AIPlanner({
+
+      toolRegistry: this.toolRegistry,
+
+      capabilityRegistry: this.capabilityRegistry,
+
+      promptRegistry: this.promptRegistry,
+
+      providerManager: this.providerManager,
+
+      router: this.router,
+
+      hooks: this.hooks,
+
+      metrics: this.metrics,
+
+      config: this.config,
+
+      conversationContext: this.conversationContext,
+
+      pendingActionService: this.pendingActionService,
+
+    });
+
+    this.entitlements = new AIEntitlementsService();
+
+    this.analyticsPersistence = new AIAnalyticsPersistence();
+
+    this.previewSessions = new PreviewSessionService();
+
+    this.previewValidation = new PreviewValidationService();
+
+    this.gatewayServices = new AIGatewayServices(this);
+
+    this.gateway = new AIGateway(this);
+
+    this.health = new AIHealth(this);
+
+    this._initialized = false;
+
+  }
+
+
+
+  initialize() {
+
+    if (this._initialized) return this.getSnapshot();
+
+
+
+    this.config.assertProductionReady();
+
+
+
+    this.providerManager.initializeAll();
+
+    this.providerRegistry.initializeAll();
+
+    this.toolRegistry.registerProductionTools({
+
+      marketplaceCore: this.marketplaceCore,
+
+    });
+
+    this.capabilityRegistry.registerFromTools([...this.toolRegistry.tools.values()]);
+
+    this._initialized = true;
+
+    return this.getSnapshot();
+
+  }
+
+
+
+  getSnapshot() {
+
+    return {
+
+      name: this.config.name,
+
+      version: this.config.version,
+
+      initialized: this._initialized,
+
+      tools: this.toolRegistry.list().length,
+
+      capabilities: this.capabilityRegistry.listCapabilities().length,
+
+      providers: this.providerManager.listProviders(),
+
+      metrics: this.metrics.getSnapshot(),
+
+      commerceAgent: true,
+
+    };
+
+  }
+
+}
+
+
+
+module.exports = AIPlatform;
+

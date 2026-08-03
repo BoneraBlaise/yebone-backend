@@ -107,7 +107,7 @@ class CommunicationOfferService {
       type: NOTIFICATION_TYPES.NEW_OFFER,
       title: "New offer received",
       body: `${snapshot.name}: ${amount} RWF`,
-      link: `/inbox?conversation=${offer.conversationId}`,
+      link: `${this._inboxPathForRecipient(sellerId, sellerId)}?conversation=${offer.conversationId}`,
       payload: { offerId: offer.offerId, conversationId: offer.conversationId },
       sourceId: offer.offerId,
     });
@@ -159,7 +159,7 @@ class CommunicationOfferService {
       type: NOTIFICATION_TYPES.OFFER_COUNTER,
       title: "Counter offer received",
       body: `${amount} RWF`,
-      link: `/inbox?conversation=${counter.conversationId}`,
+      link: `${this._inboxPathForRecipient(recipientId, parent.sellerId)}?conversation=${counter.conversationId}`,
       payload: { offerId: counter.offerId },
       sourceId: counter.offerId,
     });
@@ -213,7 +213,7 @@ class CommunicationOfferService {
     const checkoutLink =
       status === "accepted"
         ? `/checkout?offerId=${offer.offerId}&token=${updates.priceLockToken}`
-        : `/inbox?conversation=${offer.conversationId}`;
+        : `${this._inboxPathForRecipient(recipientId, offer.sellerId)}?conversation=${offer.conversationId}`;
 
     await this._notifyRecipient(recipientId, {
       type: notifType,
@@ -292,6 +292,10 @@ class CommunicationOfferService {
   async _notifyRecipient(recipientId, notification) {
     if (!this.notificationService) return;
     await this.notificationService.notifyUser(String(recipientId), notification);
+  }
+
+  _inboxPathForRecipient(recipientId, sellerId) {
+    return String(recipientId) === String(sellerId) ? "/dashboard-messages" : "/inbox";
   }
 }
 

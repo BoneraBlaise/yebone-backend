@@ -1,7 +1,9 @@
 const crypto = require("crypto");
 
 class PropertyMobilityRepository {
-  constructor() {
+  constructor({ useMemoryOnly = false, ListingModel = null } = {}) {
+    this.useMemoryOnly = useMemoryOnly;
+    this.ListingModel = ListingModel;
     this.listings = new Map();
     this.agencies = new Map();
     this.verifications = new Map();
@@ -9,6 +11,57 @@ class PropertyMobilityRepository {
     this.offers = new Map();
     this.reports = new Map();
     this.inbox = new Map();
+  }
+
+  setListingModel(model) {
+    this.ListingModel = model;
+  }
+
+  _usesMemoryForListings() {
+    return this.useMemoryOnly || !this.ListingModel;
+  }
+
+  _normalizeListing(doc) {
+    if (!doc) return null;
+    const item = doc.toObject ? doc.toObject() : structuredClone(doc);
+    if (item.createdAt instanceof Date) item.createdAt = item.createdAt.toISOString();
+    if (item.updatedAt instanceof Date) item.updatedAt = item.updatedAt.toISOString();
+    if (item.promotionExpiresAt instanceof Date) {
+      item.promotionExpiresAt = item.promotionExpiresAt.toISOString();
+    }
+    return item;
+  }
+
+  _filterListings(items, filters = {}) {
+    return items
+      .filter((item) => {
+        if (filters.ownerId && item.ownerId !== String(filters.ownerId)) return false;
+        if (filters.category && item.category !== filters.category) return false;
+        if (filters.categories?.length && !filters.categories.includes(item.category)) return false;
+        if (filters.status && item.status !== filters.status) return false;
+        if (filters.publishedOnly && item.status !== "published") return false;
+        if (filters.verifiedOnly && !item.verified) return false;
+        if (filters.featuredOnly && !item.featured) return false;
+        if (filters.minPrice != null && Number(item.price) < Number(filters.minPrice)) return false;
+        if (filters.maxPrice != null && Number(item.price) > Number(filters.maxPrice)) return false;
+        if (filters.location && item.location?.city !== filters.location && item.location?.address !== filters.location) {
+          if (!String(item.location?.city || "").toLowerCase().includes(String(filters.location).toLowerCase())) {
+            return false;
+          }
+        }
+        if (filters.q) {
+          const q = String(filters.q).toLowerCase();
+          const hay = `${item.title} ${item.description}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return item.status !== "deleted";
+      })
+      .sort((a, b) => {
+        if (filters.sort === "price_asc") return Number(a.price) - Number(b.price);
+        if (filters.sort === "price_desc") return Number(b.price) - Number(a.price);
+        return String(b.createdAt).localeCompare(String(a.createdAt));
+      })
+      .map((item) => structuredClone(item));
   }
 
   resetForTests() {
@@ -51,58 +104,69 @@ class PropertyMobilityRepository {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    this.listings.set(listing.listingId, listing);
-    return structuredClone(listing);
+
+    if (this._usesMemoryForListings()) {
+      this.listings.set(listing.listingId, listing);
+      return structuredClone(listing);
+    }
+
+    const doc = await this.ListingModel.create(listing);
+    return this._normalizeListing(doc);
   }
 
   async getListing(listingId) {
-    const item = this.listings.get(String(listingId));
-    return item ? structuredClone(item) : null;
+    if (this._usesMemoryForListings()) {
+      const item = this.listings.get(String(listingId));
+      return item ? structuredClone(item) : null;
+    }
+
+    const doc = await this.ListingModel.findOne({ listingId: String(listingId) }).lean();
+    return doc ? this._normalizeListing(doc) : null;
   }
 
   async updateListing(listingId, patch) {
-    const existing = this.listings.get(String(listingId));
-    if (!existing) return null;
-    const updated = {
-      ...existing,
-      ...patch,
-      listingId: existing.listingId,
-      updatedAt: new Date().toISOString(),
-    };
-    this.listings.set(existing.listingId, updated);
-    return structuredClone(updated);
+    if (this._usesMemoryForListings()) {
+      const existing = this.listings.get(String(listingId));
+      if (!existing) return null;
+      const updated = {
+        ...existing,
+        ...patch,
+        listingId: existing.listingId,
+        updatedAt: new Date().toISOString(),
+      };
+      this.listings.set(existing.listingId, updated);
+      return structuredClone(updated);
+    }
+
+    const updated = await this.ListingModel.findOneAndUpdate(
+      { listingId: String(listingId) },
+      { $set: { ...patch, updatedAt: new Date().toISOString() } },
+      { new: true }
+    ).lean();
+    return updated ? this._normalizeListing(updated) : null;
   }
 
   async listListings(filters = {}) {
-    return [...this.listings.values()]
-      .filter((item) => {
-        if (filters.ownerId && item.ownerId !== String(filters.ownerId)) return false;
-        if (filters.category && item.category !== filters.category) return false;
-        if (filters.categories?.length && !filters.categories.includes(item.category)) return false;
-        if (filters.status && item.status !== filters.status) return false;
-        if (filters.publishedOnly && item.status !== "published") return false;
-        if (filters.verifiedOnly && !item.verified) return false;
-        if (filters.featuredOnly && !item.featured) return false;
-        if (filters.minPrice != null && Number(item.price) < Number(filters.minPrice)) return false;
-        if (filters.maxPrice != null && Number(item.price) > Number(filters.maxPrice)) return false;
-        if (filters.location && item.location?.city !== filters.location && item.location?.address !== filters.location) {
-          if (!String(item.location?.city || "").toLowerCase().includes(String(filters.location).toLowerCase())) {
-            return false;
-          }
-        }
-        if (filters.q) {
-          const q = String(filters.q).toLowerCase();
-          const hay = `${item.title} ${item.description}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        return item.status !== "deleted";
-      })
-      .sort((a, b) => {
-        if (filters.sort === "price_asc") return Number(a.price) - Number(b.price);
-        if (filters.sort === "price_desc") return Number(b.price) - Number(a.price);
-        return String(b.createdAt).localeCompare(String(a.createdAt));
-      })
-      .map((item) => structuredClone(item));
+    if (this._usesMemoryForListings()) {
+      return this._filterListings([...this.listings.values()], filters);
+    }
+
+    const query = {};
+    if (filters.ownerId) query.ownerId = String(filters.ownerId);
+    if (filters.category) query.category = filters.category;
+    if (filters.categories?.length) query.category = { $in: filters.categories };
+    if (filters.status) query.status = filters.status;
+    else query.status = { $ne: "deleted" };
+
+    const sort =
+      filters.sort === "price_asc"
+        ? { price: 1 }
+        : filters.sort === "price_desc"
+          ? { price: -1 }
+          : { createdAt: -1 };
+
+    const docs = await this.ListingModel.find(query).sort(sort).lean();
+    return this._filterListings(docs.map((doc) => this._normalizeListing(doc)), filters);
   }
 
   async createAgency(ownerId, payload) {

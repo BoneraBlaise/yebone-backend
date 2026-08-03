@@ -6,6 +6,7 @@ const conversationSchema = new mongoose.Schema(
     members: { type: Array },
     lastMessage: { type: String },
     lastMessageId: { type: String },
+    lastMessageSenderId: { type: String },
     productId: { type: String, index: true },
     sellerId: { type: String, index: true },
     buyerId: { type: String, index: true },

@@ -131,11 +131,13 @@ class MessagingService {
       .find((id) => id !== String(senderId));
 
     if (recipientId && this.notificationService) {
+      const isSellerRecipient = String(recipientId) === String(conversation.sellerId);
+      const inboxPath = isSellerRecipient ? "/dashboard-messages" : "/inbox";
       await this.notificationService.notifyUser(String(recipientId), {
         type: NOTIFICATION_TYPES.NEW_MESSAGE,
         title: "New message",
         body: (normalizedText || "New image").slice(0, 120),
-        link: `/inbox?conversation=${conversationId}`,
+        link: `${inboxPath}?conversation=${conversationId}`,
         payload: { conversationId: String(conversationId), messageId: String(message._id) },
         sourceId: String(message._id),
       });
@@ -168,6 +170,18 @@ class MessagingService {
       { conversationId: String(conversationId), readBy: { $ne: String(userId) } },
       { $addToSet: { readBy: String(userId) } }
     );
+
+    if (this.socketEmitter) {
+      const otherMembers = (conversation.members || [])
+        .map(String)
+        .filter((id) => id !== String(userId));
+      for (const memberId of otherMembers) {
+        this.socketEmitter.emitToUser(memberId, "conversationRead", {
+          conversationId: String(conversationId),
+          readBy: String(userId),
+        });
+      }
+    }
   }
 
   async archiveConversation(conversationId, userId) {

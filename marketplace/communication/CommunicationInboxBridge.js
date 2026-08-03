@@ -54,6 +54,7 @@ class CommunicationInboxBridge {
     if (conversation) {
       conversation.lastMessage = text;
       conversation.lastMessageId = String(message._id);
+      conversation.lastMessageSenderId = String(senderId);
       const members = (conversation.members || []).map(String);
       const unread = conversation.unreadCounts || new Map();
       for (const memberId of members) {

@@ -14,7 +14,7 @@ function extractBearerToken(req) {
 }
 
 function extractAuthToken(req) {
-  return req.cookies?.token || extractBearerToken(req) || null;
+  return extractBearerToken(req) || req.cookies?.token || null;
 }
 
 function extractSellerToken(req) {

@@ -18,7 +18,7 @@ class PropertyMobilityPlatform {
     this.featureFlags = options.featureFlags || null;
     this.observability = options.observability || null;
 
-    this.repository = options.repository || new PropertyMobilityRepository();
+    this.repository = options.repository || new PropertyMobilityRepository({ useMemoryOnly: this.useMemoryOnly });
     this.configStore =
       options.configStore || new PropertyMobilityConfigStore({ useMemoryOnly: this.useMemoryOnly });
     this.inboxBridge =
@@ -72,8 +72,9 @@ class PropertyMobilityPlatform {
     this.initialized = false;
   }
 
-  setModels({ ConfigModel } = {}) {
+  setModels({ ConfigModel, ListingModel } = {}) {
     if (ConfigModel) this.configStore.setModel(ConfigModel);
+    if (ListingModel) this.repository.setListingModel(ListingModel);
   }
 
   bindFeatureFlags(featureFlags) {

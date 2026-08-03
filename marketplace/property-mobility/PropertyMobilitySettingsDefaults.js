@@ -2,12 +2,15 @@ const LISTING_CATEGORIES = Object.freeze([
   "apartments",
   "houses",
   "land",
-  "cars",
   "commercial_property",
+  "cars",
+  "motorcycles",
+  "trucks",
+  "bicycles",
 ]);
 
 const PROPERTY_CATEGORIES = Object.freeze(["apartments", "houses", "land", "commercial_property"]);
-const VEHICLE_CATEGORIES = Object.freeze(["cars"]);
+const VEHICLE_CATEGORIES = Object.freeze(["cars", "motorcycles", "trucks", "bicycles"]);
 
 const LISTING_STATUSES = Object.freeze([
   "draft",
