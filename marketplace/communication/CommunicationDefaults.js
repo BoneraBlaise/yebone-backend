@@ -12,6 +12,12 @@ const NOTIFICATION_TYPES = {
   ORDER_SHIPPED: "order_shipped",
   ORDER_DELIVERED: "order_delivered",
   DELIVERY_CONFIRMED: "delivery_confirmed",
+  LISTING_APPROVED: "listing_approved",
+  LISTING_REJECTED: "listing_rejected",
+  LISTING_NEEDS_CHANGES: "listing_needs_changes",
+  LISTING_SUSPENDED: "listing_suspended",
+  LISTING_RESTORED: "listing_restored",
+  LISTING_FEATURED: "listing_featured",
 };
 
 module.exports = {

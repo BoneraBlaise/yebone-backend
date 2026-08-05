@@ -196,6 +196,7 @@ router.get(
       res.status(200).json({
         success: true,
         user,
+        token: user.getJwtToken(),
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

@@ -98,6 +98,7 @@ function registerMarketplaceCore(app, options = {}) {
   trustBuyerProtectionPlatform.bindObservability(integration.observability);
   communicationPlatform.bindPricing(integration.pricing);
   communicationPlatform.bindOrderPlatform(require("./orders").getOrderPlatform());
+  propertyMobilityPlatform.bindNotificationService(communicationPlatform.notificationService);
   integration.initialize().catch((error) => {
     console.error("Platform integration init failed:", error.message);
   });

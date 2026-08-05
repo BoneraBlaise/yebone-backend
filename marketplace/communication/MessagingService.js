@@ -44,6 +44,30 @@ class MessagingService {
     return conversation;
   }
 
+  async startListingConversation({ listingId, buyerId, sellerId, listingSnapshot, initialMessage }) {
+    if (String(buyerId) === String(sellerId)) {
+      throw this._error("Buyer and seller must be different", 400);
+    }
+
+    const conversation = await this.inboxBridge.findOrCreateListingConversation({
+      listingId,
+      buyerId,
+      sellerId,
+      listingSnapshot,
+    });
+
+    if (initialMessage) {
+      await this.sendMessage({
+        conversationId: String(conversation._id),
+        senderId: buyerId,
+        text: initialMessage,
+        productSnapshot: listingSnapshot,
+      });
+    }
+
+    return conversation;
+  }
+
   async listConversations(userId, { search = "", includeArchived = false } = {}) {
     const query = { members: String(userId) };
     if (!includeArchived) {

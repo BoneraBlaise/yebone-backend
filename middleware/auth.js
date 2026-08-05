@@ -2,8 +2,8 @@ const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("./catchAsyncErrors");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
-const Shop = require("../model/shop");
 const PlatformAuthService = require("../marketplace/integration/auth/PlatformAuthService");
+const { authenticateVendor } = require("./vendorAuth");
 
 function extractBearerToken(req) {
   const header = String(req.headers.authorization || "");
@@ -15,10 +15,6 @@ function extractBearerToken(req) {
 
 function extractAuthToken(req) {
   return extractBearerToken(req) || req.cookies?.token || null;
-}
-
-function extractSellerToken(req) {
-  return req.cookies?.seller_token || extractBearerToken(req) || null;
 }
 
 exports.isAuthenticated = catchAsyncErrors(async (req, res, next) => {
@@ -38,22 +34,11 @@ exports.isAuthenticated = catchAsyncErrors(async (req, res, next) => {
   next();
 });
 
-exports.isSeller = catchAsyncErrors(async (req, res, next) => {
-  const sellerToken = extractSellerToken(req);
+/** @deprecated Use authenticateVendor — kept as alias for existing route imports */
+exports.isSeller = authenticateVendor;
 
-  if (!sellerToken) {
-    return next(new ErrorHandler("Please login to continue", 401));
-  }
-
-  const decoded = jwt.verify(sellerToken, process.env.JWT_SECRET_KEY);
-  req.seller = await Shop.findById(decoded.id);
-
-  if (!req.seller) {
-    return next(new ErrorHandler("Please login to continue", 401));
-  }
-
-  next();
-});
+/** Unified vendor authentication for all marketplace operations */
+exports.authenticateVendor = authenticateVendor;
 
 exports.isAdmin = (...roles) => {
   return (req, res, next) => {

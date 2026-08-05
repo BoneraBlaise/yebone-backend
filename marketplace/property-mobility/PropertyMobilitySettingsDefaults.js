@@ -18,6 +18,7 @@ const LISTING_STATUSES = Object.freeze([
   "published",
   "paused",
   "rejected",
+  "needs_changes",
   "suspended",
   "deleted",
 ]);

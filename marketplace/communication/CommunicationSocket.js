@@ -58,6 +58,38 @@ class CommunicationSocket {
         }
         this._broadcastOnlineUsers();
       });
+
+      socket.on("typing", async (payload = {}) => {
+        const { conversationId, typing = true } = payload;
+        if (!conversationId) return;
+        try {
+          const Conversation = require("../../model/conversation");
+          const conversation = await Conversation.findById(conversationId).lean();
+          if (!conversation?.members?.length) return;
+          for (const memberId of conversation.members) {
+            if (String(memberId) === userId) continue;
+            this.emitToUser(memberId, "typing", { conversationId, userId, typing });
+          }
+        } catch {
+          /* ignore lookup errors */
+        }
+      });
+
+      socket.on("stopTyping", async (payload = {}) => {
+        const { conversationId } = payload;
+        if (!conversationId) return;
+        try {
+          const Conversation = require("../../model/conversation");
+          const conversation = await Conversation.findById(conversationId).lean();
+          if (!conversation?.members?.length) return;
+          for (const memberId of conversation.members) {
+            if (String(memberId) === userId) continue;
+            this.emitToUser(memberId, "typing", { conversationId, userId, typing: false });
+          }
+        } catch {
+          /* ignore */
+        }
+      });
     });
 
     return this.io;

@@ -1,54 +1,50 @@
 const express = require("express");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
-const Shop = require("../model/shop");
 const Event = require("../model/event");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { isSeller, isAdmin, isAuthenticated } = require("../middleware/auth");
 const router = express.Router();
 const cloudinary = require("cloudinary");
 
-// create event
+// create event — requires unified vendor auth (isSeller → authenticateVendor)
 router.post(
   "/create-event",
+  isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const shopId = req.body.shopId;
-      const shop = await Shop.findById(shopId);
-      if (!shop) {
-        return next(new ErrorHandler("Shop Id is invalid!", 400));
+      if (req.body.shopId && String(req.body.shopId) !== String(req.seller._id)) {
+        return next(new ErrorHandler("You can only create events for your shop", 403));
+      }
+
+      let images = [];
+      if (typeof req.body.images === "string") {
+        images.push(req.body.images);
       } else {
-        let images = [];
+        images = req.body.images || [];
+      }
 
-        if (typeof req.body.images === "string") {
-          images.push(req.body.images);
-        } else {
-          images = req.body.images;
-        }
-
-        const imagesLinks = [];
-
-        for (let i = 0; i < images.length; i++) {
-          const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: "products",
-          });
-
-          imagesLinks.push({
-            public_id: result.public_id,
-            url: result.secure_url,
-          });
-        }
-
-        const productData = req.body;
-        productData.images = imagesLinks;
-        productData.shop = shop;
-
-        const event = await Event.create(productData);
-
-        res.status(201).json({
-          success: true,
-          event,
+      const imagesLinks = [];
+      for (let i = 0; i < images.length; i++) {
+        const result = await cloudinary.v2.uploader.upload(images[i], {
+          folder: "products",
+        });
+        imagesLinks.push({
+          public_id: result.public_id,
+          url: result.secure_url,
         });
       }
+
+      const productData = { ...req.body };
+      productData.images = imagesLinks;
+      productData.shop = req.seller;
+      productData.shopId = req.seller._id;
+
+      const event = await Event.create(productData);
+
+      res.status(201).json({
+        success: true,
+        event,
+      });
     } catch (error) {
       return next(new ErrorHandler(error, 400));
     }
@@ -86,23 +82,25 @@ router.get(
 );
 
 // delete event of a shop
-// delete event of a shop
 router.delete(
   "/delete-shop-event/:id",
+  isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const event = await Event.findById(req.params.id);
 
       if (!event) {
         return next(new ErrorHandler("Event is not found with this id", 404));
-      }    
+      }
 
-      // Delete images from Cloudinary
+      if (String(event.shopId) !== String(req.seller._id)) {
+        return next(new ErrorHandler("You can only delete your own events", 403));
+      }
+
       await Promise.all(event.images.map(async (image) => {
         await cloudinary.v2.uploader.destroy(image.public_id);
       }));
 
-      // Delete the event
       await Event.deleteOne({ _id: req.params.id });
 
       res.status(200).json({
@@ -110,11 +108,10 @@ router.delete(
         message: "Event Deleted successfully!",
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 400)); // Ensure to send the error message
+      return next(new ErrorHandler(error.message, 400));
     }
   })
 );
-
 
 // all events --- for admin
 router.get(
@@ -131,7 +128,7 @@ router.get(
         events,
       });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
+      return next(new ErrorHandler(error, 400));
     }
   })
 );

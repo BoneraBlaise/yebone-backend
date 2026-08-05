@@ -146,6 +146,18 @@ class PropertyMobilityRepository {
     return updated ? this._normalizeListing(updated) : null;
   }
 
+  async listAllListings() {
+    if (this._usesMemoryForListings()) {
+      return [...this.listings.values()].map((item) => structuredClone(item));
+    }
+    const docs = await this.ListingModel.find({}).lean();
+    return docs.map((doc) => this._normalizeListing(doc));
+  }
+
+  async updateListingOwnerId(listingId, newOwnerId) {
+    return this.updateListing(listingId, { ownerId: String(newOwnerId) });
+  }
+
   async listListings(filters = {}) {
     if (this._usesMemoryForListings()) {
       return this._filterListings([...this.listings.values()], filters);

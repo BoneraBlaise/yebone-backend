@@ -7,6 +7,8 @@ const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
+const sendToken = require("../utils/jwtToken");
+const User = require("../model/user");
 const { getVendorPlatform } = require("../marketplace");
 const { optionalAuth } = require("../marketplace/ai/middleware/optionalAuth");
 
@@ -65,32 +67,45 @@ router.post(
   })
 );
 
-// login shop
+// login shop — unified vendor auth: issue user JWT for linked account (not seller_token)
 router.post(
   "/login-shop",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const vendor = getVendorPlatform();
-      const user = await vendor.login(req.body.email, req.body.password);
-      sendShopToken(user, 201, res);
+      const shop = await vendor.login(req.body.email, req.body.password);
+      const linkedUser = await User.findOne({ email: shop.email });
+      if (!linkedUser) {
+        return next(
+          new ErrorHandler(
+            "No user account linked to this shop. Please sign in with your Yebone account.",
+            403
+          )
+        );
+      }
+      return sendToken(linkedUser, 201, res);
     } catch (error) {
       return handleServiceError(error, next);
     }
   })
 );
 
-// Resume seller session for authenticated customers who already own a verified shop (same email).
+// Resolve vendor profile for authenticated user (single JWT — no second token issued).
 router.get(
   "/resume-session",
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const vendor = getVendorPlatform();
-      const seller = await vendor.shopService.findByEmail(req.user.email);
+      const vendorPlatform = getVendorPlatform();
+      const seller = await vendorPlatform.shopService.findByEmail(req.user.email);
       if (!seller) {
         return next(new ErrorHandler("No shop linked to this account", 404));
       }
-      sendShopToken(seller, 200, res);
+      res.status(200).json({
+        success: true,
+        seller,
+        token: req.user.getJwtToken(),
+      });
     } catch (error) {
       return handleServiceError(error, next);
     }

@@ -223,6 +223,28 @@ function registerCommunicationPlatform(app, options = {}) {
   );
 
   router.post(
+    "/conversations/listing",
+    authenticateUserOrSeller,
+    catchAsyncErrors(async (req, res) => {
+      const buyerId = CommunicationAccess.assertBuyer(req);
+      const { listingId, sellerId, listingSnapshot, initialMessage } = req.body;
+      if (!listingId || !sellerId) {
+        return res.status(400).json({ success: false, message: "listingId and sellerId are required" });
+      }
+      const data = await platform.messagingService.startListingConversation({
+        listingId,
+        buyerId,
+        sellerId,
+        listingSnapshot,
+        initialMessage: initialMessage
+          ? CommunicationAccess.sanitizeMessageText(initialMessage)
+          : undefined,
+      });
+      res.status(201).json({ success: true, data });
+    })
+  );
+
+  router.post(
     "/conversations/:id/messages",
     authenticateUserOrSeller,
     catchAsyncErrors(async (req, res) => {

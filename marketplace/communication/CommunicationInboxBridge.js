@@ -6,6 +6,34 @@ class CommunicationInboxBridge {
     return `product-${productId}-${buyerId}`;
   }
 
+  buildListingGroupTitle(listingId, buyerId) {
+    return `listing-${listingId}-${buyerId}`;
+  }
+
+  async findOrCreateListingConversation({ listingId, buyerId, sellerId, listingSnapshot }) {
+    const groupTitle = this.buildListingGroupTitle(listingId, buyerId);
+    let conversation = await Conversation.findOne({ groupTitle });
+    if (!conversation) {
+      conversation = await Conversation.create({
+        groupTitle,
+        members: [buyerId, sellerId],
+        productId: String(listingId),
+        sellerId: String(sellerId),
+        buyerId: String(buyerId),
+        contextType: "listing",
+        productSnapshot: listingSnapshot || null,
+        unreadCounts: new Map([
+          [String(buyerId), 0],
+          [String(sellerId), 0],
+        ]),
+      });
+    } else if (listingSnapshot && !conversation.productSnapshot) {
+      conversation.productSnapshot = listingSnapshot;
+      await conversation.save();
+    }
+    return conversation.toObject ? conversation.toObject() : conversation;
+  }
+
   async findOrCreateProductConversation({ productId, buyerId, sellerId, productSnapshot }) {
     const groupTitle = this.buildGroupTitle(productId, buyerId);
     let conversation = await Conversation.findOne({ groupTitle });

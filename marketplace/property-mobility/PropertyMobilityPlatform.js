@@ -87,6 +87,12 @@ class PropertyMobilityPlatform {
     this.observability = observability;
   }
 
+  bindNotificationService(notificationService) {
+    if (this.moderationService?.setNotificationService) {
+      this.moderationService.setNotificationService(notificationService);
+    }
+  }
+
   async initialize() {
     if (!this.initialized) {
       await this.configStore.initialize();

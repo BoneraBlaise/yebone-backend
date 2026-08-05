@@ -1,7 +1,6 @@
 const express = require("express");
 const catchAsyncErrors = require("../../middleware/catchAsyncErrors");
-const { isAuthenticated, isSeller } = require("../../middleware/auth");
-const { authenticateUserOrSeller } = require("../../middleware/ownerAuth");
+const { isAuthenticated, authenticateVendor } = require("../../middleware/auth");
 const PropertyMobilityPlatform = require("./PropertyMobilityPlatform");
 const PropertyMobilityAccess = require("./PropertyMobilityAccess");
 const { validateCreateListingPayload } = require("./listingPayloadValidation");
@@ -83,6 +82,13 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     console.error("[PropertyMobility] initialize failed:", error.message);
   });
 
+  if (!options.useMemoryOnly && platform.repository) {
+    const { migrateListingOwners } = require("./migrateListingOwners");
+    migrateListingOwners(platform.repository).catch((err) => {
+      console.warn("[PropertyMobility] Owner migration skipped:", err.message);
+    });
+  }
+
   app.locals.propertyMobilityPlatform = platform;
 
   const router = express.Router();
@@ -157,7 +163,10 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
     if (!runFeatureGuard(featureFlags, "moderation", res, () => true)) return;
-    const data = await platform.moderationService.moderateListing(auth.userId, req.params.listingId, req.params.action, { actor: auth.userId });
+    const data = await platform.moderationService.moderateListing(auth.userId, req.params.listingId, req.params.action, {
+      actor: auth.userId,
+      adminNotes: req.body?.adminNotes || "",
+    });
     res.status(200).json({ success: true, data });
   }));
 
@@ -182,7 +191,7 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.get("/owner/listings", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.get("/owner/listings", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -191,7 +200,7 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/listings", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/listings", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) {
       return res.status(auth.statusCode).json({
@@ -228,35 +237,35 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     }
   }));
 
-  router.put("/owner/listings/:listingId", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.put("/owner/listings/:listingId", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.listingService.updateListing(auth.ownerId, req.params.listingId, req.body, { actor: auth.ownerId });
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/listings/:listingId/publish", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/listings/:listingId/publish", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.listingService.publishListing(auth.ownerId, req.params.listingId, { actor: auth.ownerId });
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/listings/:listingId/pause", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/listings/:listingId/pause", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.listingService.pauseListing(auth.ownerId, req.params.listingId, { actor: auth.ownerId });
     res.status(200).json({ success: true, data });
   }));
 
-  router.delete("/owner/listings/:listingId", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.delete("/owner/listings/:listingId", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.listingService.deleteListing(auth.ownerId, req.params.listingId, { actor: auth.ownerId });
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/listings/:listingId/promote/:type", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/listings/:listingId/promote/:type", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -265,7 +274,7 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/verification", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/verification", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -274,14 +283,14 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.get("/owner/verification", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.get("/owner/verification", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.verificationService.getVerificationStatus(auth.ownerId);
     res.status(200).json({ success: true, data });
   }));
 
-  router.get("/owner/agencies", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.get("/owner/agencies", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -290,14 +299,14 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.post("/owner/agencies", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/agencies", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.agencyService.createAgency(auth.ownerId, req.body, { actor: auth.ownerId });
     res.status(201).json({ success: true, data });
   }));
 
-  router.post("/owner/agencies/:agencyId/subscribe", authenticateUserOrSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/agencies/:agencyId/subscribe", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -306,7 +315,7 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(200).json({ success: true, data });
   }));
 
-  router.get("/owner/offers", isSeller, catchAsyncErrors(async (req, res) => {
+  router.get("/owner/offers", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const featureFlags = resolveFeatureFlags();
@@ -324,7 +333,7 @@ function registerPropertyMobilityPlatform(app, options = {}) {
     res.status(201).json({ success: true, data });
   }));
 
-  router.post("/owner/offers/:offerId/:status", isSeller, catchAsyncErrors(async (req, res) => {
+  router.post("/owner/offers/:offerId/:status", authenticateVendor, catchAsyncErrors(async (req, res) => {
     const auth = PropertyMobilityAccess.assertOwner(req);
     if (!auth.valid) return res.status(auth.statusCode).json({ success: false, reason: auth.reason });
     const data = await platform.offerService.respondToOffer(auth.ownerId, req.params.offerId, req.params.status, { actor: auth.ownerId });
