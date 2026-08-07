@@ -1,4 +1,4 @@
-const normalizeEmail = require("./normalizeEmail");
+const normalizeEmail = require("../utils/normalizeEmail");
 
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
