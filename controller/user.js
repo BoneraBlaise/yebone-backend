@@ -18,6 +18,7 @@ const {
   resolveBackupResetToken,
   GENERIC_OTP_SENT_MESSAGE,
 } = require("../utils/passwordResetService");
+const { sendWelcomeEmail } = require("../utils/authEmailService");
 
 // Create activation token function
 const createToken = (user) => {
@@ -72,7 +73,10 @@ router.post("/create-user", async (req, res, next) => {
     });
 
     if (mailResult?.skipped) {
-      await User.create(userPayload);
+      const user = await User.create(userPayload);
+      sendWelcomeEmail(user).catch((err) =>
+        console.error("[create-user] Welcome email failed:", err.message)
+      );
       return res.status(201).json({
         success: true,
         message: `Account created successfully! You can now sign in with ${userPayload.email}.`,
@@ -123,7 +127,10 @@ router.post(
         password,
       });
 
-      // Optionally send a response with the user's token or some success message
+      sendWelcomeEmail(user).catch((err) =>
+        console.error("[activation] Welcome email failed:", err.message)
+      );
+
       sendToken(user, 201, res);
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

@@ -1,17 +1,8 @@
-const { OTP_TTL_MS } = require("../passwordResetOtp");
-
-const BRAND = {
-  name: "YEBONE",
-  primary: "#29625d",
-  accent: "#c9a227",
-  text: "#1a1a1a",
-  muted: "#6b7280",
-  background: "#f8faf9",
-};
+const { BRAND, getLogoUrl } = require("./emailBrand");
 
 function buildPasswordResetOtpEmail({ otp, backupResetUrl, userName }) {
   const greeting = userName ? `Hi ${userName},` : "Hi,";
-  const logoUrl = `${String(process.env.FRONTEND_URL || "").replace(/\/$/, "")}/logo512.png`;
+  const logoUrl = getLogoUrl();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -89,7 +80,7 @@ If you didn't request this, ignore this email.`;
 
 function buildPasswordChangedEmail({ userName }) {
   const greeting = userName ? `Hi ${userName},` : "Hi,";
-  const logoUrl = `${String(process.env.FRONTEND_URL || "").replace(/\/$/, "")}/logo512.png`;
+  const logoUrl = getLogoUrl();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -123,5 +114,4 @@ function buildPasswordChangedEmail({ userName }) {
 module.exports = {
   buildPasswordResetOtpEmail,
   buildPasswordChangedEmail,
-  OTP_TTL_MS,
 };

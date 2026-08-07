@@ -31,7 +31,7 @@ async function resolveGoogleUser(profile, User) {
       await user.save();
     }
 
-    return { user };
+    return { user, isNewUser: false };
   }
 
   user = await User.create({
@@ -46,7 +46,7 @@ async function resolveGoogleUser(profile, User) {
     password: crypto.randomBytes(16).toString("hex"),
   });
 
-  return { user };
+  return { user, isNewUser: true };
 }
 
 module.exports = { resolveGoogleUser };

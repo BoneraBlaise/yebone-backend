@@ -2,6 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/user');
 const { resolveGoogleUser } = require('../utils/googleAccountLink');
+const { sendWelcomeEmail } = require('../utils/authEmailService');
 
 const googleCredentials = {
   clientID: process.env.GOOGLE_CLIENT_ID,
@@ -31,6 +32,12 @@ passport.use(
 
         if (result.error) {
           return done(null, false, { message: result.message });
+        }
+
+        if (result.isNewUser) {
+          sendWelcomeEmail(result.user).catch((err) =>
+            console.error('[Google OAuth] Welcome email failed:', err.message)
+          );
         }
 
         return done(null, result.user);

@@ -45,6 +45,7 @@ describe("resolveGoogleUser", () => {
     assert.equal(result.user.authProvider, "google");
     assert.equal(result.user.googleId, "google-123");
     assert.equal(result.user.email, "test@example.com");
+    assert.equal(result.isNewUser, true);
     assert.equal(User.create.mock.calls.length, 1);
   });
 
@@ -66,6 +67,7 @@ describe("resolveGoogleUser", () => {
     assert.equal(result.user.googleId, "google-123");
     assert.equal(result.user.authProvider, "local");
     assert.equal(result.user.role, "Admin");
+    assert.equal(result.isNewUser, false);
     assert.equal(User.create.mock.calls.length, 0);
     assert.equal(localUser.save.mock.calls.length, 1);
   });
