@@ -1,11 +1,32 @@
 const crypto = require("crypto");
 const normalizeEmail = require("./normalizeEmail");
+const { getLogoUrl } = require("./email/emailBrand");
 
-const DEFAULT_AVATAR_PATH = "/logo512.png";
+function getGoogleProfilePhotoUrl(profile) {
+  return (
+    profile.photos?.[0]?.value ||
+    profile._json?.picture ||
+    profile.picture ||
+    null
+  );
+}
 
 function getDefaultAvatarUrl() {
-  const base = String(process.env.FRONTEND_URL || "").replace(/\/$/, "");
-  return base ? `${base}${DEFAULT_AVATAR_PATH}` : DEFAULT_AVATAR_PATH;
+  return getLogoUrl();
+}
+
+function shouldRefreshAvatar(user) {
+  const url = String(user?.avatar?.url || "").trim();
+  if (!url) return true;
+  if (url.endsWith("/logo512.png")) return true;
+  return false;
+}
+
+function buildGoogleAvatar(googleId, photoUrl) {
+  return {
+    public_id: `google_${googleId}`,
+    url: photoUrl || getDefaultAvatarUrl(),
+  };
 }
 
 /**
@@ -19,6 +40,7 @@ async function resolveGoogleUser(profile, User) {
   }
 
   const googleId = profile.id;
+  const photoUrl = getGoogleProfilePhotoUrl(profile);
   let user = await User.findOne({ email });
 
   if (user) {
@@ -29,8 +51,18 @@ async function resolveGoogleUser(profile, User) {
       };
     }
 
+    let linked = false;
     if (!user.googleId) {
       user.googleId = googleId;
+      linked = true;
+    }
+
+    if (photoUrl && shouldRefreshAvatar(user)) {
+      user.avatar = buildGoogleAvatar(googleId, photoUrl);
+      linked = true;
+    }
+
+    if (linked) {
       await user.save();
     }
 
@@ -39,7 +71,6 @@ async function resolveGoogleUser(profile, User) {
 
   const displayName =
     profile.displayName?.trim() || email.split("@")[0] || "YEBONE User";
-  const photoUrl = profile.photos?.[0]?.value || getDefaultAvatarUrl();
 
   try {
     user = await User.create({
@@ -47,10 +78,7 @@ async function resolveGoogleUser(profile, User) {
       email,
       googleId,
       authProvider: "google",
-      avatar: {
-        public_id: `google_${googleId}`,
-        url: photoUrl,
-      },
+      avatar: buildGoogleAvatar(googleId, photoUrl),
       password: crypto.randomBytes(16).toString("hex"),
     });
   } catch (error) {
@@ -66,4 +94,9 @@ async function resolveGoogleUser(profile, User) {
   return { user, isNewUser: true };
 }
 
-module.exports = { resolveGoogleUser, getDefaultAvatarUrl };
+module.exports = {
+  resolveGoogleUser,
+  getDefaultAvatarUrl,
+  getGoogleProfilePhotoUrl,
+  shouldRefreshAvatar,
+};

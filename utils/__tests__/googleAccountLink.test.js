@@ -45,8 +45,17 @@ describe("resolveGoogleUser", () => {
     assert.equal(result.user.authProvider, "google");
     assert.equal(result.user.googleId, "google-123");
     assert.equal(result.user.email, "test@example.com");
+    assert.equal(result.user.avatar.url, "https://example.com/photo.jpg");
     assert.equal(result.isNewUser, true);
     assert.equal(User.create.mock.calls.length, 1);
+  });
+
+  it("uses profile._json.picture when photos array is empty", async () => {
+    const result = await resolveGoogleUser(
+      makeProfile({ photos: [], _json: { picture: "https://example.com/json-photo.jpg" } }),
+      User
+    );
+    assert.equal(result.user.avatar.url, "https://example.com/json-photo.jpg");
   });
 
   it("links Google to an existing local account without creating a duplicate", async () => {
@@ -91,6 +100,13 @@ describe("resolveGoogleUser", () => {
       email: "test@example.com",
       authProvider: "google",
       googleId: "google-123",
+      avatar: {
+        public_id: "google_google-123",
+        url: "https://example.com/photo.jpg",
+      },
+      save: mock.fn(async function save() {
+        return this;
+      }),
     };
     User.create = mock.fn(async () => {
       const err = new Error("duplicate");

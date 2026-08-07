@@ -121,6 +121,10 @@ app.get('/api/v2/auth/google/callback',
         const token = user.getJwtToken();
         setTokenCookie(res, token);
         const redirectUrl = resolveOAuthRedirect(req.query.state);
+        if (info?.isNewUser) {
+          const joiner = redirectUrl.includes("?") ? "&" : "?";
+          return res.redirect(`${redirectUrl}${joiner}newUser=1`);
+        }
         return res.redirect(redirectUrl);
       } catch (error) {
         console.error('Token Generation Error:', error);

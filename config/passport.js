@@ -40,7 +40,7 @@ passport.use(
           );
         }
 
-        return done(null, result.user);
+        return done(null, result.user, { isNewUser: Boolean(result.isNewUser) });
       } catch (error) {
         console.error('Google Strategy Error:', error);
         return done(error, null);
