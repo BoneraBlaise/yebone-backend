@@ -20,12 +20,16 @@ const sendMail = async (options) => {
     },
   });
 
-  const mailOptions = {
-    from: process.env.SMPT_MAIL,
+const mailOptions = {
+    from: process.env.EMAIL_FROM || process.env.SMPT_MAIL,
     to: options.email,
     subject: options.subject,
     text: options.message,
   };
+
+  if (options.html) {
+    mailOptions.html = options.html;
+  }
 
   await transporter.sendMail(mailOptions);
   return { skipped: false, sent: true };

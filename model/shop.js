@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { hashPasswordIfNeeded } = require("../utils/hashPasswordIfNeeded");
 
 const shopSchema = new mongoose.Schema({
   name: {
@@ -139,12 +140,17 @@ const shopSchema = new mongoose.Schema({
   resetPasswordTime: Date,
 });
 
-// Hash password
+// Hash password only when the password field was explicitly modified.
 shopSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    next();
+  try {
+    if (!this.isModified("password")) {
+      return next();
+    }
+    this.password = await hashPasswordIfNeeded(this.password);
+    return next();
+  } catch (err) {
+    return next(err);
   }
-  this.password = await bcrypt.hash(this.password, 10);
 });
 
 // jwt token

@@ -11,6 +11,13 @@ const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const crypto = require('crypto');
 const sharp = require('sharp');
 const normalizeEmail = require("../utils/normalizeEmail");
+const {
+  requestPasswordResetOtp,
+  verifyPasswordResetOtp,
+  resetPasswordWithSession,
+  resolveBackupResetToken,
+  GENERIC_OTP_SENT_MESSAGE,
+} = require("../utils/passwordResetService");
 
 // Create activation token function
 const createToken = (user) => {
@@ -407,47 +414,27 @@ router.delete(
   })
 );
 
-// Route to send password reset email
+// Route to send password reset OTP
 router.post(
   "/forgot-password",
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { email } = req.body;
-      const normalizedEmail = normalizeEmail(email);
 
       if (!email) {
         return next(new ErrorHandler("Email is required", 400));
       }
 
-      const user = await User.findOne({ email: normalizedEmail });
-
-      if (!user) {
-        return next(new ErrorHandler("User not found", 404));
-      }
-
-      // Create a reset token
-      const resetToken = createToken(user);
-
-      const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-      const mailResult = await sendMail({
-        email: user.email,
-        subject: "Password Reset Request",
-        message: `Hi ${user.name},\n\nYou requested a password reset. Click the link below to reset your password:\n\n${resetUrl}\n\nIf you didn't request this, please ignore this email.`,
+      const result = await requestPasswordResetOtp({
+        email,
+        User,
+        ip: req.ip,
       });
-
-      if (mailResult?.skipped) {
-        return next(
-          new ErrorHandler(
-            "Password reset email is unavailable until SMTP is configured on the server.",
-            503
-          )
-        );
-      }
 
       res.status(200).json({
         success: true,
-        message: "Password reset email sent!",
+        message: result.message || GENERIC_OTP_SENT_MESSAGE,
+        expiresInMs: result.expiresInMs,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -455,45 +442,99 @@ router.post(
   })
 );
 
-// Route to reset password
+// Route to verify password reset OTP
+router.post(
+  "/verify-reset-otp",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return next(new ErrorHandler("Email and verification code are required", 400));
+      }
+
+      const result = await verifyPasswordResetOtp({
+        email,
+        otp,
+        User,
+        ip: req.ip,
+      });
+
+      if (!result.success) {
+        return next(new ErrorHandler(result.message, 400));
+      }
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        resetSessionToken: result.resetSessionToken,
+        expiresInMs: result.expiresInMs,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Route to validate backup reset link token (from email)
+router.post(
+  "/validate-reset-token",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return next(new ErrorHandler("Reset token is required", 400));
+      }
+
+      const result = await resolveBackupResetToken({
+        token,
+        User,
+        ip: req.ip,
+      });
+
+      if (!result.success) {
+        return next(new ErrorHandler(result.message, 400));
+      }
+
+      res.status(200).json({
+        success: true,
+        resetSessionToken: result.resetSessionToken,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Route to reset password with verified session token
 router.post(
   "/reset-password",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { token, newPassword } = req.body;
+      const { resetSessionToken, newPassword } = req.body;
 
-      if (!token || !newPassword) {
-        return next(new ErrorHandler("Token and new password are required", 400));
+      if (!resetSessionToken || !newPassword) {
+        return next(
+          new ErrorHandler("Reset session token and new password are required", 400)
+        );
       }
 
-      try {
-        // Verify the token
-        const decoded = jwt.verify(token, process.env.ACTIVATION_SECRET);
-        
-        if (!decoded || !decoded.user || !decoded.user._id) {
-          return next(new ErrorHandler("Invalid token format", 400));
-        }
+      const result = await resetPasswordWithSession({
+        resetSessionToken,
+        newPassword,
+        User,
+        ip: req.ip,
+      });
 
-        // Find the user
-        const user = await User.findById(decoded.user._id);
-        if (!user) {
-          return next(new ErrorHandler("User not found", 404));
-        }
-
-        // Update password
-        user.password = newPassword;
-        await user.save();
-
-        res.status(200).json({
-          success: true,
-          message: "Password has been reset successfully"
-        });
-      } catch (tokenError) {
-        if (tokenError.name === 'TokenExpiredError') {
-          return next(new ErrorHandler("Reset token has expired", 400));
-        }
-        return next(new ErrorHandler("Invalid reset token", 400));
+      if (!result.success) {
+        return next(new ErrorHandler(result.message, 400));
       }
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
     } catch (error) {
       console.error("Password reset error:", error);
       return next(new ErrorHandler(error.message || "Password reset failed", 500));

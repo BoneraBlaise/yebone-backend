@@ -14,6 +14,11 @@ const {
 const {
   applyProductionMiddleware,
 } = require("./platform/deployment/productionMiddleware");
+const { setTokenCookie } = require("./utils/jwtToken");
+const {
+  resolveOAuthRedirect,
+  sanitizeOAuthRedirect,
+} = require("./utils/oauthRedirect");
 
 const allowedOrigins = resolveCorsOrigins(process.env);
 
@@ -85,43 +90,41 @@ const bid = require("./controller/bidController");
 const commission = require("./controller/commission");
 
 // Google Auth Routes - place these before other routes
-app.get('/api/v2/auth/google',
+app.get('/api/v2/auth/google', (req, res, next) => {
+  const redirectTarget = sanitizeOAuthRedirect(req.query.redirect);
   passport.authenticate('google', {
     scope: ['profile', 'email'],
-    session: false
-  })
-);
+    session: false,
+    state: encodeURIComponent(redirectTarget),
+  })(req, res, next);
+});
 
 app.get('/api/v2/auth/google/callback',
   (req, res, next) => {
     passport.authenticate('google', {
       session: false,
-      failureRedirect: `${process.env.FRONTEND_URL}/login?error=Authentication failed`
+      failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
     }, (err, user, info) => {
       if (err) {
         console.error('Passport Authentication Error:', err);
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication failed`);
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
       }
       
       if (!user) {
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=${info?.message || 'Authentication failed'}`);
+        const message = info?.message || 'Authentication failed';
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(message)}`
+        );
       }
 
       try {
         const token = user.getJwtToken();
-        
-        const options = {
-          expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-          httpOnly: true,
-          sameSite: "none",
-          secure: true,
-        };
-
-        res.cookie("token", token, options)
-           .redirect(`${process.env.FRONTEND_URL}/login?token=${token}`);
+        setTokenCookie(res, token);
+        const redirectUrl = resolveOAuthRedirect(req.query.state);
+        return res.redirect(redirectUrl);
       } catch (error) {
         console.error('Token Generation Error:', error);
-        res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication failed`);
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
       }
     })(req, res, next);
   }

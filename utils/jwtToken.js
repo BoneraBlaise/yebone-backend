@@ -1,17 +1,24 @@
-// create token and saving that in cookies
-const sendToken = (user, statusCode, res) => {
-  const token = user.getJwtToken();
+const getTokenCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
-
-  const options = {
+  return {
     expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
     path: "/",
   };
+};
 
-  res.status(statusCode).cookie("token", token, options).json({
+const setTokenCookie = (res, token) => {
+  res.cookie("token", token, getTokenCookieOptions());
+};
+
+// create token and saving that in cookies
+const sendToken = (user, statusCode, res) => {
+  const token = user.getJwtToken();
+  res.status(statusCode);
+  setTokenCookie(res, token);
+  res.json({
     success: true,
     user,
     token,
@@ -19,3 +26,5 @@ const sendToken = (user, statusCode, res) => {
 };
 
 module.exports = sendToken;
+module.exports.getTokenCookieOptions = getTokenCookieOptions;
+module.exports.setTokenCookie = setTokenCookie;

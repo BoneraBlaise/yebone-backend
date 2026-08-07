@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { hashPasswordIfNeeded } = require("../utils/hashPasswordIfNeeded");
 
 const userSchema = new mongoose.Schema({
   name:{
@@ -66,6 +67,24 @@ const userSchema = new mongoose.Schema({
  },
  resetPasswordToken: String,
  resetPasswordTime: Date,
+ passwordResetOtpHash: {
+   type: String,
+   select: false,
+ },
+ passwordResetOtpExpires: Date,
+ passwordResetOtpAttempts: {
+   type: Number,
+   default: 0,
+ },
+ passwordResetSessionTokenId: {
+   type: String,
+   select: false,
+ },
+ passwordResetRequestWindowStart: Date,
+ passwordResetRequestCount: {
+   type: Number,
+   default: 0,
+ },
  googleId: {
    type: String,
    unique: true,
@@ -87,13 +106,17 @@ const userSchema = new mongoose.Schema({
 });
 
 
-//  Hash password
-userSchema.pre("save", async function (next){
-  if(!this.isModified("password")){
-    next();
+// Hash password only when the password field was explicitly modified.
+userSchema.pre("save", async function (next) {
+  try {
+    if (!this.isModified("password")) {
+      return next();
+    }
+    this.password = await hashPasswordIfNeeded(this.password);
+    return next();
+  } catch (err) {
+    return next(err);
   }
-
-  this.password = await bcrypt.hash(this.password, 10);
 });
 
 // jwt token
