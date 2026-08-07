@@ -1,0 +1,859 @@
+{
+  "executedAt": "2026-08-06T18:27:46.931Z",
+  "mode": "APPROVE DATABASE CLEANUP (CUSTOM)",
+  "before": {
+    "collections": [
+      "aianalyticssnapshots",
+      "airequestidempotencies",
+      "bids",
+      "commissions",
+      "communicationoffers",
+      "configurationhistories",
+      "conversations",
+      "coupouncodes",
+      "deliveryconfigurations",
+      "deliveryrecords",
+      "events",
+      "flashsales",
+      "growthcommerceambassadors",
+      "growthcommercecampaigns",
+      "growthcommerceconfigs",
+      "growthcommercehomepages",
+      "growthconfigurations",
+      "messages",
+      "notifications",
+      "orderidempotencyrecords",
+      "orders",
+      "payment_audit_logs",
+      "payment_idempotency_keys",
+      "payment_transactions",
+      "paymentrecords",
+      "platformaudits",
+      "platformconfigurations",
+      "platformfeatureflags",
+      "previewsessions",
+      "products",
+      "propertymobilityconfigs",
+      "propertymobilitylistings",
+      "pushsubscriptions",
+      "selleroperationsconfigs",
+      "shops",
+      "trustbuyerprotectionconfigs",
+      "users",
+      "vendoraisubscriptions",
+      "vendorcreditswallets",
+      "vendorcredittransactions",
+      "withdraws"
+    ],
+    "counts": {
+      "aianalyticssnapshots": 8,
+      "airequestidempotencies": 0,
+      "bids": 0,
+      "commissions": 0,
+      "communicationoffers": 0,
+      "configurationhistories": 2,
+      "conversations": 7,
+      "coupouncodes": 0,
+      "deliveryconfigurations": 1,
+      "deliveryrecords": 0,
+      "events": 3,
+      "flashsales": 0,
+      "growthcommerceambassadors": 0,
+      "growthcommercecampaigns": 0,
+      "growthcommerceconfigs": 1,
+      "growthcommercehomepages": 1,
+      "growthconfigurations": 0,
+      "messages": 34,
+      "notifications": 34,
+      "orderidempotencyrecords": 0,
+      "orders": 0,
+      "payment_audit_logs": 0,
+      "payment_idempotency_keys": 0,
+      "payment_transactions": 0,
+      "paymentrecords": 0,
+      "platformaudits": 99,
+      "platformconfigurations": 1,
+      "platformfeatureflags": 1,
+      "previewsessions": 0,
+      "products": 23,
+      "propertymobilityconfigs": 1,
+      "propertymobilitylistings": 16,
+      "pushsubscriptions": 0,
+      "selleroperationsconfigs": 1,
+      "shops": 1,
+      "trustbuyerprotectionconfigs": 1,
+      "users": 2,
+      "vendoraisubscriptions": 1,
+      "vendorcreditswallets": 1,
+      "vendorcredittransactions": 0,
+      "withdraws": 0
+    },
+    "total": 239
+  },
+  "deleted": [
+    {
+      "collection": "products",
+      "_id": "6a71f349fa0d619d26683dc3",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a72003afa0d619d26684147",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a7200bbfa0d619d26684255",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a72019ffa0d619d266843a8",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a720294fa0d619d26684504",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a720542fa0d619d26684640",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a720610fa0d619d266847df",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a721614fa0d619d26684a4e",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "products",
+      "_id": "6a743994853efe2c0b53bd5f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "events",
+      "_id": "6a71f34bfa0d619d26683dd4",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "events",
+      "_id": "6a720626fa0d619d266848c1",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "events",
+      "_id": "6a721631fa0d619d26684b31",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a6fbcbfbf73d96ca16bdc03",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a71aaf2585c5be8290f6b3d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a71f349fa0d619d26683dc8",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a71f34afa0d619d26683dce",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a7200c3fa0d619d266842b5",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a7201a7fa0d619d26684409",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a72054bfa0d619d266846a7",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a720553fa0d619d266846e3",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a720618fa0d619d2668484e",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a720620fa0d619d2668488b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a72161ffa0d619d26684abc",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a72162afa0d619d26684afb",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a723d4efa0d619d26684eec",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a6fc026bf73d96ca16bdc8c",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a7219dcfa0d619d26684b76",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "conversations",
+      "_id": "6a73a0a1b1cbb895c4b9b70a",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a6cdf0985db846625202099",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a6cf33e1ddeaea0f666ed41",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a6f03a9eb55860c457e436b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a73a0a4b1cbb895c4b9b70d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a73a2eeb1cbb895c4b9b758",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "messages",
+      "_id": "6a73acd0b1cbb895c4b9b920",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a6cdf0985db8466252020b5",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a6cf33e1ddeaea0f666ed45",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a6f03aaeb55860c457e436f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a73a0a6b1cbb895c4b9b711",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a73a2f0b1cbb895c4b9b75c",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "notifications",
+      "_id": "6a73acd2b1cbb895c4b9b924",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a57308d793b6399b55d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a58308d793b6399b561",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a58308d793b6399b563",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a5a308d793b6399b567",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a5c308d793b6399b569",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a5d308d793b6399b56b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a5e308d793b6399b56d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6a5e308d793b6399b56f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aa7308d793b6399b573",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aa9308d793b6399b577",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aaa308d793b6399b579",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aab308d793b6399b57d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aad308d793b6399b57f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aad308d793b6399b581",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aae308d793b6399b583",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6aec308d793b6399b587",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b8e308d793b6399b58b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b8f308d793b6399b58f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b90308d793b6399b591",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b91308d793b6399b593",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b91308d793b6399b595",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b92308d793b6399b597",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b94308d793b6399b599",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6b94308d793b6399b59b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6bcd308d793b6399b59d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d22308d793b6399b5a4",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d22308d793b6399b5a8",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d23308d793b6399b5aa",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d24308d793b6399b5ac",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d24308d793b6399b5ae",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d25308d793b6399b5b0",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d26308d793b6399b5b2",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6d27308d793b6399b5b4",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6edd308d793b6399b5b8",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6ede308d793b6399b5bb",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6edf308d793b6399b5be",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f1b308d793b6399b5c3",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f1d308d793b6399b5cc",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f1f308d793b6399b5d2",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f53308d793b6399b5da",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f53308d793b6399b5de",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f54308d793b6399b5e0",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f55308d793b6399b5e2",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f55308d793b6399b5e4",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f56308d793b6399b5e6",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f56308d793b6399b5e8",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e6f56308d793b6399b5ea",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e8409f38092e046121d39",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a5e8833f38092e046121d3d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a61fcff21dfc26061783476",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6474a6829f7e80ab247a76",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6474a7829f7e80ab247a87",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6474a7829f7e80ab247a89",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6474a7829f7e80ab247a8b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6474a7829f7e80ab247a8d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647565829f7e80ab247ab6",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647566829f7e80ab247aba",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647566829f7e80ab247abc",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647566829f7e80ab247abe",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647566829f7e80ab247ac0",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647b1179bc4195313cc275",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647b1279bc4195313cc284",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647b1279bc4195313cc286",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647b1279bc4195313cc288",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a647b1279bc4195313cc28a",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a64aa7b666c5f50863f5802",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a64e12bdcdc9f592fe0d73d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a64e151dcdc9f592fe0d742",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a67238745571fd5dd8340e3",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a675d3945571fd5dd83428d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a67806e45571fd5dd83442d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a67869f45571fd5dd834575",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6c9e0e7c56eb3531c16628",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6fafbdeb55860c457e63cf",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6fafd1eb55860c457e63d7",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a6fbcbfbf73d96ca16bdc05",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a71aaf2585c5be8290f6b3f",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a71f349fa0d619d26683dca",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a71f34afa0d619d26683dd0",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a7200c3fa0d619d266842b7",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a7201a7fa0d619d2668440b",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a72054bfa0d619d266846a9",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a720554fa0d619d266846e5",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a720618fa0d619d26684850",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a720621fa0d619d2668488d",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a72161ffa0d619d26684abe",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a72162afa0d619d26684afd",
+      "reason": "explicit approved ID"
+    },
+    {
+      "collection": "platformaudits",
+      "_id": "6a723d4efa0d619d26684eee",
+      "reason": "explicit approved ID"
+    }
+  ],
+  "preserved": [
+    {
+      "collection": "users",
+      "_id": "6a569862a85d5895dc95c1f9",
+      "email": "bonbreizy@gmail.com"
+    },
+    {
+      "collection": "users",
+      "_id": "6a6660d4b7c2b17054691302",
+      "email": "derick@gmail.com"
+    },
+    {
+      "collection": "shops",
+      "_id": "6a64e98ddcdc9f592fe0d774",
+      "name": "YEBONE"
+    },
+    {
+      "collection": "propertymobilitylistings",
+      "_id": "6a71af9e585c5be8290f6c2d",
+      "title": "Radisson blu hotel (primary kept)"
+    }
+  ],
+  "after": {
+    "collections": [
+      "aianalyticssnapshots",
+      "airequestidempotencies",
+      "bids",
+      "commissions",
+      "communicationoffers",
+      "configurationhistories",
+      "conversations",
+      "coupouncodes",
+      "deliveryconfigurations",
+      "deliveryrecords",
+      "events",
+      "flashsales",
+      "growthcommerceambassadors",
+      "growthcommercecampaigns",
+      "growthcommerceconfigs",
+      "growthcommercehomepages",
+      "growthconfigurations",
+      "messages",
+      "notifications",
+      "orderidempotencyrecords",
+      "orders",
+      "payment_audit_logs",
+      "payment_idempotency_keys",
+      "payment_transactions",
+      "paymentrecords",
+      "platformaudits",
+      "platformconfigurations",
+      "platformfeatureflags",
+      "previewsessions",
+      "products",
+      "propertymobilityconfigs",
+      "propertymobilitylistings",
+      "pushsubscriptions",
+      "selleroperationsconfigs",
+      "shops",
+      "trustbuyerprotectionconfigs",
+      "users",
+      "vendoraisubscriptions",
+      "vendorcreditswallets",
+      "vendorcredittransactions",
+      "withdraws"
+    ],
+    "counts": {
+      "aianalyticssnapshots": 8,
+      "airequestidempotencies": 0,
+      "bids": 0,
+      "commissions": 0,
+      "communicationoffers": 0,
+      "configurationhistories": 2,
+      "conversations": 6,
+      "coupouncodes": 0,
+      "deliveryconfigurations": 1,
+      "deliveryrecords": 0,
+      "events": 0,
+      "flashsales": 0,
+      "growthcommerceambassadors": 0,
+      "growthcommercecampaigns": 0,
+      "growthcommerceconfigs": 1,
+      "growthcommercehomepages": 1,
+      "growthconfigurations": 0,
+      "messages": 28,
+      "notifications": 28,
+      "orderidempotencyrecords": 0,
+      "orders": 0,
+      "payment_audit_logs": 0,
+      "payment_idempotency_keys": 0,
+      "payment_transactions": 0,
+      "paymentrecords": 0,
+      "platformaudits": 11,
+      "platformconfigurations": 1,
+      "platformfeatureflags": 1,
+      "previewsessions": 0,
+      "products": 14,
+      "propertymobilityconfigs": 1,
+      "propertymobilitylistings": 1,
+      "pushsubscriptions": 0,
+      "selleroperationsconfigs": 1,
+      "shops": 1,
+      "trustbuyerprotectionconfigs": 1,
+      "users": 2,
+      "vendoraisubscriptions": 1,
+      "vendorcreditswallets": 1,
+      "vendorcredittransactions": 0,
+      "withdraws": 0
+    },
+    "total": 111
+  },
+  "verification": {
+    "bonbreizyExists": true,
+    "derickExists": true,
+    "yeboneShopExists": true,
+    "radissonPrimaryKept": true,
+    "realProductCount": 14,
+    "demoProductsRemaining": [],
+    "demoListingsRemaining": [],
+    "demoEventsRemaining": [],
+    "remainingE2EMessages": []
+  },
+  "errors": [],
+  "totalDeleted": 128
+}

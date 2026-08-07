@@ -19,6 +19,12 @@ class PropertyMobilitySearchBridge {
     return null;
   }
 
+  _parseOptionalPrice(value) {
+    if (value == null || value === "") return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
   async searchListings(query = {}) {
     if (!this._enabled()) {
       return { listings: [], meta: { enabled: false, total: 0 } };
@@ -31,8 +37,8 @@ class PropertyMobilitySearchBridge {
       categories,
       verifiedOnly: query.verifiedOnly === "true" || query.verifiedOnly === true,
       featuredOnly: query.featuredOnly === "true" || query.featuredOnly === true,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
+      minPrice: this._parseOptionalPrice(query.minPrice),
+      maxPrice: this._parseOptionalPrice(query.maxPrice),
       location: query.location || query.city,
       q: query.q || query.query,
       sort: query.sort || "newest",

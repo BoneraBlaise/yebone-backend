@@ -32,7 +32,16 @@ class PropertyMobilityRepository {
     return item;
   }
 
+  _parsePriceFilter(value) {
+    if (value == null || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   _filterListings(items, filters = {}) {
+    const minPrice = this._parsePriceFilter(filters.minPrice);
+    const maxPrice = this._parsePriceFilter(filters.maxPrice);
+
     return items
       .filter((item) => {
         if (filters.ownerId && item.ownerId !== String(filters.ownerId)) return false;
@@ -42,8 +51,8 @@ class PropertyMobilityRepository {
         if (filters.publishedOnly && item.status !== "published") return false;
         if (filters.verifiedOnly && !item.verified) return false;
         if (filters.featuredOnly && !item.featured) return false;
-        if (filters.minPrice != null && Number(item.price) < Number(filters.minPrice)) return false;
-        if (filters.maxPrice != null && Number(item.price) > Number(filters.maxPrice)) return false;
+        if (minPrice != null && Number(item.price) < minPrice) return false;
+        if (maxPrice != null && Number(item.price) > maxPrice) return false;
         if (filters.location && item.location?.city !== filters.location && item.location?.address !== filters.location) {
           if (!String(item.location?.city || "").toLowerCase().includes(String(filters.location).toLowerCase())) {
             return false;

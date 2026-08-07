@@ -23,8 +23,8 @@ const { io } = require(path.join(
 const API = "http://127.0.0.1:5000/api/v2";
 const SOCKET = "http://127.0.0.1:5000";
 
-const BUYER_EMAIL = process.env.E2E_BUYER_EMAIL || "derick@gmail.com";
-const SELLER_EMAIL = process.env.E2E_SELLER_EMAIL || "bonbreizy@gmail.com";
+const BUYER_EMAIL = process.env.E2E_BUYER_EMAIL;
+const SELLER_EMAIL = process.env.E2E_SELLER_EMAIL;
 
 async function api(path, { method = "GET", token, body } = {}) {
   const res = await fetch(`${API}${path}`, {
@@ -51,6 +51,11 @@ function waitForSocketEvent(socket, event, timeoutMs = 15000) {
 }
 
 async function main() {
+  if (!BUYER_EMAIL || !SELLER_EMAIL) {
+    console.error("Set E2E_BUYER_EMAIL and E2E_SELLER_EMAIL in .env or the environment.");
+    process.exit(1);
+  }
+
   const User = require("../model/user");
   const Shop = require("../model/shop");
   const Product = require("../model/product");

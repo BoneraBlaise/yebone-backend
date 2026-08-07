@@ -1,7 +1,10 @@
 /**
- * Seed or verify a production test user in MongoDB.
- * Usage: node scripts/seed-production-test-user.js
- * Requires DB_URL in .env (same Atlas cluster as Render).
+ * Seed a non-production test user in MongoDB (development / staging only).
+ *
+ * Usage:
+ *   SEED_ALLOW=true SEED_TEST_EMAIL=... SEED_TEST_PASSWORD=... node scripts/seed-production-test-user.js
+ *
+ * Requires DB_URL in .env. Refuses to run when NODE_ENV=production or SEED_ALLOW is not set.
  */
 const path = require("path");
 const fs = require("fs");
@@ -15,19 +18,39 @@ if (fs.existsSync(rootEnv)) {
 const User = require("../model/user");
 const normalizeEmail = require("../utils/normalizeEmail");
 
-const TEST_USER = {
-  name: "Production Test User",
-  email: normalizeEmail(
-    process.env.SEED_TEST_EMAIL || "prod.test@yebone.app"
-  ),
-  password: process.env.SEED_TEST_PASSWORD || "YeboneTest2026!",
-  avatar: {
-    public_id: "seed/production-test-user",
-    url: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
-  },
-};
+function requireSeedConfig() {
+  if (process.env.NODE_ENV === "production") {
+    console.error("Refusing to seed users when NODE_ENV=production.");
+    process.exit(1);
+  }
+  if (process.env.SEED_ALLOW !== "true") {
+    console.error(
+      "Refusing to seed without SEED_ALLOW=true. This script is for local/staging only."
+    );
+    process.exit(1);
+  }
+  const email = process.env.SEED_TEST_EMAIL;
+  const password = process.env.SEED_TEST_PASSWORD;
+  if (!email || !password) {
+    console.error("SEED_TEST_EMAIL and SEED_TEST_PASSWORD must both be set.");
+    process.exit(1);
+  }
+  return {
+    name: process.env.SEED_TEST_NAME || "Development Test User",
+    email: normalizeEmail(email),
+    password,
+    avatar: {
+      public_id: "seed/development-test-user",
+      url:
+        process.env.SEED_TEST_AVATAR_URL ||
+        "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg",
+    },
+  };
+}
 
 async function main() {
+  const testUser = requireSeedConfig();
+
   if (!process.env.DB_URL) {
     console.error("DB_URL is not set.");
     process.exit(1);
@@ -36,32 +59,19 @@ async function main() {
   await mongoose.connect(process.env.DB_URL);
   console.log("Connected to MongoDB");
 
-  const totalUsers = await User.countDocuments();
-  const indexes = await User.collection.indexes();
-  console.log("users collection count:", totalUsers);
-  console.log(
-    "indexes:",
-    indexes.map((i) => ({ name: i.name, key: i.key, unique: i.unique }))
-  );
-
-  let user = await User.findOne({ email: TEST_USER.email }).select("+password");
+  let user = await User.findOne({ email: testUser.email }).select("+password");
 
   if (user) {
-    console.log("Test user already exists:", TEST_USER.email);
+    console.log("Test user already exists:", testUser.email);
   } else {
-    user = await User.create(TEST_USER);
-    console.log("Created test user:", TEST_USER.email);
+    user = await User.create(testUser);
+    console.log("Created test user:", testUser.email);
   }
 
-  const loginCheck = await User.findOne({ email: TEST_USER.email }).select(
-    "+password"
-  );
-  const passwordOk = await loginCheck.comparePassword(TEST_USER.password);
+  const loginCheck = await User.findOne({ email: testUser.email }).select("+password");
+  const passwordOk = await loginCheck.comparePassword(testUser.password);
   console.log("login query match:", Boolean(loginCheck));
   console.log("password valid:", passwordOk);
-  console.log("--- credentials for production login ---");
-  console.log("email:", TEST_USER.email);
-  console.log("password:", TEST_USER.password);
 
   await mongoose.disconnect();
 }

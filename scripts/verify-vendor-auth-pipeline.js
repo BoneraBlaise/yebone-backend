@@ -1,12 +1,12 @@
 /**
  * Verify unified vendor auth pipeline (API-level E2E).
- * Usage: node scripts/verify-vendor-auth-pipeline.js
+ * Usage: E2E_VENDOR_EMAIL=... E2E_VENDOR_PASSWORD=... node scripts/verify-vendor-auth-pipeline.js
  */
 require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 
 const API = "http://127.0.0.1:5000/api/v2";
-const EMAIL = process.env.E2E_VENDOR_EMAIL || "derick@gmail.com";
-const PASSWORD = process.env.E2E_VENDOR_PASSWORD || "YeboneTest2026!";
+const EMAIL = process.env.E2E_VENDOR_EMAIL;
+const PASSWORD = process.env.E2E_VENDOR_PASSWORD;
 
 async function api(path, { method = "GET", token, body, cookies } = {}) {
   const headers = { "Content-Type": "application/json", Accept: "application/json" };
@@ -28,6 +28,11 @@ async function api(path, { method = "GET", token, body, cookies } = {}) {
 }
 
 async function main() {
+  if (!EMAIL || !PASSWORD) {
+    console.error("Set E2E_VENDOR_EMAIL and E2E_VENDOR_PASSWORD in .env or the environment.");
+    process.exit(1);
+  }
+
   console.log("=== Vendor Auth Pipeline Verification ===\n");
 
   const login = await api("/user/login-user", {
