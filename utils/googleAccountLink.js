@@ -1,13 +1,16 @@
 const crypto = require("crypto");
 const normalizeEmail = require("./normalizeEmail");
 
+const DEFAULT_AVATAR_PATH = "/logo512.png";
+
+function getDefaultAvatarUrl() {
+  const base = String(process.env.FRONTEND_URL || "").replace(/\/$/, "");
+  return base ? `${base}${DEFAULT_AVATAR_PATH}` : DEFAULT_AVATAR_PATH;
+}
+
 /**
  * Resolve a Google OAuth profile to an existing or new User document.
  * Links Google to local accounts by email — never creates duplicates.
- *
- * @param {import('passport-google-oauth20').Profile} profile
- * @param {import('mongoose').Model} User
- * @returns {Promise<{ user?: object, error?: string, message?: string }>}
  */
 async function resolveGoogleUser(profile, User) {
   const email = normalizeEmail(profile.emails?.[0]?.value || "");
@@ -34,19 +37,33 @@ async function resolveGoogleUser(profile, User) {
     return { user, isNewUser: false };
   }
 
-  user = await User.create({
-    name: profile.displayName || email.split("@")[0],
-    email,
-    googleId,
-    authProvider: "google",
-    avatar: {
-      public_id: `google_${googleId}`,
-      url: profile.photos?.[0]?.value || "",
-    },
-    password: crypto.randomBytes(16).toString("hex"),
-  });
+  const displayName =
+    profile.displayName?.trim() || email.split("@")[0] || "YEBONE User";
+  const photoUrl = profile.photos?.[0]?.value || getDefaultAvatarUrl();
+
+  try {
+    user = await User.create({
+      name: displayName,
+      email,
+      googleId,
+      authProvider: "google",
+      avatar: {
+        public_id: `google_${googleId}`,
+        url: photoUrl,
+      },
+      password: crypto.randomBytes(16).toString("hex"),
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      user = await User.findOne({ email });
+      if (user) {
+        return { user, isNewUser: false };
+      }
+    }
+    throw error;
+  }
 
   return { user, isNewUser: true };
 }
 
-module.exports = { resolveGoogleUser };
+module.exports = { resolveGoogleUser, getDefaultAvatarUrl };

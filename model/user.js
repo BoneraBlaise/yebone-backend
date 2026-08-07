@@ -103,6 +103,10 @@ const userSchema = new mongoose.Schema({
    type: mongoose.Schema.Types.ObjectId,
    ref: "Commission"
  },
+ tokenVersion: {
+   type: Number,
+   default: 0,
+ },
 });
 
 
@@ -121,9 +125,11 @@ userSchema.pre("save", async function (next) {
 
 // jwt token
 userSchema.methods.getJwtToken = function () {
-  return jwt.sign({ id: this._id}, process.env.JWT_SECRET_KEY,{
-    expiresIn: process.env.JWT_EXPIRES,
-  });
+  return jwt.sign(
+    { id: this._id, tv: this.tokenVersion || 0 },
+    process.env.JWT_SECRET_KEY,
+    { expiresIn: process.env.JWT_EXPIRES }
+  );
 };
 
 // compare password

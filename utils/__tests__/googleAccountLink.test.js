@@ -84,4 +84,23 @@ describe("resolveGoogleUser", () => {
     assert.equal(result.error, "EMAIL_LINKED_TO_OTHER_GOOGLE");
     assert.equal(User.create.mock.calls.length, 0);
   });
+
+  it("returns existing user on duplicate key race", async () => {
+    const existing = {
+      _id: "user-race",
+      email: "test@example.com",
+      authProvider: "google",
+      googleId: "google-123",
+    };
+    User.create = mock.fn(async () => {
+      const err = new Error("duplicate");
+      err.code = 11000;
+      throw err;
+    });
+    User.findOne = mock.fn(async () => existing);
+
+    const result = await resolveGoogleUser(makeProfile(), User);
+    assert.equal(result.user, existing);
+    assert.equal(result.isNewUser, false);
+  });
 });

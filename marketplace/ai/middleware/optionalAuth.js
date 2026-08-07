@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../../../model/user");
 const Shop = require("../../../model/shop");
 const catchAsyncErrors = require("../../../middleware/catchAsyncErrors");
+const { isTokenVersionValid } = require("../../../middleware/auth");
 
 function extractBearerToken(req) {
   const header = String(req.headers.authorization || "");
@@ -29,7 +30,10 @@ const optionalAuth = catchAsyncErrors(async (req, _res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-      req.user = await User.findById(decoded.id);
+      const user = await User.findById(decoded.id);
+      if (user && isTokenVersionValid(decoded, user)) {
+        req.user = user;
+      }
     } catch {
       req.user = null;
     }

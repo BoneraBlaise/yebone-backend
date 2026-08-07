@@ -14,6 +14,7 @@ const {
 } = require("./passwordResetOtp");
 const { validatePasswordPolicy } = require("./passwordPolicy");
 const { logAuthEvent } = require("./authAuditLog");
+const { invalidateUserSessions } = require("./sessionInvalidation");
 const {
   buildPasswordResetOtpEmail,
   buildPasswordChangedEmail,
@@ -228,6 +229,7 @@ async function resetPasswordWithSession({ resetSessionToken, newPassword, User, 
   }
 
   user.password = newPassword;
+  invalidateUserSessions(user);
   clearAllPasswordResetFields(user);
   await user.save();
 

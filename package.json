@@ -36,7 +36,7 @@
     "test:providers:all": "npm run test:providers && npm run test:providers:runtime",
     "test:payment-foundation": "npm run test:providers:all && npm run test:engine && npm run test:foundation && npm run test:phase4",
     "test:marketplace-core": "node --test marketplace/__tests__/MarketplaceCore.test.js",
-    "test:auth": "node --test utils/__tests__/hashPasswordIfNeeded.test.js utils/__tests__/googleAccountLink.test.js utils/__tests__/passwordPolicy.test.js utils/__tests__/passwordResetOtp.test.js utils/__tests__/welcomeEmail.test.js utils/__tests__/sendMail.test.js",
+    "test:auth": "node --test utils/__tests__/hashPasswordIfNeeded.test.js utils/__tests__/googleAccountLink.test.js utils/__tests__/passwordPolicy.test.js utils/__tests__/passwordResetOtp.test.js utils/__tests__/welcomeEmail.test.js utils/__tests__/sendMail.test.js utils/__tests__/jwtExpires.test.js utils/__tests__/sessionInvalidation.test.js utils/__tests__/tokenVersion.test.js",
     "test:vendor-management": "node --test marketplace/vendor/__tests__/VendorPlatform.test.js",
     "test:product-catalog": "node --test marketplace/catalog/__tests__/ProductPlatform.test.js",
     "test:orders": "node --test marketplace/orders/__tests__/OrderPlatform.test.js",

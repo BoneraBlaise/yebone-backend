@@ -1,12 +1,19 @@
+const { getJwtExpiresDate } = require("./jwtExpires");
+
 const getTokenCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
   return {
-    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    expires: getJwtExpiresDate(),
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
     path: "/",
   };
+};
+
+const clearTokenCookie = (res) => {
+  const options = getTokenCookieOptions();
+  res.cookie("token", null, { ...options, expires: new Date(0) });
 };
 
 const setTokenCookie = (res, token) => {
@@ -28,3 +35,4 @@ const sendToken = (user, statusCode, res) => {
 module.exports = sendToken;
 module.exports.getTokenCookieOptions = getTokenCookieOptions;
 module.exports.setTokenCookie = setTokenCookie;
+module.exports.clearTokenCookie = clearTokenCookie;

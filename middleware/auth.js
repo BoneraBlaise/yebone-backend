@@ -17,6 +17,12 @@ function extractAuthToken(req) {
   return extractBearerToken(req) || req.cookies?.token || null;
 }
 
+function isTokenVersionValid(decoded, user) {
+  const expected = user.tokenVersion || 0;
+  const actual = decoded.tv ?? 0;
+  return actual === expected;
+}
+
 exports.isAuthenticated = catchAsyncErrors(async (req, res, next) => {
   const token = extractAuthToken(req);
 
@@ -24,13 +30,24 @@ exports.isAuthenticated = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Please login to continue", 401));
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  req.user = await User.findById(decoded.id);
-
-  if (!req.user) {
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+  } catch (error) {
     return next(new ErrorHandler("Please login to continue", 401));
   }
 
+  const user = await User.findById(decoded.id);
+
+  if (!user) {
+    return next(new ErrorHandler("Please login to continue", 401));
+  }
+
+  if (!isTokenVersionValid(decoded, user)) {
+    return next(new ErrorHandler("Session expired. Please login again.", 401));
+  }
+
+  req.user = user;
   next();
 });
 
@@ -56,3 +73,5 @@ exports.isAdmin = (...roles) => {
     next();
   };
 };
+
+exports.isTokenVersionValid = isTokenVersionValid;

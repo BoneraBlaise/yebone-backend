@@ -19,6 +19,19 @@ const {
   GENERIC_OTP_SENT_MESSAGE,
 } = require("../utils/passwordResetService");
 const { sendWelcomeEmail } = require("../utils/authEmailService");
+const { validatePasswordPolicy } = require("../utils/passwordPolicy");
+const { logAuthEvent } = require("../utils/authAuditLog");
+const { invalidateUserSessions } = require("../utils/sessionInvalidation");
+const {
+  loginRateLimit,
+  forgotPasswordRateLimit,
+  verifyOtpRateLimit,
+  authNoStore,
+  getClientIp,
+} = require("../middleware/authRateLimit");
+const { clearTokenCookie } = require("../utils/jwtToken");
+
+router.use(authNoStore);
 
 // Create activation token function
 const createToken = (user) => {
@@ -35,6 +48,11 @@ router.post("/create-user", async (req, res, next) => {
 
     if (!name || !email || !password || !avatar) {
       return next(new ErrorHandler("Missing required fields", 400));
+    }
+
+    const passwordCheck = validatePasswordPolicy(password);
+    if (!passwordCheck.valid) {
+      return next(new ErrorHandler(passwordCheck.errors[0], 400));
     }
 
     const userEmail = await User.findOne({ email });
@@ -113,6 +131,11 @@ router.post(
 
       const { name, email, password, avatar } = decoded.user;
 
+      const passwordCheck = validatePasswordPolicy(password);
+      if (!passwordCheck.valid) {
+        return next(new ErrorHandler(passwordCheck.errors[0], 400));
+      }
+
       let user = await User.findOne({ email });
 
       if (user) {
@@ -162,10 +185,12 @@ router.post("/check-email", catchAsyncErrors(async (req, res, next) => {
 // Login user
 router.post(
   "/login-user",
+  loginRateLimit,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { password } = req.body;
       const email = normalizeEmail(req.body.email);
+      const ip = getClientIp(req);
 
       if (!email || !password) {
         return next(new ErrorHandler("Please fill all fields!", 400));
@@ -174,20 +199,23 @@ router.post(
       const user = await User.findOne({ email }).select("+password");
 
       if (!user) {
-        return next(new ErrorHandler("User doesn't exist!", 400));
+        logAuthEvent("login_failed", { email, ip, success: false, reason: "user_not_found" });
+        return next(new ErrorHandler("Invalid email or password.", 400));
       }
 
-      // Check if user is registered with Google
-      if (user.authProvider === 'google') {
+      if (user.authProvider === "google") {
+        logAuthEvent("login_failed", { userId: user._id, email, ip, success: false, reason: "google_only" });
         return next(new ErrorHandler("Please login with Google", 400));
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return next(new ErrorHandler("Invalid password!", 400));
+        logAuthEvent("login_failed", { userId: user._id, email, ip, success: false, reason: "invalid_password" });
+        return next(new ErrorHandler("Invalid email or password.", 400));
       }
 
+      logAuthEvent("login_success", { userId: user._id, email, ip, success: true });
       sendToken(user, 201, res);
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -223,15 +251,60 @@ router.get(
   "/logout",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      res.cookie("token", null, {
-        expires: new Date(Date.now()),
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-      });
+      clearTokenCookie(res);
       res.status(200).json({
         success: true,
         message: "Log out successful!",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Update password (authenticated)
+router.put(
+  "/update-user-password",
+  isAuthenticated,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      const ip = getClientIp(req);
+
+      if (!oldPassword || !newPassword) {
+        return next(new ErrorHandler("Old and new password are required", 400));
+      }
+
+      const policy = validatePasswordPolicy(newPassword);
+      if (!policy.valid) {
+        return next(new ErrorHandler(policy.errors[0], 400));
+      }
+
+      const user = await User.findById(req.user.id).select("+password");
+      if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+
+      if (user.authProvider === "google") {
+        return next(new ErrorHandler("Google accounts cannot change password here. Use Google sign-in.", 400));
+      }
+
+      const isMatch = await user.comparePassword(oldPassword);
+      if (!isMatch) {
+        logAuthEvent("password_change_failed", { userId: user._id, email: user.email, ip, success: false, reason: "invalid_old_password" });
+        return next(new ErrorHandler("Current password is incorrect", 400));
+      }
+
+      user.password = newPassword;
+      invalidateUserSessions(user);
+      await user.save();
+
+      clearTokenCookie(res);
+      logAuthEvent("password_change_success", { userId: user._id, email: user.email, ip, success: true });
+
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully. Please sign in again.",
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -424,6 +497,7 @@ router.delete(
 // Route to send password reset OTP
 router.post(
   "/forgot-password",
+  forgotPasswordRateLimit,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { email } = req.body;
@@ -435,7 +509,7 @@ router.post(
       const result = await requestPasswordResetOtp({
         email,
         User,
-        ip: req.ip,
+        ip: getClientIp(req),
       });
 
       res.status(200).json({
@@ -452,6 +526,7 @@ router.post(
 // Route to verify password reset OTP
 router.post(
   "/verify-reset-otp",
+  verifyOtpRateLimit,
   catchAsyncErrors(async (req, res, next) => {
     try {
       const { email, otp } = req.body;
@@ -464,7 +539,7 @@ router.post(
         email,
         otp,
         User,
-        ip: req.ip,
+        ip: getClientIp(req),
       });
 
       if (!result.success) {
